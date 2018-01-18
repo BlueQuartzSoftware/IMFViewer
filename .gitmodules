@@ -1,0 +1,3 @@
+[submodule "Source/SIMPL"]
+	path = Source/SIMPL
+	url = https://github.com/bluequartzsoftware/SIMPL.git
