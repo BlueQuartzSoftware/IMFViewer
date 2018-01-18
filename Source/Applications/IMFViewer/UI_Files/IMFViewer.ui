@@ -1,0 +1,229 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>IMFViewer</class>
+ <widget class="QMainWindow" name="IMFViewer">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>856</width>
+    <height>619</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>IMFViewer</string>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <layout class="QGridLayout" name="gridLayout" rowstretch="0,1,0">
+    <item row="0" column="0">
+     <widget class="QLabel" name="outputFileLabel">
+      <property name="text">
+       <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Output File:&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+      </property>
+     </widget>
+    </item>
+    <item row="0" column="2">
+     <widget class="QPushButton" name="selectBtn">
+      <property name="text">
+       <string>Select</string>
+      </property>
+     </widget>
+    </item>
+    <item row="0" column="1">
+     <widget class="QLineEdit" name="outputFile"/>
+    </item>
+    <item row="2" column="0" colspan="3">
+     <layout class="QHBoxLayout" name="horizontalLayout">
+      <property name="spacing">
+       <number>6</number>
+      </property>
+      <property name="bottomMargin">
+       <number>0</number>
+      </property>
+      <item>
+       <widget class="QProgressBar" name="progressBar">
+        <property name="value">
+         <number>0</number>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="goBtn">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="text">
+         <string>Go</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </item>
+    <item row="1" column="0" colspan="3">
+     <widget class="IMFViewerSplitter" name="splitter">
+      <property name="orientation">
+       <enum>Qt::Horizontal</enum>
+      </property>
+      <widget class="CSDFTreeWidget" name="treeWidget">
+       <property name="styleSheet">
+        <string notr="true"/>
+       </property>
+       <property name="editTriggers">
+        <set>QAbstractItemView::NoEditTriggers</set>
+       </property>
+       <property name="dragDropMode">
+        <enum>QAbstractItemView::DropOnly</enum>
+       </property>
+       <property name="defaultDropAction">
+        <enum>Qt::CopyAction</enum>
+       </property>
+       <property name="autoExpandDelay">
+        <number>0</number>
+       </property>
+       <column>
+        <property name="text">
+         <string>File Structure</string>
+        </property>
+       </column>
+      </widget>
+      <widget class="QWidget" name="layoutWidget">
+       <layout class="QGridLayout" name="gridLayout_2">
+        <item row="1" column="1">
+         <spacer name="verticalSpacer">
+          <property name="orientation">
+           <enum>Qt::Vertical</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>20</width>
+            <height>40</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+        <item row="0" column="2" rowspan="2">
+         <widget class="QTableWidget" name="attributesTable">
+          <property name="alternatingRowColors">
+           <bool>true</bool>
+          </property>
+          <property name="selectionBehavior">
+           <enum>QAbstractItemView::SelectRows</enum>
+          </property>
+          <attribute name="verticalHeaderVisible">
+           <bool>false</bool>
+          </attribute>
+          <column>
+           <property name="text">
+            <string>Name</string>
+           </property>
+          </column>
+          <column>
+           <property name="text">
+            <string>Value</string>
+           </property>
+          </column>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QMenuBar" name="menubar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>856</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <widget class="QMenu" name="menuFile">
+    <property name="toolTipDuration">
+     <number>-1</number>
+    </property>
+    <property name="title">
+     <string>File</string>
+    </property>
+    <addaction name="actionNew"/>
+    <addaction name="separator"/>
+    <addaction name="actionOpen"/>
+    <addaction name="separator"/>
+    <addaction name="actionImportCSDFFile"/>
+    <addaction name="separator"/>
+    <addaction name="actionExitIMFViewer"/>
+   </widget>
+   <widget class="QMenu" name="menuCampaign">
+    <property name="title">
+     <string>Campaign</string>
+    </property>
+    <addaction name="actionAddCampaign"/>
+   </widget>
+   <widget class="QMenu" name="menuFile_View">
+    <property name="title">
+     <string>File Structure</string>
+    </property>
+    <addaction name="actionClearFileStructure"/>
+   </widget>
+   <addaction name="menuFile"/>
+   <addaction name="menuCampaign"/>
+   <addaction name="menuFile_View"/>
+  </widget>
+  <widget class="QStatusBar" name="statusbar">
+   <property name="styleSheet">
+    <string notr="true"/>
+   </property>
+  </widget>
+  <action name="actionNew">
+   <property name="text">
+    <string>New...</string>
+   </property>
+  </action>
+  <action name="actionOpen">
+   <property name="text">
+    <string>Open...</string>
+   </property>
+  </action>
+  <action name="actionAddCampaign">
+   <property name="text">
+    <string>Add Campaign</string>
+   </property>
+  </action>
+  <action name="actionImportCSDFFile">
+   <property name="text">
+    <string>Import CSDF File...</string>
+   </property>
+  </action>
+  <action name="actionExitIMFViewer">
+   <property name="text">
+    <string>Exit IMFViewer</string>
+   </property>
+  </action>
+  <action name="actionClearFileStructure">
+   <property name="text">
+    <string>Clear File Structure</string>
+   </property>
+  </action>
+ </widget>
+ <customwidgets>
+  <customwidget>
+   <class>IMFViewerSplitter</class>
+   <extends>QSplitter</extends>
+   <header location="global">IMFViewerSplitter.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>CSDFTreeWidget</class>
+   <extends>QTreeWidget</extends>
+   <header location="global">CSDFTreeWidget.h</header>
+  </customwidget>
+ </customwidgets>
+ <resources>
+  <include location="../../../../Resources/icons/images/Icons.qrc"/>
+ </resources>
+ <connections/>
+</ui>
