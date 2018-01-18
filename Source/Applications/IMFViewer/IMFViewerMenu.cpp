@@ -72,22 +72,16 @@ IMFViewerMenu::~IMFViewerMenu()
 void IMFViewerMenu::initialize()
 {
   m_MenuBar = new QMenuBar(NULL);
-  m_MenuBar->setObjectName(QStringLiteral("m_GlobalMenu"));
   m_MenuBar->setGeometry(QRect(0, 0, 1104, 21));
 
   m_MenuFile = new QMenu(m_MenuBar);
-  m_MenuFile->setObjectName(QStringLiteral("menuFile"));
-
 
   m_ActionNew = new QAction(this);
-  m_ActionNew->setObjectName(QStringLiteral("actionNew"));
-
-
-  m_ActionNew->setText(QApplication::translate("DREAM3D_UI", "New...", 0));
-  m_ActionNew->setShortcut(QApplication::translate("DREAM3D_UI", "Ctrl+N", 0));
+  m_ActionNew->setText("New...");
+  m_ActionNew->setShortcut(QApplication::translate("IMFViewer_UI", "Ctrl+N", 0));
 
   // Connections
-  connect(m_ActionNew, SIGNAL(triggered()), csdfApp, SLOT(on_actionNew_triggered()));
+//  connect(m_ActionNew, SIGNAL(triggered()), csdfApp, SLOT(on_actionNew_triggered()));
 
   // Add the actions to their respective menus
   m_MenuBar->addAction(m_MenuFile->menuAction());

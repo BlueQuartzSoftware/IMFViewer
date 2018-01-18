@@ -15,6 +15,11 @@ if(NOT "${DREAM3D_SDK}" STREQUAL "")
   message(STATUS "DREAM3D_SDK Location: ${DREAM3D_SDK}")
 endif()
 
+# Request C++11 standard, using new CMake variables.
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD_REQUIRED True)
+set(CMAKE_CXX_EXTENSIONS False)
+
 if(${CMAKE_MAJOR_VERSION} STREQUAL "3")
   # CMake 3.0 introduces VERSION variables for each Project.
   cmake_policy(SET CMP0048 NEW)
@@ -124,8 +129,14 @@ else()
 endif(BUILD_SHARED_LIBS)
 
 
-# ---------- Find and Use the Qt5 Libraries -----------------------
+# Find and Use the Qt5 Libraries
 include(${CMP_SOURCE_DIR}/ExtLib/Qt5Support.cmake)
+set(IMFViewer_Qt5_Components Core Widgets Network Gui Concurrent Svg Xml OpenGL PrintSupport )
+# option(SIMPLView_USE_QtWebEngine "Use QWebEngine to display Help. OFF=Use default web browser" ON)
+CMP_AddQt5Support( "${IMFViewer_Qt5_Components}"
+                    "OFF"
+                    "${IMFViewerProj_BINARY_DIR}"
+                    "IMFViewer")
 
 
 # ---------- Find HDF5 Headers/Libraries -----------------------

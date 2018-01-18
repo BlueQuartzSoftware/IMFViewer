@@ -36,8 +36,8 @@
 
 #include <QApplication>
 
-#include "IMFViewer.h"
-#include "IMFViewerApplication.h"
+#include "IMFViewer/IMFViewer_UI.h"
+#include "IMFViewer/IMFViewerApplication.h"
 
 int main(int argc, char* argv[])
 {
@@ -48,8 +48,8 @@ int main(int argc, char* argv[])
 
   IMFViewerApplication app(argc, argv);
 
-  IMFViewer* importer = app.getNewIMFViewerInstance();
-  importer->show();
+  IMFViewer_UI* viewer = app.getNewIMFViewerInstance();
+  viewer->show();
 
   return app.exec();
 }

@@ -34,8 +34,8 @@
 *
 * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-#ifndef _IMFViewerMenu_H_
-#define _IMFViewerMenu_H_
+#ifndef _imfviewermenu_h_
+#define _imfviewermenu_h_
 
 #include <QtCore/QObject>
 

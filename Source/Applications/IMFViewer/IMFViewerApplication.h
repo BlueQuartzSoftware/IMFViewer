@@ -35,19 +35,19 @@
 *
 * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-#ifndef _IMFViewerApplication_H_
-#define _IMFViewerApplication_H_
+#ifndef _imfviewerapplication_h_
+#define _imfviewerapplication_h_
 
 #include <QtCore/QObject>
 #include <QtCore/QSet>
 
 #include <QtWidgets/QApplication>
 
-#include "IMFViewerMenu.h"
-
-#define csdfApp (static_cast<IMFViewerApplication *>(qApp))
+#define imfViewerApp (static_cast<IMFViewerApplication *>(qApp))
 
 class IMFViewer;
+class IMFViewerMenu;
+class IMFViewer_UI;
 
 class IMFViewerApplication : public QApplication
 {
@@ -57,51 +57,9 @@ public:
   IMFViewerApplication(int& argc, char** argv);
   virtual ~IMFViewerApplication();
 
-  QList<IMFViewer*> getIMFViewerInstances();
-
-  void registerIMFViewerWindow(IMFViewer* window);
-  void unregisterIMFViewerWindow(IMFViewer* window);
-
-  IMFViewer* getNewIMFViewerInstance();
-
-  bool isCurrentlyRunning(IMFViewer* instance);
-
-protected slots:
-
-  /**
-  * @brief Updates the QMenu 'Recent Files' with the latest list of files. This
-  * should be connected to the Signal QRecentFileList->fileListChanged
-  * @param file The newly added file.
-  */
-  //void updateRecentFileList(const QString& file);
-
-  /**
-  * @brief activeWindowChanged
-  */
-  void activeWindowChanged(IMFViewer* instance);
-
-  void toRunningState();
-  void toIdleState();
-
-  void on_actionNew_triggered();
-  void on_actionOpen_triggered();
-
-  void on_treeWidgetContextMenuRequested(const QPoint&);
-
-  void on_actionCloseWindow_triggered();
-  void on_actionExit_triggered();
+  IMFViewer_UI* getNewIMFViewerInstance();
 
 private:
-
-  // This map stores each DREAM3D instance with its accompanying "View" menu
-  QList<IMFViewer*>                      m_IMFViewerInstances;
-
-  // This is the set of DREAM3D instances that are currently running a pipeline
-  QSet<IMFViewer*>                       m_CurrentlyRunningInstances;
-
-  // The currently active DREAM3D instance
-  IMFViewer*                             m_ActiveWindow;
-
   // The global menu (used on Mac OS X only)
 #if defined(Q_OS_MAC)
   IMFViewerMenu*                            m_GlobalMenu;

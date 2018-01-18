@@ -33,198 +33,28 @@
 *
 * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
+#ifndef _imfviewer_ui_h_
+#define _imfviewer_ui_h_
 
-#ifndef _IMFViewer_H_
-#define _IMFViewer_H_
+#include <QtWidgets/QMainWindow>
 
-#include <QtCore/QObject>
-#include <QtCore/QThread>
+#include "ui_IMFViewer_UI.h"
 
-#include "AddSpatialTransformWidget.h"
-
-#include "ui_IMFViewer.h"
-
-class RootOptionsDialog;
-class CampaignOptionsDialog;
-class CSDFInProgress;
-class DataCampaign;
-
-class IMFViewer : public QMainWindow, public Ui::IMFViewer
+class IMFViewer_UI : public QMainWindow, public Ui::IMFViewer_UI
 {
     Q_OBJECT
 
   public:
-
-    enum TableIndices
-    {
-      Name,
-      Value
-    };
-
-    enum IMFViewerState
-    {
-      Default,
-      Error,
-      Success
-    };
-
-    IMFViewer(QWidget* parent = 0);
-    ~IMFViewer();
-
-    static CSDFTreeWidgetItem* AddTreeItem(QString name, CSDFTreeWidgetItem::ObjectType type, int index, CSDFTreeWidgetItem* parent = NULL, AbstractOptionsDialog* optionsDialog = NULL, const QString &csdfFilePath = "");
-
-    static QList<QString> CampaignTypes();
-
-    bool isRunning();
-
-    bool hasRootItem();
-
-    void createRootItem(const QString &fileName, const int &partId, const QString &csdfFilePath = "");
-
-    DataCampaign* addCampaign(const QString &campaignName, const QString &campaignType, int index, const QString &csdfFilePath = "");
-
-    QTreeWidget* getTreeWidget();
-
-    RootOptionsDialog* getRootOptionsDialog();
-
-    void openCSDFFile(const QString &filePath);
-
-    void importCSDFFile(QString filePath);
-
-    bool event(QEvent* event);
-
-  public slots:
-
-    /**
-    * @brief onCustomContextMenuRequested
-    * @param pos
-    */
-    void treeWidgetCustomContextMenuRequested(const QPoint& pos);
-
-    /**
-    * @brief importCSDFFiles
-    * @param fileList
-    */
-    void importCSDFFiles(QList<QString> fileList);
-
-    /**
-    * @brief showErrorMessage
-    * @param msg
-    */
-    void showErrorMessage(const QString msg);
-
-    /**
-    * @brief on_actionClearFileView_triggered
-    */
-    void on_actionClearFileStructure_triggered();
+    IMFViewer_UI(QWidget* parent = 0);
+    ~IMFViewer_UI();
 
   protected:
     void setupGui();
 
-    bool isRootItem(CSDFTreeWidgetItem* item);
-    bool isCampaignItem(CSDFTreeWidgetItem* item);
-    bool isRawItem(CSDFTreeWidgetItem* item);
-    bool isReducedItem(CSDFTreeWidgetItem* item);
-    bool isMetaItem(CSDFTreeWidgetItem* item);
-    bool isSTItem(CSDFTreeWidgetItem* item);
-    bool isSTDataset(CSDFTreeWidgetItem* item);
-
-    void addAttribute(QString name, QString value, bool readOnly);
-    void removeAttribute(int row);
-
-  protected slots:
-    void on_actionNew_triggered();
-    void on_actionOpen_triggered();
-    void on_actionImportCSDFFile_triggered();
-    void on_actionExitIMFViewer_triggered();
-
-    void on_goBtn_clicked();
-    void on_selectBtn_clicked();
-    void campaignOptions_applyPressed();
-    void rootOptions_applyPressed();
-
-    void on_attributesTable_itemChanged(QTableWidgetItem* item);
-    void on_treeWidget_currentItemChanged(QTreeWidgetItem* current, QTreeWidgetItem* previous);
-    void on_outputFile_textChanged(const QString &text);
-
-    /* Add Functions */
-    void addCampaign();
-    void addRawFolder(const QString &csdfFilePath = "");
-    void addReducedFolder(const QString &csdfFilePath = "");
-    void addMetaFolder(const QString &csdfFilePath = "");
-
-    void addSpatialTransform();
-    void addOriginShiftTransform(AddSpatialTransformWidget::STValues values, QVector<double> translation);
-    void addDirectRemapTransform(AddSpatialTransformWidget::STValues values);
-    void addStrideTransform(AddSpatialTransformWidget::STValues values, const QString &units, QVector<double> voxelSize, QVector<int> dimensions, QVector<int> stride);
-    void addPolynomialTransform(AddSpatialTransformWidget::STValues values, const QString &polyDegree, QVector<double> xCoefficients, QVector<double> yCoefficients, QVector<double> zCoefficients);
-    void addRotationTransform(AddSpatialTransformWidget::STValues values, QVector<double> angle);
-
-    // Rename Root Function
-    void renameRootItem();
-
-    /* Edit Functions */
-    void editRootItem();
-    void editCampaign();
-    void editRawFolder();
-    void editReducedFolder();
-    void editMetaFolder();
-
-    /* Update Functions */
-    void updateProgressBar(int value);
-    void updateStatusBar(const QString &msg, IMFViewer::IMFViewerState state);
-    void updateCampaigns(QTableWidget* campaignTable);
-
-    /* Remove Functions */
-    void removeCampaign(const QString &campaignName);
-    void removeCampaign(DataCampaign* campaign);
-    void removeSpatialTransform();
-
-    void changeCampaignAvailability(const QString &campaignName, bool available);
-
-    void finishWriting();
-
-  signals:
-    void writeStarted();
-    void writeCanceled();
-    void writeFinished();
-
-    void IMFViewerChangedState(IMFViewer* window);
-    void actionNew_triggered();
-    void actionOpen_triggered();
-
-  private slots:
-    void readSpatialTransforms(hid_t stFolderId, CSDFTreeWidgetItem* stFolder);
-
   private:
-    DataCampaign* dataCampaign(CSDFTreeWidgetItem* item);
 
-    void syncTablesToTree(QMap<QString, bool> map, DataCampaign* campaign, const QString &folderType);
-
-    void toState(IMFViewerState state);
-
-    template<typename T>
-    QVector<T> toVector(std::vector<T> stdVector);
-
-    void addOriginShiftTransform(AddSpatialTransformWidget::STValues values, QVector<double> translation, CSDFTreeWidgetItem* stFolder);
-    void addDirectRemapTransform(AddSpatialTransformWidget::STValues values, CSDFTreeWidgetItem* stFolder);
-    void addStrideTransform(AddSpatialTransformWidget::STValues values, const QString &units, QVector<double> voxelSize, QVector<int> dimensions, QVector<int> stride, CSDFTreeWidgetItem* stFolder);
-    void addPolynomialTransform(AddSpatialTransformWidget::STValues values, const QString &polyDegree, QVector<double> xCoefficients, QVector<double> yCoefficients, QVector<double> zCoefficients, CSDFTreeWidgetItem* stFolder);
-    void addRotationTransform(AddSpatialTransformWidget::STValues values, QVector<double> angle, CSDFTreeWidgetItem* stFolder);
-
-    QString                                                 m_LastOpenDirectory;
-    QString                                                 m_OpenFilePath;
-    QString                                                 m_CSDFSourcePath;
-
-    CSDFTreeWidgetItem*                                     m_Root;
-    CSDFTreeWidgetItem*                                     m_STFolder;
-
-    QMap<QString, QSharedPointer<DataCampaign> >            m_DataCampaignMap;
-
-    QMenu*                                                  m_Menu;
-
-    QThread*                                                m_WorkerThread;
-    CSDFInProgress*                                         m_CSDFObject;
+    IMFViewer_UI(const IMFViewer_UI&); // Copy Constructor Not Implemented
+    void operator=(const IMFViewer_UI&); // Operator '=' Not Implemented
 };
 
 #endif
