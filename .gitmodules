@@ -1,3 +1,6 @@
 [submodule "Source/SIMPL"]
 	path = Source/SIMPL
 	url = https://github.com/bluequartzsoftware/SIMPL.git
+[submodule "Source/Moderni"]
+	path = Source/Moderni
+	url = https://gitlab.bluequartz.net/DREAM3D/Moderni
