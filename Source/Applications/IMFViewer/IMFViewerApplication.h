@@ -39,7 +39,7 @@
 #define _imfviewerapplication_h_
 
 #include <QtCore/QObject>
-#include <QtCore/QSet>
+#include <QtWidgets/QMenuBar>
 
 #include <QtWidgets/QApplication>
 
@@ -60,12 +60,20 @@ public:
   IMFViewer_UI* getNewIMFViewerInstance();
 
 private:
-  // The global menu (used on Mac OS X only)
-#if defined(Q_OS_MAC)
-  IMFViewerMenu*                            m_GlobalMenu;
-#endif
+  QMenuBar*                               m_ApplicationMenuBar;
 
   QString                                 m_OpenDialogLastDirectory;
+
+  /**
+   * @brief createApplicationMenu
+   */
+  void createApplicationMenu();
+
+  /**
+   * @brief loadStyleSheet
+   * @param sheetName
+   */
+  void loadStyleSheet(const QString &sheetName);
 
   IMFViewerApplication(const IMFViewerApplication&); // Copy Constructor Not Implemented
   void operator=(const IMFViewerApplication&); // Operator '=' Not Implemented

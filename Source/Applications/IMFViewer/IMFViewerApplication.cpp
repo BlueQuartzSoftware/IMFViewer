@@ -37,23 +37,24 @@
 
 #include "IMFViewerApplication.h"
 
-#include "IMFViewer/IMFViewerMenu.h"
+#include <QtCore/QDebug>
+
+#include <QtCore/QFile>
+
+#include "SVWidgetsLib/QtSupport/QtSStyles.h"
+
 #include "IMFViewer/IMFViewer_UI.h"
 
 // -----------------------------------------------------------------------------
 //
 // -----------------------------------------------------------------------------
 IMFViewerApplication::IMFViewerApplication(int& argc, char** argv) :
-QApplication(argc, argv),
-#if defined(Q_OS_MAC)
-m_GlobalMenu(NULL),
-#endif
-m_OpenDialogLastDirectory("")
+  QApplication(argc, argv),
+  m_OpenDialogLastDirectory("")
 {
-  // If Mac, initialize global menu
-#if defined (Q_OS_MAC)
-  m_GlobalMenu = new IMFViewerMenu();
-#endif
+  loadStyleSheet("light");
+
+  createApplicationMenu();
 }
 
 // -----------------------------------------------------------------------------
@@ -67,13 +68,42 @@ IMFViewerApplication::~IMFViewerApplication()
 // -----------------------------------------------------------------------------
 //
 // -----------------------------------------------------------------------------
+void IMFViewerApplication::createApplicationMenu()
+{
+  m_ApplicationMenuBar = new QMenuBar();
+  QMenu* fileMenu = new QMenu("File", m_ApplicationMenuBar);
+  fileMenu->addAction("Open File", [=] {
+    // Open a file in the application
+  }, QKeySequence(Qt::CTRL + Qt::Key_O));
+  m_ApplicationMenuBar->addMenu(fileMenu);
+}
+
+// -----------------------------------------------------------------------------
+//
+// -----------------------------------------------------------------------------
 IMFViewer_UI* IMFViewerApplication::getNewIMFViewerInstance()
 {
   // Create new DREAM3D instance
   IMFViewer_UI* newInstance = new IMFViewer_UI(NULL);
   newInstance->setAttribute(Qt::WA_DeleteOnClose);
   newInstance->setWindowTitle("IMF Viewer");
+
+  #if defined(Q_OS_WIN)
+  newInstance->setMenuBar(m_ApplicationMenuBar);
+  #endif
+
   return newInstance;
+}
+
+// -----------------------------------------------------------------------------
+//
+// -----------------------------------------------------------------------------
+void IMFViewerApplication::loadStyleSheet(const QString &sheetName)
+{
+  QFile file(":/Resources/StyleSheets/" + sheetName.toLower() + ".qss");
+  file.open(QFile::ReadOnly);
+  QString styleSheet = QString::fromLatin1(file.readAll());
+  qApp->setStyleSheet(styleSheet);
 }
 
 

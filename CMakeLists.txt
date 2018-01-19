@@ -80,6 +80,7 @@ set(PROJECT_INSTALL_HEADERS "0")
 set(PROJECT_INSTALL_EXECUTABLES "1")
 set(IMFViewerProj_DOCUMENTATION_DIR ${PROJECT_SOURCE_DIR}/Documentation)
 set(IMFViewerProj_SUPPORT_DIR ${PROJECT_SOURCE_DIR}/Support)
+set(Moderni_SOURCE_DIR ${PROJECT_SOURCE_DIR}/Source/Moderni)
 
 set(CMP_SOURCE_DIR ${IMFViewerProj_SOURCE_DIR}/Support/cmp)
 set(CMP_CONFIGURED_FILES_SOURCE_DIR ${CMP_SOURCE_DIR}/ConfiguredFiles)
@@ -204,13 +205,15 @@ include_directories(${IMFViewerProj_SOURCE_DIR}/Source)
 include_directories(${PROJECT_BINARY_DIR})
 
 # -----------------------------------------------------------------------
-# Add in the Necessary SIMPL Sources
+# Add in the SIMPL Sources
 # -----------------------------------------------------------------------
 add_subdirectory( ${IMFViewerProj_SOURCE_DIR}/Source/SIMPL ${PROJECT_BINARY_DIR}/SIMPL)
+set(SIMPL_SOURCE_DIR ${PROJECT_SOURCE_DIR}/Source/SIMPL)
 
-#-------------------------------------------------------------------------------
+# -----------------------------------------------------------------------
+# Add in the Necessary IMFViewer Sources
+# -----------------------------------------------------------------------
 add_subdirectory( ${IMFViewerProj_SOURCE_DIR}/Source/Applications/IMFViewer ${PROJECT_BINARY_DIR}/Applications/IMFViewer)
-
 
 # This should be the last line in this file:
 include(${PROJECT_RESOURCES_DIR}/CPack/PackageProject.cmake)

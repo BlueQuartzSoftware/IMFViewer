@@ -24,22 +24,19 @@ if(WIN32)
  SET(GUI_TYPE WIN32)
 ENDif(WIN32)
 
-
-set(IMFViewer_SRCS
-  ${IMFViewer_SOURCE_DIR}/IMFViewer_UI.cpp
-  ${IMFViewer_SOURCE_DIR}/IMFViewerApplication.cpp
-  ${IMFViewer_SOURCE_DIR}/IMFViewerMenu.cpp
-  ${IMFViewer_SOURCE_DIR}/main.cpp
+SET(IMFViewer_MOC_HDRS
+    ${IMFViewer_SOURCE_DIR}/IMFViewer_UI.h
+    ${IMFViewer_SOURCE_DIR}/IMFViewerApplication.h
   )
 
 SET(IMFViewer_HDRS
 
   )
 
-SET(IMFViewer_MOC_HDRS
-    ${IMFViewer_SOURCE_DIR}/IMFViewer_UI.h
-    ${IMFViewer_SOURCE_DIR}/IMFViewerApplication.h
-    ${IMFViewer_SOURCE_DIR}/IMFViewerMenu.h
+set(IMFViewer_SRCS
+  ${IMFViewer_SOURCE_DIR}/IMFViewer_UI.cpp
+  ${IMFViewer_SOURCE_DIR}/IMFViewerApplication.cpp
+  ${IMFViewer_SOURCE_DIR}/main.cpp
   )
 
 cmp_IDE_SOURCE_PROPERTIES( "IMFViewer" "${IMFViewer_HDRS};${IMFViewer_MOC_HDRS}" "${IMFViewer_SRCS}" "${PROJECT_INSTALL_HEADERS}")
@@ -55,6 +52,7 @@ cmp_IDE_GENERATED_PROPERTIES("IMFViewer/UI_Files" "${IMFViewer_UIS}" "")
 # SET(IMFViewer_RCS ${IMFViewer_SOURCE_DIR}/Templates.qrc)
 SET(IMFViewer_RCS
     ${PROJECT_RESOURCES_DIR}/icons/images/Icons.qrc
+    ${Moderni_SOURCE_DIR}/Resources.qrc
 )
 
 # -- Run MOC and UIC on the necessary files
