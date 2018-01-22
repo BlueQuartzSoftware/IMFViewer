@@ -4,3 +4,6 @@
 [submodule "Source/Moderni"]
 	path = Source/Moderni
 	url = https://gitlab.bluequartz.net/DREAM3D/Moderni
+[submodule "Source/CMP"]
+	path = Source/CMP
+	url = https://www.github.com/bluequartzsoftware/CMP.git
