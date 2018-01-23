@@ -59,6 +59,10 @@ public:
 
   IMFViewer_UI* getNewIMFViewerInstance();
 
+private slots:
+  void openFile();
+  void openFileFromPath(const QString &filePath);
+
 private:
   QMenuBar*                               m_ApplicationMenuBar;
 

@@ -38,12 +38,18 @@
 #include "IMFViewerApplication.h"
 
 #include <QtCore/QDebug>
-
 #include <QtCore/QFile>
+
+#include <QtWidgets/QFileDialog>
+#include <QtWidgets/QMessageBox>
+
+#include "SIMPLib/Utilities/SIMPLH5DataReader.h"
+#include "SIMPLib/Utilities/SIMPLH5DataReaderRequirements.h"
 
 #include "SVWidgetsLib/QtSupport/QtSStyles.h"
 
 #include "IMFViewer/IMFViewer_UI.h"
+#include "IMFViewer/Dialogs/LoadHDF5FileDialog.h"
 
 // -----------------------------------------------------------------------------
 //
@@ -52,7 +58,7 @@ IMFViewerApplication::IMFViewerApplication(int& argc, char** argv) :
   QApplication(argc, argv),
   m_OpenDialogLastDirectory("")
 {
-  loadStyleSheet("light");
+//  loadStyleSheet("light");
 
   createApplicationMenu();
 }
@@ -72,10 +78,69 @@ void IMFViewerApplication::createApplicationMenu()
 {
   m_ApplicationMenuBar = new QMenuBar();
   QMenu* fileMenu = new QMenu("File", m_ApplicationMenuBar);
-  fileMenu->addAction("Open File", [=] {
-    // Open a file in the application
-  }, QKeySequence(Qt::CTRL + Qt::Key_O));
+
+  QAction* openAction = new QAction("Open File");
+  openAction->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_O));
+  connect(openAction, &QAction::triggered, this, &IMFViewerApplication::openFile);
+  fileMenu->addAction(openAction);
+
   m_ApplicationMenuBar->addMenu(fileMenu);
+}
+
+// -----------------------------------------------------------------------------
+//
+// -----------------------------------------------------------------------------
+void IMFViewerApplication::openFile()
+{
+  // Open a file in the application
+  QString filter = "DREAM.3D Files (*.dream3d);;HDF5 Files (*.h5);;All Files (*.*)";
+  QString filePath = QFileDialog::getOpenFileName(nullptr, "Open Input File", m_OpenDialogLastDirectory, filter);
+  if (filePath.isEmpty())
+  {
+    return;
+  }
+
+  openFileFromPath(filePath);
+}
+
+// -----------------------------------------------------------------------------
+//
+// -----------------------------------------------------------------------------
+void IMFViewerApplication::openFileFromPath(const QString &filePath)
+{
+  QFileInfo fi(filePath);
+  QString ext = fi.completeSuffix();
+  if (ext == "dream3d" || ext == "h5")
+  {
+    SIMPLH5DataReader reader;
+    bool success = reader.openFile(filePath);
+    if (success)
+    {
+      int err = 0;
+      DataContainerArrayProxy proxy = reader.readDataContainerArrayStructure(nullptr, err);
+      if (proxy.dataContainers.isEmpty())
+      {
+        QMessageBox::critical(nullptr, "Empty File",
+                              tr("IMF Viewer opened the file '%1', but it was empty.").arg(fi.fileName()), QMessageBox::StandardButton::Ok);
+        return;
+      }
+
+      QSharedPointer<LoadHDF5FileDialog> dialog = QSharedPointer<LoadHDF5FileDialog>(new LoadHDF5FileDialog(proxy));
+      int ret = dialog->exec();
+
+      if (ret == QDialog::Accepted)
+      {
+
+      }
+    }
+  }
+  else
+  {
+    QMessageBox::critical(nullptr, "Invalid File Type",
+                          tr("IMF Viewer failed to open the file because the file extension, '.%1', is not supported by the "
+                             "application.").arg(ext), QMessageBox::StandardButton::Ok);
+    return;
+  }
 }
 
 // -----------------------------------------------------------------------------

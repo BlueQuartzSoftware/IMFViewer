@@ -69,6 +69,9 @@ cmp_IDE_GENERATED_PROPERTIES("Generated/ui" "${IMFViewer_Generated_UI_HDRS}" "")
 cmp_IDE_GENERATED_PROPERTIES("Generated/moc" "${IMFViewer_Generated_MOC_SRCS}" "")
 cmp_IDE_GENERATED_PROPERTIES("Generated/qrc" "${QRC_LICENSE_FILES}" "${IMFViewer_Generated_RC_SRCS}")
 
+# -- Include the Dialogs sources
+include(${IMFViewer_SOURCE_DIR}/Dialogs/SourceList.cmake)
+
 # -- Finally set the Project Sources to include all the sources
 set(${PROJECT_NAME}_PROJECT_SRCS
   ${IMFViewer_SRCS}
@@ -76,6 +79,15 @@ set(${PROJECT_NAME}_PROJECT_SRCS
   ${IMFViewer_MOC_HDRS}
   ${IMFViewer_Generated_RC_SRCS}
   ${IMFViewer_Generated_UI_HDRS}
+
+  ${IMFViewer_Dialogs_Moc_HDRS}
+  ${IMFViewer_Dialogs_HDRS}
+  ${IMFViewer_Dialogs_SRCS}
+  ${IMFViewer_Dialogs_Generated_UI_HDRS}
+
+  ${IMFViewer_Dialogs_Utilities_Moc_HDRS}
+  ${IMFViewer_Dialogs_Utilities_HDRS}
+  ${IMFViewer_Dialogs_Utilities_SRCS}
   )
 
 include_directories(${HDF5_INCLUDE_DIR})
