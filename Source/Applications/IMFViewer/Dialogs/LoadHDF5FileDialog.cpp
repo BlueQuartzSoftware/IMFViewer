@@ -43,12 +43,11 @@
 //
 // -----------------------------------------------------------------------------
 LoadHDF5FileDialog::LoadHDF5FileDialog(DataContainerArrayProxy proxy, QWidget* parent) :
-  QDialog(parent),
-  m_Proxy(proxy)
+  QDialog(parent)
 {
   setupUi(this);
 
-  setupGui();
+  setupGui(proxy);
 }
 
 // -----------------------------------------------------------------------------
@@ -62,7 +61,7 @@ LoadHDF5FileDialog::~LoadHDF5FileDialog()
 // -----------------------------------------------------------------------------
 //
 // -----------------------------------------------------------------------------
-void LoadHDF5FileDialog::setupGui()
+void LoadHDF5FileDialog::setupGui(DataContainerArrayProxy proxy)
 {
   DREAM3DFileTreeModel* model = new DREAM3DFileTreeModel();
   connect(model, &DREAM3DFileTreeModel::dataChanged, [=] {
@@ -81,7 +80,7 @@ void LoadHDF5FileDialog::setupGui()
 
   treeView->setModel(model);
 
-  model->populateTreeWithProxy(m_Proxy);
+  model->populateTreeWithProxy(proxy);
 
   QModelIndexList indexes = model->match(model->index(0, 0), Qt::DisplayRole, "*", -1, Qt::MatchWildcard|Qt::MatchRecursive);
   for (int i = 0; i < indexes.size(); i++)
@@ -104,20 +103,14 @@ void LoadHDF5FileDialog::setupGui()
 // -----------------------------------------------------------------------------
 //
 // -----------------------------------------------------------------------------
-DataContainerArrayProxy LoadHDF5FileDialog::getLoadProxy()
+DataContainerArrayProxy LoadHDF5FileDialog::getDataStructureProxy()
 {
   DREAM3DFileTreeModel* model = static_cast<DREAM3DFileTreeModel*>(treeView->model());
   if (model == nullptr)
   {
-    return m_Proxy;
+    return DataContainerArrayProxy();
   }
 
-  QStringList dcNames = model->getSelectedDataContainerNames();
-  for (int i = 0; i < dcNames.size(); i++)
-  {
-
-  }
-
-  return m_Proxy;
+  return model->getModelProxy();
 }
 

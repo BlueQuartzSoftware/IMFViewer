@@ -110,7 +110,7 @@ void IMFViewerApplication::openFileFromPath(const QString &filePath)
 {
   QFileInfo fi(filePath);
   QString ext = fi.completeSuffix();
-  if (ext == "dream3d" || ext == "h5")
+  if (ext == "dream3d")
   {
     SIMPLH5DataReader reader;
     bool success = reader.openFile(filePath);
@@ -130,7 +130,10 @@ void IMFViewerApplication::openFileFromPath(const QString &filePath)
 
       if (ret == QDialog::Accepted)
       {
+        DataContainerArrayProxy dcaProxy = dialog->getDataStructureProxy();
+        DataContainerArray::Pointer dca = reader.readSIMPLDataUsingProxy(dcaProxy, false);
 
+        // Hand DataContainerArray instance over to the display widget
       }
     }
   }

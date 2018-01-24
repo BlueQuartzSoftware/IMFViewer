@@ -38,9 +38,9 @@
 
 #include <QtWidgets/QDialog>
 
-#include "SIMPLib/DataContainers/DataContainerArrayProxy.h"
-
 #include "ui_LoadHDF5FileDialog.h"
+
+class DataContainerArrayProxy;
 
 class LoadHDF5FileDialog : public QDialog, public Ui::LoadHDF5FileDialog
 {
@@ -54,13 +54,12 @@ class LoadHDF5FileDialog : public QDialog, public Ui::LoadHDF5FileDialog
      * @brief getLoadProxy
      * @return
      */
-    DataContainerArrayProxy getLoadProxy();
+    DataContainerArrayProxy getDataStructureProxy();
 
   protected:
-    void setupGui();
+    void setupGui(DataContainerArrayProxy proxy);
 
   private:
-    DataContainerArrayProxy                           m_Proxy;
 
     LoadHDF5FileDialog(const LoadHDF5FileDialog&); // Copy Constructor Not Implemented
     void operator=(const LoadHDF5FileDialog&); // Operator '=' Not Implemented

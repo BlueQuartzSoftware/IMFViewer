@@ -74,15 +74,16 @@ endif()
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 #set_property(GLOBAL PROPERTY USE_FOLDERS OFF)
 set(PROJECT_CODE_DIR ${PROJECT_SOURCE_DIR}/Source)
+set(IMFViewer_ExternalProject_DIR "${PROJECT_SOURCE_DIR}/ExternalProjects")
 set(PROJECT_RESOURCES_DIR ${IMFViewerProj_SOURCE_DIR}/Resources)
 set(EXE_DEBUG_EXTENSION "_debug")
 set(PROJECT_INSTALL_HEADERS "0")
 set(PROJECT_INSTALL_EXECUTABLES "1")
 set(IMFViewerProj_DOCUMENTATION_DIR ${PROJECT_SOURCE_DIR}/Documentation)
 set(IMFViewerProj_SUPPORT_DIR ${PROJECT_SOURCE_DIR}/Support)
-set(Moderni_SOURCE_DIR ${PROJECT_SOURCE_DIR}/Source/Moderni)
+set(Moderni_SOURCE_DIR ${IMFViewer_ExternalProject_DIR}/Moderni)
 
-set(CMP_SOURCE_DIR ${PROJECT_CODE_DIR}/CMP)
+set(CMP_SOURCE_DIR ${IMFViewer_ExternalProject_DIR}/CMP)
 set(CMP_CONFIGURED_FILES_SOURCE_DIR ${CMP_SOURCE_DIR}/ConfiguredFiles)
 INCLUDE (${CMP_SOURCE_DIR}/cmpCMakeMacros.cmake )
 set(CMP_ENABLE_PLUGINS "1")
@@ -207,8 +208,8 @@ include_directories(${PROJECT_BINARY_DIR})
 # -----------------------------------------------------------------------
 # Add in the SIMPL Sources
 # -----------------------------------------------------------------------
-add_subdirectory( ${IMFViewerProj_SOURCE_DIR}/Source/SIMPL ${PROJECT_BINARY_DIR}/SIMPL)
-set(SIMPL_SOURCE_DIR ${PROJECT_SOURCE_DIR}/Source/SIMPL)
+set(SIMPL_SOURCE_DIR ${IMFViewer_ExternalProject_DIR}/SIMPL)
+add_subdirectory( ${SIMPL_SOURCE_DIR} ${PROJECT_BINARY_DIR}/SIMPL)
 
 # -----------------------------------------------------------------------
 # Add in the Necessary IMFViewer Sources

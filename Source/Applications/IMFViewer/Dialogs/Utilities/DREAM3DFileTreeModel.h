@@ -41,10 +41,9 @@
 #include <QtCore/QVariant>
 
 #include "SIMPLib/Common/SIMPLibSetGetMacros.h"
+#include "SIMPLib/DataContainers/DataContainerArrayProxy.h"
 
 #include "IMFViewer/Dialogs/Utilities/DREAM3DFileItem.h"
-
-class DataContainerArrayProxy;
 
 class DREAM3DFileTreeModel : public QAbstractItemModel
 {
@@ -87,13 +86,14 @@ class DREAM3DFileTreeModel : public QAbstractItemModel
     void populateTreeWithProxy(DataContainerArrayProxy proxy);
 
     /**
-     * @brief getSelectedDataContainerNames
+     * @brief getModelProxy
      * @return
      */
-    QStringList getSelectedDataContainerNames();
+    DataContainerArrayProxy getModelProxy();
 
   private:
-    DREAM3DFileItem*            rootItem;
+    DREAM3DFileItem*                rootItem;
+    DataContainerArrayProxy         m_Proxy;
 
     DREAM3DFileItem* getItem(const QModelIndex& index) const;
 
