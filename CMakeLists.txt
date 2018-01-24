@@ -97,6 +97,18 @@ if("${SIMPLProj_SOURCE_DIR}" STREQUAL "")
 endif()
 
 #------------------------------------------------------------------------------
+# If the developer has set another SIMPL directory then use that, otherwise look
+# for the SIMPL directory in the ExternalProjects directory
+if("${SIMPLVtkLibProj_SOURCE_DIR}" STREQUAL "")
+  if(EXISTS "${IMFViewer_ExternalProject_DIR}/SIMPLVtkLib")
+    set(SIMPLVtkLibProj_SOURCE_DIR "${IMFViewer_ExternalProject_DIR}/SIMPLVtkLib")
+  else()
+    message(FATAL_ERROR "SIMPLVtkLibProj_SOURCE_DIR was not set. Please set the SIMPLVtkLibProj_SOURCE_DIR variable to the SIMPLVtkLib directory.")
+  endif()
+  message(STATUS "SIMPLVtkLibProj_SOURCE_DIR: ${SIMPLVtkLibProj_SOURCE_DIR}")
+endif()
+
+#------------------------------------------------------------------------------
 # If the developer has set another Moderni directory then use that, otherwise look
 # for the Moderni directory in the ExternalProjects directory
 if("${ModerniProj_SOURCE_DIR}" STREQUAL "")
@@ -183,6 +195,30 @@ CMP_AddQt5Support( "${IMFViewer_Qt5_Components}"
 include(${CMP_SOURCE_DIR}/ExtLib/HDF5Support.cmake)
 
 # --------------------------------------------------------------------
+# Look for Vtk 8.0 as we need it for the plugin GUI to be generated
+# These are the required component libraries
+set(VtkComponents
+    vtkGUISupportQt
+    vtkRenderingCore
+    vtkRenderingFreeType
+    vtkRenderingOpenGL2
+    vtkRenderingVolumeOpenGL2
+    vtkRenderingContextOpenGL2
+    vtkRenderingAnnotation
+    vtkInteractionWidgets
+    vtkInteractionStyle
+    vtkIOLegacy
+    vtkIOImage
+    vtkIOGeometry
+    vtkChartsCore
+    vtkViewsContext2D
+  )
+
+include("${CMP_SOURCE_DIR}/ExtLib/VtkSupport.cmake")
+CMP_FindVtkComponents(QT5_REQUIRED TRUE
+                      COMPONENTS ${VtkComponents}
+                      )
+# --------------------------------------------------------------------
 # Now that we have found all of our required libraries and packages we can start the all
 # the tests
 
@@ -244,6 +280,11 @@ include_directories(${PROJECT_BINARY_DIR})
 # Add in the SIMPL Sources
 # -----------------------------------------------------------------------
 add_subdirectory( ${SIMPLProj_SOURCE_DIR} ${PROJECT_BINARY_DIR}/SIMPL)
+
+# -----------------------------------------------------------------------
+# Add in the SIMPLVtkLib Sources
+# -----------------------------------------------------------------------
+add_subdirectory( ${SIMPLVtkLibProj_SOURCE_DIR} ${PROJECT_BINARY_DIR}/SIMPLVtkLib)
 
 # -----------------------------------------------------------------------
 # Add in the Necessary IMFViewer Sources

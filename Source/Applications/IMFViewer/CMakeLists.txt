@@ -96,6 +96,7 @@ include_directories(${IMFViewer_SOURCE_DIR}/.. )
 include_directories(${IMFViewer_BINARY_DIR} )
 include_directories(${IMFViewer_BINARY_DIR} )
 include_directories(${QtSupportLib_SOURCE_DIR} )
+include_directories(${SIMPLVtkLibProj_SOURCE_DIR} )
 
 
 if(APPLE)
@@ -120,7 +121,7 @@ BuildQtAppBundle(
     VERSION_MINOR ${DREAM3D_VER_MINOR}
     VERSION_PATCH ${DREAM3D_VER_PATCH}
     BINARY_DIR    ${${PROJECT_NAME}_BINARY_DIR}
-    LINK_LIBRARIES SIMPLib
+    LINK_LIBRARIES SIMPLib SIMPLVtkLib
     LIB_SEARCH_DIRS ${CMAKE_LIBRARY_OUTPUT_DIRECTORY} ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
     QT5_MODULES   ${Qt5_COMPONENTS}
     COMPONENT     Applications
