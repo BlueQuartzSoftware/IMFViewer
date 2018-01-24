@@ -70,20 +70,55 @@ if(MSVC_IDE OR XCODE)
   file(MAKE_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/Release)
 endif()
 
+set(IMFViewer_ExternalProject_DIR "${PROJECT_SOURCE_DIR}/ExternalProjects")
+
+#------------------------------------------------------------------------------
+# If the developer has set another CMP directory then use that, otherwise look
+# for the CMP directory in the ExternalProjects directory
+if("${CMP_SOURCE_DIR}" STREQUAL "")
+  if(EXISTS "${IMFViewer_ExternalProject_DIR}/CMP")
+    set(CMP_SOURCE_DIR "${IMFViewer_ExternalProject_DIR}/CMP")
+  else()
+    message(FATAL_ERROR "CMP_SOURCE_DIR was not set.  Please set the CMP_SOURCE_DIR variable to the CMP directory.")
+  endif()
+  message(STATUS "CMP_SOURCE_DIR: ${CMP_SOURCE_DIR}")
+endif()
+
+#------------------------------------------------------------------------------
+# If the developer has set another SIMPL directory then use that, otherwise look
+# for the SIMPL directory in the ExternalProjects directory
+if("${SIMPLProj_SOURCE_DIR}" STREQUAL "")
+  if(EXISTS "${IMFViewer_ExternalProject_DIR}/SIMPL")
+    set(SIMPLProj_SOURCE_DIR "${IMFViewer_ExternalProject_DIR}/SIMPL")
+  else()
+    message(FATAL_ERROR "SIMPLProj_SOURCE_DIR was not set. Please set the SIMPLProj_SOURCE_DIR variable to the SIMPL directory.")
+  endif()
+  message(STATUS "SIMPLProj_SOURCE_DIR: ${SIMPLProj_SOURCE_DIR}")
+endif()
+
+#------------------------------------------------------------------------------
+# If the developer has set another Moderni directory then use that, otherwise look
+# for the Moderni directory in the ExternalProjects directory
+if("${ModerniProj_SOURCE_DIR}" STREQUAL "")
+  if(EXISTS "${IMFViewer_ExternalProject_DIR}/Moderni")
+    set(ModerniProj_SOURCE_DIR "${IMFViewer_ExternalProject_DIR}/Moderni")
+  else()
+    message(FATAL_ERROR "ModerniProj_SOURCE_DIR was not set. Please set the ModerniProj_SOURCE_DIR variable to the Moderni directory.")
+  endif()
+  message(STATUS "ModerniProj_SOURCE_DIR: ${ModerniProj_SOURCE_DIR}")
+endif()
+
 #Enable use of Solution Folders
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 #set_property(GLOBAL PROPERTY USE_FOLDERS OFF)
 set(PROJECT_CODE_DIR ${PROJECT_SOURCE_DIR}/Source)
-set(IMFViewer_ExternalProject_DIR "${PROJECT_SOURCE_DIR}/ExternalProjects")
 set(PROJECT_RESOURCES_DIR ${IMFViewerProj_SOURCE_DIR}/Resources)
 set(EXE_DEBUG_EXTENSION "_debug")
 set(PROJECT_INSTALL_HEADERS "0")
 set(PROJECT_INSTALL_EXECUTABLES "1")
 set(IMFViewerProj_DOCUMENTATION_DIR ${PROJECT_SOURCE_DIR}/Documentation)
 set(IMFViewerProj_SUPPORT_DIR ${PROJECT_SOURCE_DIR}/Support)
-set(Moderni_SOURCE_DIR ${IMFViewer_ExternalProject_DIR}/Moderni)
 
-set(CMP_SOURCE_DIR ${IMFViewer_ExternalProject_DIR}/CMP)
 set(CMP_CONFIGURED_FILES_SOURCE_DIR ${CMP_SOURCE_DIR}/ConfiguredFiles)
 INCLUDE (${CMP_SOURCE_DIR}/cmpCMakeMacros.cmake )
 set(CMP_ENABLE_PLUGINS "1")
@@ -208,8 +243,7 @@ include_directories(${PROJECT_BINARY_DIR})
 # -----------------------------------------------------------------------
 # Add in the SIMPL Sources
 # -----------------------------------------------------------------------
-set(SIMPL_SOURCE_DIR ${IMFViewer_ExternalProject_DIR}/SIMPL)
-add_subdirectory( ${SIMPL_SOURCE_DIR} ${PROJECT_BINARY_DIR}/SIMPL)
+add_subdirectory( ${SIMPLProj_SOURCE_DIR} ${PROJECT_BINARY_DIR}/SIMPL)
 
 # -----------------------------------------------------------------------
 # Add in the Necessary IMFViewer Sources

@@ -52,7 +52,7 @@ cmp_IDE_GENERATED_PROPERTIES("IMFViewer/UI_Files" "${IMFViewer_UIS}" "")
 # SET(IMFViewer_RCS ${IMFViewer_SOURCE_DIR}/Templates.qrc)
 SET(IMFViewer_RCS
     ${PROJECT_RESOURCES_DIR}/icons/images/Icons.qrc
-    ${Moderni_SOURCE_DIR}/Resources.qrc
+    ${ModerniProj_SOURCE_DIR}/Resources.qrc
 )
 
 # -- Run MOC and UIC on the necessary files
