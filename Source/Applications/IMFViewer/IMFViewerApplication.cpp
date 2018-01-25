@@ -132,8 +132,7 @@ void IMFViewerApplication::openFileFromPath(const QString &filePath)
       {
         DataContainerArrayProxy dcaProxy = dialog->getDataStructureProxy();
         DataContainerArray::Pointer dca = reader.readSIMPLDataUsingProxy(dcaProxy, false);
-
-        // Hand DataContainerArray instance over to the display widget
+        m_ActiveWindow->loadDataContainerArray(dca);
       }
     }
   }
@@ -159,6 +158,8 @@ IMFViewer_UI* IMFViewerApplication::getNewIMFViewerInstance()
   #if defined(Q_OS_WIN)
   newInstance->setMenuBar(m_ApplicationMenuBar);
   #endif
+
+  m_ActiveWindow = newInstance;
 
   return newInstance;
 }

@@ -62,3 +62,12 @@ void IMFViewer_UI::setupGui()
 
 }
 
+// -----------------------------------------------------------------------------
+//
+// -----------------------------------------------------------------------------
+void IMFViewer_UI::loadDataContainerArray(DataContainerArray::Pointer dca)
+{
+  VSController* controller = vsWidget->getController();
+  controller->importData(dca);
+}
+

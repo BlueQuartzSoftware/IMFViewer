@@ -48,6 +48,12 @@ class IMFViewer_UI : public QMainWindow, public Ui::IMFViewer_UI
     IMFViewer_UI(QWidget* parent = 0);
     ~IMFViewer_UI();
 
+    /**
+     * @brief loadDataContainerArray
+     * @param dca
+     */
+    void loadDataContainerArray(DataContainerArray::Pointer dca);
+
   protected:
     void setupGui();
 

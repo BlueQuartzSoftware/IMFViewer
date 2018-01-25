@@ -64,6 +64,7 @@ private slots:
   void openFileFromPath(const QString &filePath);
 
 private:
+  IMFViewer_UI*                           m_ActiveWindow = nullptr;
   QMenuBar*                               m_ApplicationMenuBar;
 
   QString                                 m_OpenDialogLastDirectory;
