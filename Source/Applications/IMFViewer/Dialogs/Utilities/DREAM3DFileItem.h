@@ -33,8 +33,7 @@
 *
 * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-#ifndef _dream3dfileitem_h_
-#define _dream3dfileitem_h_
+#pragma once
 
 #include <QtCore/QList>
 #include <QtCore/QVariant>
@@ -58,12 +57,13 @@ class DREAM3DFileItem
     enum class ItemType : unsigned int
     {
       Unknown,
+      SelectAll,
       DataContainer,
       AttributeMatrix,
       DataArray,
     };
 
-    SIMPL_BOOL_PROPERTY(Checked)
+    SIMPL_INSTANCE_PROPERTY(Qt::CheckState, CheckState)
     SIMPL_INSTANCE_PROPERTY(DREAM3DFileItem::ItemType, ItemType)
     SIMPL_INSTANCE_PROPERTY(QIcon, Icon)
     SIMPL_INSTANCE_PROPERTY(QString, ItemTooltip)
@@ -97,5 +97,3 @@ class DREAM3DFileItem
     DREAM3DFileItem(const DREAM3DFileItem&);    // Copy Constructor Not Implemented
     void operator=(const DREAM3DFileItem&);  // Operator '=' Not Implemented
 };
-
-#endif // _dream3dfileitem_h_

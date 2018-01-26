@@ -33,8 +33,7 @@
 *
 * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-#ifndef _dream3dfileitemdelegate_h_
-#define _dream3dfileitemdelegate_h_
+#pragma once
 
 #include <QtCore/QModelIndex>
 
@@ -61,5 +60,3 @@ class DREAM3DFileItemDelegate : public QStyledItemDelegate
     DREAM3DFileItemDelegate(const DREAM3DFileItemDelegate&) = delete; // Copy Constructor Not Implemented
     void operator=(const DREAM3DFileItemDelegate&) = delete;        // Operator '=' Not Implemented
 };
-
-#endif // _DREAM3DFileItemDelegate_H

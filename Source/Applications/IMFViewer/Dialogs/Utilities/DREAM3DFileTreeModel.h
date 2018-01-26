@@ -33,8 +33,7 @@
 *
 * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-#ifndef _dream3dfiletreemodel_h_
-#define _dream3dfiletreemodel_h_
+#pragma once
 
 #include <QtCore/QAbstractItemModel>
 #include <QtCore/QModelIndex>
@@ -63,8 +62,8 @@ class DREAM3DFileTreeModel : public QAbstractItemModel
     DREAM3DFileItem::ItemType itemType(const QModelIndex &index) const;
     void setItemType(const QModelIndex &index, DREAM3DFileItem::ItemType itemType);
 
-    bool isChecked(const QModelIndex &index) const;
-    void setChecked(const QModelIndex &index, bool checked);
+    Qt::CheckState getCheckState(const QModelIndex &index) const;
+    void setCheckState(const QModelIndex &index, Qt::CheckState checkState);
 
     QModelIndex index(int row, int column, const QModelIndex& parent = QModelIndex()) const Q_DECL_OVERRIDE;
     QModelIndex parent(const QModelIndex& index) const Q_DECL_OVERRIDE;
@@ -83,7 +82,7 @@ class DREAM3DFileTreeModel : public QAbstractItemModel
      * @brief populateTree
      * @param proxy
      */
-    void populateTreeWithProxy(DataContainerArrayProxy proxy);
+    bool populateTreeWithProxy(DataContainerArrayProxy proxy);
 
     /**
      * @brief getModelProxy
@@ -97,8 +96,11 @@ class DREAM3DFileTreeModel : public QAbstractItemModel
 
     DREAM3DFileItem* getItem(const QModelIndex& index) const;
 
+    /**
+     * @brief clearModel
+     */
+    void clearModel();
+
     DREAM3DFileTreeModel(const DREAM3DFileTreeModel&);    // Copy Constructor Not Implemented
     void operator=(const DREAM3DFileTreeModel&);  // Operator '=' Not Implemented
 };
-
-#endif // _dream3dfiletreemodel_h_

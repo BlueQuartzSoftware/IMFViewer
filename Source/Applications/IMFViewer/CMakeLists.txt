@@ -25,15 +25,17 @@ if(WIN32)
 ENDif(WIN32)
 
 SET(IMFViewer_MOC_HDRS
-    ${IMFViewer_SOURCE_DIR}/IMFViewer_UI.h
-    ${IMFViewer_SOURCE_DIR}/IMFViewerApplication.h
-  )
+  ${IMFViewer_SOURCE_DIR}/IMFController.h
+  ${IMFViewer_SOURCE_DIR}/IMFViewer_UI.h
+  ${IMFViewer_SOURCE_DIR}/IMFViewerApplication.h
+)
 
 SET(IMFViewer_HDRS
 
-  )
+)
 
 set(IMFViewer_SRCS
+  ${IMFViewer_SOURCE_DIR}/IMFController.cpp
   ${IMFViewer_SOURCE_DIR}/IMFViewer_UI.cpp
   ${IMFViewer_SOURCE_DIR}/IMFViewerApplication.cpp
   ${IMFViewer_SOURCE_DIR}/main.cpp

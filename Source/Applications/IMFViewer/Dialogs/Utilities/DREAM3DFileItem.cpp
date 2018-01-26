@@ -41,7 +41,7 @@
 //
 // -----------------------------------------------------------------------------
 DREAM3DFileItem::DREAM3DFileItem(const QVector<QVariant>& data, DREAM3DFileItem* parent)
-: m_Checked(false)
+: m_CheckState(Qt::Unchecked)
 , m_ItemType(DREAM3DFileItem::ItemType::Unknown)
 , m_Icon(QIcon())
 , m_ItemTooltip("")

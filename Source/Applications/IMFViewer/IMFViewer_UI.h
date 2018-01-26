@@ -33,10 +33,11 @@
 *
 * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-#ifndef _imfviewer_ui_h_
-#define _imfviewer_ui_h_
+#pragma once
 
 #include <QtWidgets/QMainWindow>
+
+#include "SIMPLib/DataContainers/DataContainerArray.h"
 
 #include "ui_IMFViewer_UI.h"
 
@@ -49,10 +50,10 @@ class IMFViewer_UI : public QMainWindow, public Ui::IMFViewer_UI
     ~IMFViewer_UI();
 
     /**
-     * @brief loadDataContainerArray
+     * @brief displayDataContainerArray
      * @param dca
      */
-    void loadDataContainerArray(DataContainerArray::Pointer dca);
+    void displayDataContainerArray(DataContainerArray::Pointer dca);
 
   protected:
     void setupGui();
@@ -62,5 +63,3 @@ class IMFViewer_UI : public QMainWindow, public Ui::IMFViewer_UI
     IMFViewer_UI(const IMFViewer_UI&); // Copy Constructor Not Implemented
     void operator=(const IMFViewer_UI&); // Operator '=' Not Implemented
 };
-
-#endif

@@ -33,41 +33,43 @@
 *
 * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-#include "IMFViewer_UI.h"
+#pragma once
 
-// -----------------------------------------------------------------------------
-//
-// -----------------------------------------------------------------------------
-IMFViewer_UI::IMFViewer_UI(QWidget* parent) :
-  QMainWindow(parent)
+#include <QtCore/QObject>
+
+#include "SIMPLib/Common/SIMPLibSetGetMacros.h"
+#include "SIMPLib/DataContainers/DataContainerArray.h"
+
+class IMFViewer_UI;
+
+class IMFController : public QObject
 {
-  setupUi(this);
+    Q_OBJECT
 
-  setupGui();
-}
+  public:
+    IMFController(QObject* parent = nullptr);
+    ~IMFController();
 
-// -----------------------------------------------------------------------------
-//
-// -----------------------------------------------------------------------------
-IMFViewer_UI::~IMFViewer_UI()
-{
+  public slots:
+    /**
+     * @brief openFile
+     * @param filePath
+     */
+    void openFile(IMFViewer_UI *instance);
 
-}
+  protected:
+    void setupGui();
 
-// -----------------------------------------------------------------------------
-//
-// -----------------------------------------------------------------------------
-void IMFViewer_UI::setupGui()
-{
+  private:
+    QString                                 m_OpenDialogLastDirectory = "";
 
-}
+    /**
+     * @brief openDREAM3DFile
+     * @param filePath
+     * @param instance
+     */
+    bool openDREAM3DFile(const QString &filePath, IMFViewer_UI* instance);
 
-// -----------------------------------------------------------------------------
-//
-// -----------------------------------------------------------------------------
-void IMFViewer_UI::displayDataContainerArray(DataContainerArray::Pointer dca)
-{
-//  VSController* controller = vsWidget->getController();
-//  controller->importData(dca);
-}
-
+    IMFController(const IMFController&); // Copy Constructor Not Implemented
+    void operator=(const IMFController&); // Operator '=' Not Implemented
+};

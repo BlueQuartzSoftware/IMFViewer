@@ -69,7 +69,7 @@ void LoadHDF5FileDialog::setupGui(DataContainerArrayProxy proxy)
     for (int i = 0; i < model->rowCount(); i++)
     {
       QModelIndex dcIndex = model->index(i, DREAM3DFileItem::Name);
-      if (model->isChecked(dcIndex) == true)
+      if (model->getCheckState(dcIndex) == true)
       {
         enabled = true;
       }

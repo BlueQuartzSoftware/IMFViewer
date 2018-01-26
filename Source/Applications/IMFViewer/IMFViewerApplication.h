@@ -35,8 +35,7 @@
 *
 * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-#ifndef _imfviewerapplication_h_
-#define _imfviewerapplication_h_
+#pragma once
 
 #include <QtCore/QObject>
 #include <QtWidgets/QMenuBar>
@@ -48,6 +47,7 @@
 class IMFViewer;
 class IMFViewerMenu;
 class IMFViewer_UI;
+class IMFController;
 
 class IMFViewerApplication : public QApplication
 {
@@ -61,13 +61,11 @@ public:
 
 private slots:
   void openFile();
-  void openFileFromPath(const QString &filePath);
 
 private:
-  IMFViewer_UI*                           m_ActiveWindow = nullptr;
-  QMenuBar*                               m_ApplicationMenuBar;
-
-  QString                                 m_OpenDialogLastDirectory;
+  IMFViewer_UI*                           m_ActiveInstance = nullptr;
+  IMFController*                          m_Controller = nullptr;
+  QMenuBar*                               m_ApplicationMenuBar = nullptr;
 
   /**
    * @brief createApplicationMenu
@@ -80,9 +78,13 @@ private:
    */
   void loadStyleSheet(const QString &sheetName);
 
+  /**
+   * @brief setActiveInstance
+   * @param instance
+   */
+  void setActiveInstance(IMFViewer_UI* instance);
+
   IMFViewerApplication(const IMFViewerApplication&); // Copy Constructor Not Implemented
   void operator=(const IMFViewerApplication&); // Operator '=' Not Implemented
 };
-
-#endif /* _IMFViewerApplication_H */
 

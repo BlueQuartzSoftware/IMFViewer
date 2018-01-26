@@ -33,8 +33,7 @@
 *
 * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-#ifndef _loadhdf5filedialog_h_
-#define _loadhdf5filedialog_h_
+#pragma once
 
 #include <QtWidgets/QDialog>
 
@@ -64,5 +63,3 @@ class LoadHDF5FileDialog : public QDialog, public Ui::LoadHDF5FileDialog
     LoadHDF5FileDialog(const LoadHDF5FileDialog&); // Copy Constructor Not Implemented
     void operator=(const LoadHDF5FileDialog&); // Operator '=' Not Implemented
 };
-
-#endif
