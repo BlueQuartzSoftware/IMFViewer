@@ -46,7 +46,7 @@ class LoadHDF5FileDialog : public QDialog, public Ui::LoadHDF5FileDialog
     Q_OBJECT
 
   public:
-    LoadHDF5FileDialog(DataContainerArrayProxy proxy, QWidget* parent = 0);
+    LoadHDF5FileDialog(QWidget* parent = 0);
     ~LoadHDF5FileDialog();
 
     /**
@@ -55,8 +55,14 @@ class LoadHDF5FileDialog : public QDialog, public Ui::LoadHDF5FileDialog
      */
     DataContainerArrayProxy getDataStructureProxy();
 
+    /**
+     * @brief setProxy
+     * @param proxy
+     */
+    void setProxy(DataContainerArrayProxy proxy);
+
   protected:
-    void setupGui(DataContainerArrayProxy proxy);
+    void setupGui();
 
   private:
 

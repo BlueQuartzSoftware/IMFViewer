@@ -117,7 +117,8 @@ bool IMFController::openDREAM3DFile(const QString &filePath, IMFViewer_UI* insta
   if (success)
   {
     int err = 0;
-    DataContainerArrayProxy proxy = reader.readDataContainerArrayStructure(nullptr, err);
+    SIMPLH5DataReaderRequirements req(SIMPL::Defaults::AnyPrimitive, SIMPL::Defaults::AnyComponentSize, AttributeMatrix::Type::Any, IGeometry::Type::Any);
+    DataContainerArrayProxy proxy = reader.readDataContainerArrayStructure(&req, err);
     if (proxy.dataContainers.isEmpty())
     {
       QMessageBox::critical(instance, "Empty File",
@@ -125,25 +126,35 @@ bool IMFController::openDREAM3DFile(const QString &filePath, IMFViewer_UI* insta
       return false;
     }
 
-    bool containsValidDCGeometries = false;
     bool containsCellAttributeMatrices = false;
     bool containsValidArrays = false;
-    for (QMap<QString, DataContainerProxy>::iterator dcIter = proxy.dataContainers.begin(); dcIter != proxy.dataContainers.end(); dcIter++)
+
+    QStringList dcNames = proxy.dataContainers.keys();
+    for (int i = 0; i < dcNames.size(); i++)
     {
-      QString dcName = dcIter.key();
-      DataContainerProxy dcProxy = dcIter.value();
+      QString dcName = dcNames[i];
+      DataContainerProxy dcProxy = proxy.dataContainers[dcName];
 
       // We want only data containers with geometries displayed
-      if (dcProxy.dcType != static_cast<unsigned int>(DataContainer::Type::Unknown))
+      if (dcProxy.dcType == static_cast<unsigned int>(DataContainer::Type::Unknown))
       {
-        containsValidDCGeometries = true;
-        for (QMap<QString, AttributeMatrixProxy>::iterator amIter = dcProxy.attributeMatricies.begin(); amIter != dcProxy.attributeMatricies.end(); amIter++)
+        proxy.dataContainers.remove(dcName);
+      }
+      else
+      {
+        QStringList amNames = dcProxy.attributeMatricies.keys();
+        for (int j = 0; j < amNames.size(); j++)
         {
-          QString amName = amIter.key();
-          AttributeMatrixProxy amProxy = amIter.value();
+          QString amName = amNames[j];
+          AttributeMatrixProxy amProxy = dcProxy.attributeMatricies[amName];
 
           // We want only cell attribute matrices displayed
-          if (amProxy.amType == AttributeMatrix::Type::Cell)
+          if (amProxy.amType != AttributeMatrix::Type::Cell)
+          {
+            dcProxy.attributeMatricies.remove(amName);
+            proxy.dataContainers[dcName] = dcProxy;
+          }
+          else
           {
             containsCellAttributeMatrices = true;
 
@@ -151,17 +162,17 @@ bool IMFController::openDREAM3DFile(const QString &filePath, IMFViewer_UI* insta
             {
               containsValidArrays = true;
             }
-//              for (QMap<QString, DataArrayProxy>::iterator daIter = amProxy.dataArrays.begin(); daIter != amProxy.dataArrays.end(); daIter++)
-//              {
-//                QString daName = daIter.key();
-//                DataArrayProxy daProxy = daIter.value();
-//              }
           }
+        }
+
+        if (dcProxy.attributeMatricies.size() <= 0)
+        {
+          proxy.dataContainers.remove(dcName);
         }
       }
     }
 
-    if (containsValidDCGeometries == false)
+    if (proxy.dataContainers.size() <= 0)
     {
       QMessageBox::critical(instance, "Invalid Data",
                             tr("IMF Viewer failed to open file '%1' because the file does not "
@@ -183,7 +194,8 @@ bool IMFController::openDREAM3DFile(const QString &filePath, IMFViewer_UI* insta
       return false;
     }
 
-    QSharedPointer<LoadHDF5FileDialog> dialog = QSharedPointer<LoadHDF5FileDialog>(new LoadHDF5FileDialog(proxy));
+    QSharedPointer<LoadHDF5FileDialog> dialog = QSharedPointer<LoadHDF5FileDialog>(new LoadHDF5FileDialog());
+    dialog->setProxy(proxy);
     int ret = dialog->exec();
 
     if (ret == QDialog::Accepted)

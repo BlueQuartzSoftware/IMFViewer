@@ -57,7 +57,6 @@ class DREAM3DFileItem
     enum class ItemType : unsigned int
     {
       Unknown,
-      SelectAll,
       DataContainer,
       AttributeMatrix,
       DataArray,

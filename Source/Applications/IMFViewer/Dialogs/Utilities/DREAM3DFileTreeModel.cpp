@@ -150,10 +150,6 @@ Qt::ItemFlags DREAM3DFileTreeModel::flags(const QModelIndex& index) const
   {
     return (Qt::ItemIsEnabled | Qt::ItemIsUserCheckable);
   }
-  else if (item->getItemType() == DREAM3DFileItem::ItemType::SelectAll)
-  {
-    return (Qt::ItemIsEnabled | Qt::ItemIsUserCheckable | Qt::ItemIsAutoTristate);
-  }
   else if (item->getItemType() == DREAM3DFileItem::ItemType::AttributeMatrix)
   {
     return (0);
@@ -338,42 +334,43 @@ bool DREAM3DFileTreeModel::setData(const QModelIndex& index, const QVariant& val
 
       m_Proxy.dataContainers[dcName] = dcProxy;
 
-      Qt::CheckState tristateCS = Qt::Unchecked;
-      QModelIndex selIndex = this->index(0, DREAM3DFileItem::Name);
-      bool allChecked = true;
-      for (int i = 0; i < rowCount(selIndex); i++)
-      {
-        QModelIndex dcIndex = this->index(i, DREAM3DFileItem::Name, selIndex);
-        if (getCheckState(dcIndex) == Qt::Checked)
-        {
-          tristateCS = Qt::PartiallyChecked;
-        }
-        else
-        {
-          allChecked = false;
-        }
-      }
-
-      if (allChecked)
-      {
-        tristateCS = Qt::Checked;
-      }
-
-      setCheckState(selIndex, tristateCS);
-      indexesChanged.push_front(selIndex);
       emit dataChanged(indexesChanged[0], indexesChanged[indexesChanged.size() - 1]);
-    }
-    else if (itemType(index) == DREAM3DFileItem::ItemType::SelectAll)
-    {
-      for (int i = 0; i < rowCount(index); i++)
-      {
-        QModelIndex dcIndex = this->index(i, DREAM3DFileItem::Name, index);
-        setData(dcIndex, checkState, Qt::CheckStateRole);
-      }
 
-      setCheckState(index, checkState);
-      emit dataChanged(index, index);
+//      Qt::CheckState tristateCS = Qt::Unchecked;
+//      QModelIndex selIndex = this->index(0, DREAM3DFileItem::Name);
+//      bool allChecked = true;
+//      for (int i = 0; i < rowCount(selIndex); i++)
+//      {
+//        QModelIndex dcIndex = this->index(i, DREAM3DFileItem::Name, selIndex);
+//        if (getCheckState(dcIndex) == Qt::Checked)
+//        {
+//          tristateCS = Qt::PartiallyChecked;
+//        }
+//        else
+//        {
+//          allChecked = false;
+//        }
+//      }
+
+//      if (allChecked)
+//      {
+//        tristateCS = Qt::Checked;
+//      }
+
+//      setCheckState(selIndex, tristateCS);
+//      indexesChanged.push_front(selIndex);
     }
+//    else if (itemType(index) == DREAM3DFileItem::ItemType::SelectAll)
+//    {
+//      for (int i = 0; i < rowCount(index); i++)
+//      {
+//        QModelIndex dcIndex = this->index(i, DREAM3DFileItem::Name, index);
+//        setData(dcIndex, checkState, Qt::CheckStateRole);
+//      }
+
+//      setCheckState(index, checkState);
+//      emit dataChanged(index, index);
+//    }
 
     return false;
   }
@@ -449,26 +446,14 @@ bool DREAM3DFileTreeModel::populateTreeWithProxy(DataContainerArrayProxy proxy)
 {
   clearModel();
 
-  int rowPos = rowCount();
-  insertRow(rowPos);
-  QModelIndex selIndex = index(rowPos, DREAM3DFileItem::Name);
-  setItemType(selIndex, DREAM3DFileItem::ItemType::SelectAll);
-  setData(selIndex, "Data Containers", Qt::DisplayRole);
-
   for (QMap<QString, DataContainerProxy>::iterator dcIter = proxy.dataContainers.begin(); dcIter != proxy.dataContainers.end(); dcIter++)
   {
     QString dcName = dcIter.key();
     DataContainerProxy dcProxy = dcIter.value();
 
-    // We want only data containers with geometries displayed
-    if (dcProxy.dcType == static_cast<unsigned int>(DataContainer::Type::Unknown))
-    {
-      continue;
-    }
-
-    int rowPos = rowCount(selIndex);
-    insertRow(rowPos, selIndex);
-    QModelIndex dcIndex = index(rowPos, DREAM3DFileItem::Name, selIndex);
+    int dcRowPos = rowCount();
+    insertRow(dcRowPos);
+    QModelIndex dcIndex = index(dcRowPos, DREAM3DFileItem::Name);
     setItemType(dcIndex, DREAM3DFileItem::ItemType::DataContainer);
     setData(dcIndex, dcName, Qt::DisplayRole);
 
@@ -477,15 +462,9 @@ bool DREAM3DFileTreeModel::populateTreeWithProxy(DataContainerArrayProxy proxy)
       QString amName = amIter.key();
       AttributeMatrixProxy amProxy = amIter.value();
 
-      // We want only cell attribute matrices displayed
-      if (amProxy.amType != AttributeMatrix::Type::Cell)
-      {
-        continue;
-      }
-
-      int rowPos = rowCount(dcIndex);
-      insertRow(rowPos, dcIndex);
-      QModelIndex amIndex = index(rowPos, DREAM3DFileItem::Name, dcIndex);
+      int amRowPos = rowCount(dcIndex);
+      insertRow(amRowPos, dcIndex);
+      QModelIndex amIndex = index(amRowPos, DREAM3DFileItem::Name, dcIndex);
       setItemType(amIndex, DREAM3DFileItem::ItemType::AttributeMatrix);
       setData(amIndex, amName, Qt::DisplayRole);
 
@@ -494,24 +473,12 @@ bool DREAM3DFileTreeModel::populateTreeWithProxy(DataContainerArrayProxy proxy)
         QString daName = daIter.key();
         DataArrayProxy daProxy = daIter.value();
 
-        int rowPos = rowCount(amIndex);
-        insertRow(rowPos, amIndex);
-        QModelIndex daIndex = index(rowPos, DREAM3DFileItem::Name, amIndex);
+        int daRowPos = rowCount(amIndex);
+        insertRow(daRowPos, amIndex);
+        QModelIndex daIndex = index(daRowPos, DREAM3DFileItem::Name, amIndex);
         setItemType(daIndex, DREAM3DFileItem::ItemType::DataArray);
         setData(daIndex, daName, Qt::DisplayRole);
       }
-
-      // If there are no attribute arrays displayed, delete the attribute matrix row
-      if (rowCount(amIndex) <= 0)
-      {
-        removeRow(rowPos);
-      }
-    }
-
-    // If there are no attribute matrices displayed, delete the data container row
-    if (rowCount(dcIndex) <= 0)
-    {
-      removeRow(rowPos, selIndex);
     }
 
     // Set the check state after adding all the items to the Data Container, so that the check state propagates through the whole Data Container sub-tree
