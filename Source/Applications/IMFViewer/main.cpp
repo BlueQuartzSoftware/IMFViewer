@@ -41,6 +41,7 @@
 
 int main(int argc, char* argv[])
 {
+  QSurfaceFormat::setDefaultFormat(QVTKOpenGLWidget::defaultFormat());
   QCoreApplication::setApplicationName("IMFViewer");
   QCoreApplication::setOrganizationDomain("bluequartz.net");
   QCoreApplication::setOrganizationName("BlueQuartz Software");
