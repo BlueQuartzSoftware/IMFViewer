@@ -237,6 +237,11 @@ bool DREAM3DFileTreeModel::removeRows(int position, int rows, const QModelIndex&
   DREAM3DFileItem* parentItem = getItem(parent);
   bool success = true;
 
+  if (rows <= 0)
+  {
+    return false;
+  }
+
   beginRemoveRows(parent, position, position + rows - 1);
   success = parentItem->removeChildren(position, rows);
   endRemoveRows();
