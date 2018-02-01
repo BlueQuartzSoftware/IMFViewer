@@ -59,7 +59,8 @@ IMFViewer_UI::~IMFViewer_UI()
 // -----------------------------------------------------------------------------
 void IMFViewer_UI::setupGui()
 {
-
+  vsWidget->setFilterView(treeView);
+  vsWidget->setInfoWidget(infoWidget);
 }
 
 // -----------------------------------------------------------------------------
