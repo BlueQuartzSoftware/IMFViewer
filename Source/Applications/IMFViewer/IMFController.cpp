@@ -164,11 +164,6 @@ bool IMFController::openDREAM3DFile(const QString &filePath, IMFViewer_UI* insta
             }
           }
         }
-
-        if (dcProxy.attributeMatricies.size() <= 0)
-        {
-          proxy.dataContainers.remove(dcName);
-        }
       }
     }
 
@@ -177,20 +172,6 @@ bool IMFController::openDREAM3DFile(const QString &filePath, IMFViewer_UI* insta
       QMessageBox::critical(instance, "Invalid Data",
                             tr("IMF Viewer failed to open file '%1' because the file does not "
                                "contain any data containers with a supported geometry.").arg(fi.fileName()), QMessageBox::StandardButton::Ok);
-      return false;
-    }
-    else if (containsCellAttributeMatrices == false)
-    {
-      QMessageBox::critical(instance, "Invalid Data",
-                            tr("IMF Viewer failed to open file '%1' because the file does not "
-                               "contain any cell attribute matrices.").arg(fi.fileName()), QMessageBox::StandardButton::Ok);
-      return false;
-    }
-    else if (containsValidArrays == false)
-    {
-      QMessageBox::critical(instance, "Invalid Data",
-                            tr("IMF Viewer failed to open file '%1' because the file does not "
-                               "contain any cell data arrays.").arg(fi.fileName()), QMessageBox::StandardButton::Ok);
       return false;
     }
 
