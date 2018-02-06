@@ -35,6 +35,8 @@
 
 #include "IMFViewer_UI.h"
 
+#include "SVWidgetsLib/QtSupport/QtSSettings.h"
+
 // -----------------------------------------------------------------------------
 //
 // -----------------------------------------------------------------------------
@@ -51,7 +53,7 @@ IMFViewer_UI::IMFViewer_UI(QWidget* parent) :
 // -----------------------------------------------------------------------------
 IMFViewer_UI::~IMFViewer_UI()
 {
-
+  writeSettings();
 }
 
 // -----------------------------------------------------------------------------
@@ -59,6 +61,8 @@ IMFViewer_UI::~IMFViewer_UI()
 // -----------------------------------------------------------------------------
 void IMFViewer_UI::setupGui()
 {
+  readSettings();
+
   vsWidget->setFilterView(treeView);
   vsWidget->setInfoWidget(infoWidget);
 }
@@ -70,5 +74,72 @@ void IMFViewer_UI::displayDataContainerArray(DataContainerArray::Pointer dca)
 {
   VSController* controller = vsWidget->getController();
   controller->importData(dca);
+}
+
+// -----------------------------------------------------------------------------
+//  Read our settings from a file
+// -----------------------------------------------------------------------------
+void IMFViewer_UI::readSettings()
+{
+  QSharedPointer<QtSSettings> prefs = QSharedPointer<QtSSettings>(new QtSSettings());
+
+  // Read the window settings from the prefs file
+  readWindowSettings(prefs.data());
+
+//  QtSRecentFileList::instance()->readList(prefs.data());
+}
+
+// -----------------------------------------------------------------------------
+//
+// -----------------------------------------------------------------------------
+void IMFViewer_UI::readWindowSettings(QtSSettings* prefs)
+{
+  bool ok = false;
+  prefs->beginGroup("WindowSettings");
+  if(prefs->contains(QString("MainWindowGeometry")))
+  {
+    QByteArray geo_data = prefs->value("MainWindowGeometry", QByteArray());
+    ok = restoreGeometry(geo_data);
+    if(!ok)
+    {
+      qDebug() << "Error Restoring the Window Geometry"
+               << "\n";
+    }
+  }
+
+  if(prefs->contains(QString("MainWindowState")))
+  {
+    QByteArray layout_data = prefs->value("MainWindowState", QByteArray());
+    restoreState(layout_data);
+  }
+
+  prefs->endGroup();
+}
+
+// -----------------------------------------------------------------------------
+//
+// -----------------------------------------------------------------------------
+void IMFViewer_UI::writeSettings()
+{
+  QSharedPointer<QtSSettings> prefs = QSharedPointer<QtSSettings>(new QtSSettings());
+
+  // Write the window settings to the prefs file
+  writeWindowSettings(prefs.data());
+
+//  QtSRecentFileList::instance()->writeList(prefs.data());
+}
+
+// -----------------------------------------------------------------------------
+//
+// -----------------------------------------------------------------------------
+void IMFViewer_UI::writeWindowSettings(QtSSettings* prefs)
+{
+  prefs->beginGroup("WindowSettings");
+  QByteArray geo_data = saveGeometry();
+  QByteArray layout_data = saveState();
+  prefs->setValue(QString("MainWindowGeometry"), geo_data);
+  prefs->setValue(QString("MainWindowState"), layout_data);
+
+  prefs->endGroup();
 }
 

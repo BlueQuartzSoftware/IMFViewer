@@ -41,6 +41,8 @@
 
 #include "ui_IMFViewer_UI.h"
 
+class QtSSettings;
+
 class IMFViewer_UI : public QMainWindow, public Ui::IMFViewer_UI
 {
     Q_OBJECT
@@ -56,7 +58,32 @@ class IMFViewer_UI : public QMainWindow, public Ui::IMFViewer_UI
     void displayDataContainerArray(DataContainerArray::Pointer dca);
 
   protected:
+    /**
+     * @brief setupGui
+     */
     void setupGui();
+
+    /**
+     * @brief readSettings
+     */
+    void readSettings();
+
+    /**
+     * @brief readWindowSettings
+     * @param prefs
+     */
+    void readWindowSettings(QtSSettings* prefs);
+
+    /**
+     * @brief writeSettings
+     */
+    void writeSettings();
+
+    /**
+     * @brief writeWindowSettings
+     * @param prefs
+     */
+    void writeWindowSettings(QtSSettings* prefs);
 
   private:
 
