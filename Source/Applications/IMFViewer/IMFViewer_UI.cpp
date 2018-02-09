@@ -35,6 +35,8 @@
 
 #include "IMFViewer_UI.h"
 
+#include <QtCore/QFileInfo>
+
 #include "SVWidgetsLib/QtSupport/QtSSettings.h"
 
 // -----------------------------------------------------------------------------
@@ -70,10 +72,13 @@ void IMFViewer_UI::setupGui()
 // -----------------------------------------------------------------------------
 //
 // -----------------------------------------------------------------------------
-void IMFViewer_UI::displayDataContainerArray(DataContainerArray::Pointer dca)
+void IMFViewer_UI::displayDataContainerArray(QString filePath, DataContainerArray::Pointer dca)
 {
   VSController* controller = vsWidget->getController();
-  controller->importData(dca);
+
+  QFileInfo fi(filePath);
+  QString fileName = fi.fileName();
+  controller->importData(fileName, filePath, dca);
 }
 
 // -----------------------------------------------------------------------------

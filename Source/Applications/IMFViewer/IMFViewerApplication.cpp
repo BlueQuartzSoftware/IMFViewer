@@ -73,10 +73,10 @@ void IMFViewerApplication::createApplicationMenu()
   m_ApplicationMenuBar = new QMenuBar();
   QMenu* fileMenu = new QMenu("File", m_ApplicationMenuBar);
 
-  QAction* openAction = new QAction("Open File");
-  openAction->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_O));
-  connect(openAction, &QAction::triggered, this, &IMFViewerApplication::openFile);
-  fileMenu->addAction(openAction);
+  QAction* importAction = new QAction("Import");
+  importAction->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_I));
+  connect(importAction, &QAction::triggered, this, &IMFViewerApplication::importFile);
+  fileMenu->addAction(importAction);
 
   m_ApplicationMenuBar->addMenu(fileMenu);
 }
@@ -84,11 +84,11 @@ void IMFViewerApplication::createApplicationMenu()
 // -----------------------------------------------------------------------------
 //
 // -----------------------------------------------------------------------------
-void IMFViewerApplication::openFile()
+void IMFViewerApplication::importFile()
 {
   if (m_ActiveInstance != nullptr)
   {
-    m_Controller->openFile(m_ActiveInstance);
+    m_Controller->importFile(m_ActiveInstance);
   }
 }
 

@@ -52,10 +52,10 @@ class IMFController : public QObject
 
   public slots:
     /**
-     * @brief openFile
+     * @brief importFile
      * @param filePath
      */
-    void openFile(IMFViewer_UI *instance);
+    void importFile(IMFViewer_UI *instance);
 
   protected:
     void setupGui();
