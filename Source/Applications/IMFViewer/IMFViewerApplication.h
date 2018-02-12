@@ -60,7 +60,7 @@ public:
   IMFViewer_UI* getNewIMFViewerInstance();
 
 private slots:
-  void openFile();
+  void importFile();
 
 private:
   IMFViewer_UI*                           m_ActiveInstance = nullptr;

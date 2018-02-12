@@ -74,7 +74,7 @@ void IMFController::setupGui()
 // -----------------------------------------------------------------------------
 //
 // -----------------------------------------------------------------------------
-void IMFController::openFile(IMFViewer_UI* instance)
+void IMFController::importFile(IMFViewer_UI* instance)
 {
   // Open a file in the application
   QString filter = "DREAM.3D Files (*.dream3d);;HDF5 Files (*.h5);;All Files (*.*)";
@@ -183,7 +183,7 @@ bool IMFController::openDREAM3DFile(const QString &filePath, IMFViewer_UI* insta
     {
       DataContainerArrayProxy dcaProxy = dialog->getDataStructureProxy();
       DataContainerArray::Pointer dca = reader.readSIMPLDataUsingProxy(dcaProxy, false);
-      instance->displayDataContainerArray(dca);
+      instance->displayDataContainerArray(filePath, dca);
       return true;
     }
   }

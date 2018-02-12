@@ -53,9 +53,10 @@ class IMFViewer_UI : public QMainWindow, public Ui::IMFViewer_UI
 
     /**
      * @brief displayDataContainerArray
+     * @param filePath
      * @param dca
      */
-    void displayDataContainerArray(DataContainerArray::Pointer dca);
+    void displayDataContainerArray(QString filePath, DataContainerArray::Pointer dca);
 
   protected:
     /**
