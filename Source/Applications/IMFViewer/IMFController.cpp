@@ -36,6 +36,7 @@
 #include "IMFController.h"
 
 #include <QtCore/QFileInfo>
+#include <QtCore/QMimeDatabase>
 
 #include <QtWidgets/QFileDialog>
 #include <QtWidgets/QMessageBox>
@@ -76,20 +77,57 @@ void IMFController::setupGui()
 // -----------------------------------------------------------------------------
 void IMFController::importFile(IMFViewer_UI* instance)
 {
+  QMimeDatabase db;
+  QStringList pngFileExts;
+
+  QMimeType pngType = db.mimeTypeForName("image/png");
+  QStringList pngSuffixes = pngType.suffixes();
+  QString pngSuffixStr = pngSuffixes.join(" *.");
+  pngSuffixStr.prepend("*.");
+
+  QMimeType tiffType = db.mimeTypeForName("image/tiff");
+  QStringList tiffSuffixes = tiffType.suffixes();
+  QString tiffSuffixStr = tiffSuffixes.join(" *.");
+  tiffSuffixStr.prepend("*.");
+
+  QMimeType jpegType = db.mimeTypeForName("image/jpeg");
+  QStringList jpegSuffixes = jpegType.suffixes();
+  QString jpegSuffixStr = jpegSuffixes.join(" *.");
+  jpegSuffixStr.prepend("*.");
+
   // Open a file in the application
-  QString filter = "DREAM.3D Files (*.dream3d);;HDF5 Files (*.h5);;All Files (*.*)";
+  QString filter = tr("All Files (*.*);;"
+                      "DREAM.3D Files (*.dream3d);;"
+                   "Image Files (%1 %2 %3);;"
+                      "VTK Files (*.vtk);;"
+                      "STL Files (*.stl)").arg(pngSuffixStr).arg(tiffSuffixStr).arg(jpegSuffixStr);
   QString filePath = QFileDialog::getOpenFileName(instance, "Open Input File", m_OpenDialogLastDirectory, filter);
   if (filePath.isEmpty())
   {
     return;
   }
 
+  QMimeType mimeType = db.mimeTypeForFile(filePath, QMimeDatabase::MatchContent);
+
   QFileInfo fi(filePath);
-  QString ext = fi.completeSuffix();
+  QString ext = fi.completeSuffix().toLower();
   bool success = false;
-  if (ext == "dream3d")
+  if (mimeType.inherits("application/x-hdf") && ext == "dream3d")
   {
     success = openDREAM3DFile(filePath, instance);
+  }
+  else if (mimeType.inherits("image/png") || mimeType.inherits("image/tiff") || mimeType.inherits("image/jpeg"))
+  {
+    instance->importData(filePath);
+    success = true;
+  }
+  else if (ext == "vtk")
+  {
+    success = openVTKFile(filePath, instance);
+  }
+  else if (ext == "stl")
+  {
+    success = openSTLFile(filePath, instance);
   }
   else
   {
@@ -183,11 +221,27 @@ bool IMFController::openDREAM3DFile(const QString &filePath, IMFViewer_UI* insta
     {
       DataContainerArrayProxy dcaProxy = dialog->getDataStructureProxy();
       DataContainerArray::Pointer dca = reader.readSIMPLDataUsingProxy(dcaProxy, false);
-      instance->displayDataContainerArray(filePath, dca);
+      instance->importDataContainerArray(filePath, dca);
       return true;
     }
   }
 
   return false;
+}
+
+// -----------------------------------------------------------------------------
+//
+// -----------------------------------------------------------------------------
+bool IMFController::openVTKFile(const QString &filePath, IMFViewer_UI* instance)
+{
+  return true;
+}
+
+// -----------------------------------------------------------------------------
+//
+// -----------------------------------------------------------------------------
+bool IMFController::openSTLFile(const QString &filePath, IMFViewer_UI* instance)
+{
+  return true;
 }
 

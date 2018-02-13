@@ -39,13 +39,27 @@
 
 #include "SVWidgetsLib/QtSupport/QtSSettings.h"
 
+#include "ui_IMFViewer_UI.h"
+
+// -----------------------------------------------------------------------------
+//
+// -----------------------------------------------------------------------------
+class IMFViewer_UI::vsInternals : public Ui::IMFViewer_UI
+{
+public:
+  vsInternals()
+  {
+  }
+};
+
 // -----------------------------------------------------------------------------
 //
 // -----------------------------------------------------------------------------
 IMFViewer_UI::IMFViewer_UI(QWidget* parent) :
   QMainWindow(parent)
+, m_Internals(new vsInternals())
 {
-  setupUi(this);
+  m_Internals->setupUi(this);
 
   setupGui();
 }
@@ -65,20 +79,29 @@ void IMFViewer_UI::setupGui()
 {
   readSettings();
 
-  vsWidget->setFilterView(treeView);
-  vsWidget->setInfoWidget(infoWidget);
+  m_Internals->vsWidget->setFilterView(m_Internals->treeView);
+  m_Internals->vsWidget->setInfoWidget(m_Internals->infoWidget);
 }
 
 // -----------------------------------------------------------------------------
 //
 // -----------------------------------------------------------------------------
-void IMFViewer_UI::displayDataContainerArray(QString filePath, DataContainerArray::Pointer dca)
+void IMFViewer_UI::importDataContainerArray(QString filePath, DataContainerArray::Pointer dca)
 {
-  VSController* controller = vsWidget->getController();
+  VSController* controller = m_Internals->vsWidget->getController();
 
   QFileInfo fi(filePath);
   QString fileName = fi.fileName();
-  controller->importData(fileName, filePath, dca);
+  controller->importDataContainerArray(fileName, filePath, dca);
+}
+
+// -----------------------------------------------------------------------------
+//
+// -----------------------------------------------------------------------------
+void IMFViewer_UI::importData(const QString &filePath)
+{
+  VSController* controller = m_Internals->vsWidget->getController();
+  controller->importData(filePath);
 }
 
 // -----------------------------------------------------------------------------
