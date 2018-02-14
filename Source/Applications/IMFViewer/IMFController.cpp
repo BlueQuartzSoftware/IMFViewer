@@ -99,7 +99,7 @@ void IMFController::importFile(IMFViewer_UI* instance)
   QString filter = tr("All Files (*.*);;"
                       "DREAM.3D Files (*.dream3d);;"
                    "Image Files (%1 %2 %3);;"
-                      "VTK Files (*.vtk);;"
+                      "VTK Files (*.vtk *.vti *.vtp *.vtr *.vts *.vtu);;"
                       "STL Files (*.stl)").arg(pngSuffixStr).arg(tiffSuffixStr).arg(jpegSuffixStr);
   QString filePath = QFileDialog::getOpenFileName(instance, "Open Input File", m_OpenDialogLastDirectory, filter);
   if (filePath.isEmpty())
@@ -108,11 +108,12 @@ void IMFController::importFile(IMFViewer_UI* instance)
   }
 
   QMimeType mimeType = db.mimeTypeForFile(filePath, QMimeDatabase::MatchContent);
+  QString mimeName = mimeType.name();
 
   QFileInfo fi(filePath);
   QString ext = fi.completeSuffix().toLower();
   bool success = false;
-  if (mimeType.inherits("application/x-hdf") && ext == "dream3d")
+  if (ext == "dream3d")
   {
     success = openDREAM3DFile(filePath, instance);
   }
@@ -121,9 +122,11 @@ void IMFController::importFile(IMFViewer_UI* instance)
     instance->importData(filePath);
     success = true;
   }
-  else if (ext == "vtk")
+  else if (ext == "vtk" || ext == "vti" || ext == "vtp" || ext == "vtr"
+           || ext == "vts" || ext == "vtu")
   {
-    success = openVTKFile(filePath, instance);
+    instance->importData(filePath);
+    success = true;
   }
   else if (ext == "stl")
   {
@@ -227,14 +230,6 @@ bool IMFController::openDREAM3DFile(const QString &filePath, IMFViewer_UI* insta
   }
 
   return false;
-}
-
-// -----------------------------------------------------------------------------
-//
-// -----------------------------------------------------------------------------
-bool IMFController::openVTKFile(const QString &filePath, IMFViewer_UI* instance)
-{
-  return true;
 }
 
 // -----------------------------------------------------------------------------
