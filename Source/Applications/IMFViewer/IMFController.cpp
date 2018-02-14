@@ -96,7 +96,7 @@ void IMFController::importFile(IMFViewer_UI* instance)
   jpegSuffixStr.prepend("*.");
 
   // Open a file in the application
-  QString filter = tr("Data Files (*.dream3d *.vtk *.stl %1 %3 %3);;"
+  QString filter = tr("Data Files (*.dream3d *.vtk *.vti *.vtp *.vtr *.vts *.vtu *.stl %1 %3 %3);;"
                       "DREAM.3D Files (*.dream3d);;"
                       "Image Files (%1 %2 %3);;"
                       "VTK Files (*.vtk *.vti *.vtp *.vtr *.vts *.vtu);;"
