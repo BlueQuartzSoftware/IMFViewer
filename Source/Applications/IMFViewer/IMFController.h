@@ -70,14 +70,6 @@ class IMFController : public QObject
      */
     bool openDREAM3DFile(const QString &filePath, IMFViewer_UI* instance);
 
-    /**
-     * @brief openSTLFile
-     * @param filePath
-     * @param instance
-     * @return
-     */
-    bool openSTLFile(const QString &filePath, IMFViewer_UI* instance);
-
     IMFController(const IMFController&); // Copy Constructor Not Implemented
     void operator=(const IMFController&); // Operator '=' Not Implemented
 };

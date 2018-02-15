@@ -130,7 +130,8 @@ void IMFController::importFile(IMFViewer_UI* instance)
   }
   else if (ext == "stl")
   {
-    success = openSTLFile(filePath, instance);
+    instance->importData(filePath);
+    success = true;
   }
   else
   {
@@ -230,13 +231,5 @@ bool IMFController::openDREAM3DFile(const QString &filePath, IMFViewer_UI* insta
   }
 
   return false;
-}
-
-// -----------------------------------------------------------------------------
-//
-// -----------------------------------------------------------------------------
-bool IMFController::openSTLFile(const QString &filePath, IMFViewer_UI* instance)
-{
-  return true;
 }
 
