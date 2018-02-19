@@ -90,10 +90,7 @@ void IMFViewer_UI::setupGui()
 void IMFViewer_UI::importDataContainerArray(QString filePath, DataContainerArray::Pointer dca)
 {
   VSController* controller = m_Internals->vsWidget->getController();
-
-  QFileInfo fi(filePath);
-  QString fileName = fi.fileName();
-  controller->importDataContainerArray(fileName, filePath, dca);
+  controller->importDataContainerArray(filePath, dca);
 }
 
 // -----------------------------------------------------------------------------
