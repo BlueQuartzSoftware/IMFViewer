@@ -50,18 +50,17 @@ class IMFController : public QObject
     IMFController(QObject* parent = nullptr);
     ~IMFController();
 
-  public slots:
     /**
      * @brief importFile
      * @param filePath
+     * @param instance
      */
-    void importFile(IMFViewer_UI *instance);
+    bool importFile(const QString &filePath, IMFViewer_UI *instance);
 
   protected:
     void setupGui();
 
   private:
-    QString                                 m_OpenDialogLastDirectory = "";
 
     /**
      * @brief openDREAM3DFile
@@ -69,14 +68,6 @@ class IMFController : public QObject
      * @param instance
      */
     bool openDREAM3DFile(const QString &filePath, IMFViewer_UI* instance);
-
-    /**
-     * @brief openSTLFile
-     * @param filePath
-     * @param instance
-     * @return
-     */
-    bool openSTLFile(const QString &filePath, IMFViewer_UI* instance);
 
     IMFController(const IMFController&); // Copy Constructor Not Implemented
     void operator=(const IMFController&); // Operator '=' Not Implemented

@@ -38,6 +38,7 @@
 #include <QtCore/QFileInfo>
 
 #include "SVWidgetsLib/QtSupport/QtSSettings.h"
+#include "SVWidgetsLib/QtSupport/QtSRecentFileList.h"
 
 #include "ui_IMFViewer_UI.h"
 
@@ -114,7 +115,7 @@ void IMFViewer_UI::readSettings()
   // Read the window settings from the prefs file
   readWindowSettings(prefs.data());
 
-//  QtSRecentFileList::instance()->readList(prefs.data());
+  QtSRecentFileList::instance()->readList(prefs.data());
 }
 
 // -----------------------------------------------------------------------------
@@ -154,7 +155,7 @@ void IMFViewer_UI::writeSettings()
   // Write the window settings to the prefs file
   writeWindowSettings(prefs.data());
 
-//  QtSRecentFileList::instance()->writeList(prefs.data());
+  QtSRecentFileList::instance()->writeList(prefs.data());
 }
 
 // -----------------------------------------------------------------------------
