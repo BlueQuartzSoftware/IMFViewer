@@ -47,6 +47,8 @@
 #include "SIMPLib/Utilities/SIMPLH5DataReader.h"
 #include "SIMPLib/Utilities/SIMPLH5DataReaderRequirements.h"
 
+#include "SVWidgetsLib/QtSupport/QtSRecentFileList.h"
+
 // -----------------------------------------------------------------------------
 //
 // -----------------------------------------------------------------------------
@@ -75,37 +77,9 @@ void IMFController::setupGui()
 // -----------------------------------------------------------------------------
 //
 // -----------------------------------------------------------------------------
-void IMFController::importFile(IMFViewer_UI* instance)
+bool IMFController::importFile(const QString &filePath, IMFViewer_UI* instance)
 {
   QMimeDatabase db;
-  QStringList pngFileExts;
-
-  QMimeType pngType = db.mimeTypeForName("image/png");
-  QStringList pngSuffixes = pngType.suffixes();
-  QString pngSuffixStr = pngSuffixes.join(" *.");
-  pngSuffixStr.prepend("*.");
-
-  QMimeType tiffType = db.mimeTypeForName("image/tiff");
-  QStringList tiffSuffixes = tiffType.suffixes();
-  QString tiffSuffixStr = tiffSuffixes.join(" *.");
-  tiffSuffixStr.prepend("*.");
-
-  QMimeType jpegType = db.mimeTypeForName("image/jpeg");
-  QStringList jpegSuffixes = jpegType.suffixes();
-  QString jpegSuffixStr = jpegSuffixes.join(" *.");
-  jpegSuffixStr.prepend("*.");
-
-  // Open a file in the application
-  QString filter = tr("Data Files (*.dream3d *.vtk *.vti *.vtp *.vtr *.vts *.vtu *.stl %1 %3 %3);;"
-                      "DREAM.3D Files (*.dream3d);;"
-                      "Image Files (%1 %2 %3);;"
-                      "VTK Files (*.vtk *.vti *.vtp *.vtr *.vts *.vtu);;"
-                      "STL Files (*.stl)").arg(pngSuffixStr).arg(tiffSuffixStr).arg(jpegSuffixStr);
-  QString filePath = QFileDialog::getOpenFileName(instance, "Open Input File", m_OpenDialogLastDirectory, filter);
-  if (filePath.isEmpty())
-  {
-    return;
-  }
 
   QMimeType mimeType = db.mimeTypeForFile(filePath, QMimeDatabase::MatchContent);
   QString mimeName = mimeType.name();
@@ -138,13 +112,17 @@ void IMFController::importFile(IMFViewer_UI* instance)
     QMessageBox::critical(instance, "Invalid File Type",
                           tr("IMF Viewer failed to open the file because the file extension, '.%1', is not supported by the "
                              "application.").arg(ext), QMessageBox::StandardButton::Ok);
-    return;
+    return false;
   }
 
   if (success)
   {
-    m_OpenDialogLastDirectory = filePath;
+    // Add file to the recent files list
+    QtSRecentFileList* list = QtSRecentFileList::instance();
+    list->addFile(filePath);
   }
+
+  return success;
 }
 
 // -----------------------------------------------------------------------------
