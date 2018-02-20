@@ -39,6 +39,7 @@
 
 #include "SVWidgetsLib/QtSupport/QtSSettings.h"
 #include "SVWidgetsLib/QtSupport/QtSRecentFileList.h"
+#include "SVWidgetsLib/Widgets/SIMPLViewMenuItems.h"
 
 #include "ui_IMFViewer_UI.h"
 
@@ -82,6 +83,8 @@ void IMFViewer_UI::setupGui()
 
   m_Internals->vsWidget->setFilterView(m_Internals->treeView);
   m_Internals->vsWidget->setInfoWidget(m_Internals->infoWidget);
+
+  createMenu();
 }
 
 // -----------------------------------------------------------------------------
@@ -169,3 +172,44 @@ void IMFViewer_UI::writeWindowSettings(QtSSettings* prefs)
   prefs->endGroup();
 }
 
+// -----------------------------------------------------------------------------
+//
+// -----------------------------------------------------------------------------
+QMenuBar* IMFViewer_UI::getMenuBar()
+{
+  return m_MenuBar;
+}
+
+// -----------------------------------------------------------------------------
+//
+// -----------------------------------------------------------------------------
+void IMFViewer_UI::createMenu()
+{
+  SIMPLViewMenuItems* menuItems = SIMPLViewMenuItems::Instance();
+
+  m_MenuBar = new QMenuBar();
+
+  // File Menu
+  QMenu* fileMenu = new QMenu("File", m_MenuBar);
+
+  QAction* importAction = new QAction("Import");
+  importAction->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_I));
+  connect(importAction, &QAction::triggered, this, &IMFViewer_UI::importSignal);
+  //connect(importAction, &QAction::triggered, this, &IMFViewerApplication::importFile);
+  fileMenu->addAction(importAction);
+
+  fileMenu->addSeparator();
+
+  QMenu* recentsMenu = menuItems->getMenuRecentFiles();
+  QAction* clearRecentsAction = menuItems->getActionClearRecentFiles();
+  fileMenu->addMenu(recentsMenu);
+
+  m_MenuBar->addMenu(fileMenu);
+
+  // Add Filter Menu
+  QMenu* filterMenu = m_Internals->vsWidget->getFilterMenu();
+  m_MenuBar->addMenu(filterMenu);
+
+  // Apply Menu Bar
+  setMenuBar(m_MenuBar);
+}

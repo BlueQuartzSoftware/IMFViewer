@@ -69,14 +69,8 @@ private slots:
 private:
   IMFViewer_UI*                           m_ActiveInstance = nullptr;
   IMFController*                          m_Controller = nullptr;
-  QMenuBar*                               m_ApplicationMenuBar = nullptr;
 
   QString                                 m_OpenDialogLastDirectory = "";
-
-  /**
-   * @brief createApplicationMenu
-   */
-  void createApplicationMenu();
 
   /**
    * @brief loadStyleSheet

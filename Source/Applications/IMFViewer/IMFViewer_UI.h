@@ -36,6 +36,7 @@
 #pragma once
 
 #include <QtWidgets/QMainWindow>
+#include <QtWidgets/QMenuBar>
 
 #include "SIMPLib/DataContainers/DataContainerArray.h"
 
@@ -62,11 +63,25 @@ class IMFViewer_UI : public QMainWindow
      */
     void importData(const QString &filePath);
 
+    /**
+    * @brief Returns the QMenuBar for the window
+    * @return
+    */
+    QMenuBar* getMenuBar();
+
+  signals:
+    void importSignal();
+
   protected:
     /**
      * @brief setupGui
      */
     void setupGui();
+
+    /**
+    * @brief createApplicationMenu
+    */
+    void createMenu();
 
     /**
      * @brief readSettings
@@ -93,6 +108,8 @@ class IMFViewer_UI : public QMainWindow
   private:
     class vsInternals;
     vsInternals*                        m_Internals;
+
+    QMenuBar*                           m_MenuBar;
 
     IMFViewer_UI(const IMFViewer_UI&); // Copy Constructor Not Implemented
     void operator=(const IMFViewer_UI&); // Operator '=' Not Implemented

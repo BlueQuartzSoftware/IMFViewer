@@ -59,8 +59,6 @@ IMFViewerApplication::IMFViewerApplication(int& argc, char** argv) :
 {
 //  loadStyleSheet("light");
 
-  createApplicationMenu();
-
   // Connection to update the recent files list on all windows when it changes
   QtSRecentFileList* recentsList = QtSRecentFileList::instance();
   connect(recentsList, SIGNAL(fileListChanged(const QString&)), this, SLOT(updateRecentFileList(const QString&)));
@@ -72,31 +70,6 @@ IMFViewerApplication::IMFViewerApplication(int& argc, char** argv) :
 IMFViewerApplication::~IMFViewerApplication()
 {
   delete m_Controller;
-}
-
-// -----------------------------------------------------------------------------
-//
-// -----------------------------------------------------------------------------
-void IMFViewerApplication::createApplicationMenu()
-{
-  SIMPLViewMenuItems* menuItems = SIMPLViewMenuItems::Instance();
-
-  m_ApplicationMenuBar = new QMenuBar();
-  QMenu* fileMenu = new QMenu("File", m_ApplicationMenuBar);
-
-  QAction* importAction = new QAction("Import");
-  importAction->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_I));
-  connect(importAction, &QAction::triggered, this, &IMFViewerApplication::importFile);
-  fileMenu->addAction(importAction);
-
-  fileMenu->addSeparator();
-
-  QMenu* recentsMenu = menuItems->getMenuRecentFiles();
-  QAction* clearRecentsAction = menuItems->getActionClearRecentFiles();
-  fileMenu->addMenu(recentsMenu);
-
-
-  m_ApplicationMenuBar->addMenu(fileMenu);
 }
 
 // -----------------------------------------------------------------------------
@@ -195,10 +168,6 @@ IMFViewer_UI* IMFViewerApplication::getNewIMFViewerInstance()
   newInstance->setAttribute(Qt::WA_DeleteOnClose);
   newInstance->setWindowTitle("IMF Viewer");
 
-  #if defined(Q_OS_WIN)
-  newInstance->setMenuBar(m_ApplicationMenuBar);
-  #endif
-
   setActiveInstance(newInstance);
 
   return newInstance;
@@ -220,18 +189,19 @@ void IMFViewerApplication::loadStyleSheet(const QString &sheetName)
 // -----------------------------------------------------------------------------
 void IMFViewerApplication::setActiveInstance(IMFViewer_UI* instance)
 {
-  if (instance == nullptr)
+  if (nullptr == instance)
   {
     return;
   }
 
   // Disconnections from the old instance
-  if (m_ActiveInstance != nullptr)
+  if (nullptr != m_ActiveInstance)
   {
-
+    disconnect(instance, &IMFViewer_UI::importSignal, this, &IMFViewerApplication::importFile);
   }
 
   // Connections to the new instance
+  connect(instance, &IMFViewer_UI::importSignal, this, &IMFViewerApplication::importFile);
 
   m_ActiveInstance = instance;
 }
