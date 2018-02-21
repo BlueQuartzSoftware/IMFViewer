@@ -36,6 +36,8 @@
 
 #include <QApplication>
 
+#include <QVTKOpenGLWidget.h>
+
 #include "IMFViewer/IMFViewer_UI.h"
 #include "IMFViewer/IMFViewerApplication.h"
 

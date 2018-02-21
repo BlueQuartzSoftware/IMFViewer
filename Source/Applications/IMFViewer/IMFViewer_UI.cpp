@@ -38,14 +38,30 @@
 #include <QtCore/QFileInfo>
 
 #include "SVWidgetsLib/QtSupport/QtSSettings.h"
+#include "SVWidgetsLib/QtSupport/QtSRecentFileList.h"
+#include "SVWidgetsLib/Widgets/SIMPLViewMenuItems.h"
+
+#include "ui_IMFViewer_UI.h"
+
+// -----------------------------------------------------------------------------
+//
+// -----------------------------------------------------------------------------
+class IMFViewer_UI::vsInternals : public Ui::IMFViewer_UI
+{
+public:
+  vsInternals()
+  {
+  }
+};
 
 // -----------------------------------------------------------------------------
 //
 // -----------------------------------------------------------------------------
 IMFViewer_UI::IMFViewer_UI(QWidget* parent) :
   QMainWindow(parent)
+, m_Internals(new vsInternals())
 {
-  setupUi(this);
+  m_Internals->setupUi(this);
 
   setupGui();
 }
@@ -65,20 +81,28 @@ void IMFViewer_UI::setupGui()
 {
   readSettings();
 
-  vsWidget->setFilterView(treeView);
-  vsWidget->setInfoWidget(infoWidget);
+  m_Internals->vsWidget->setFilterView(m_Internals->treeView);
+  m_Internals->vsWidget->setInfoWidget(m_Internals->infoWidget);
+
+  createMenu();
 }
 
 // -----------------------------------------------------------------------------
 //
 // -----------------------------------------------------------------------------
-void IMFViewer_UI::displayDataContainerArray(QString filePath, DataContainerArray::Pointer dca)
+void IMFViewer_UI::importDataContainerArray(QString filePath, DataContainerArray::Pointer dca)
 {
-  VSController* controller = vsWidget->getController();
+  VSController* controller = m_Internals->vsWidget->getController();
+  controller->importDataContainerArray(filePath, dca);
+}
 
-  QFileInfo fi(filePath);
-  QString fileName = fi.fileName();
-  controller->importData(fileName, filePath, dca);
+// -----------------------------------------------------------------------------
+//
+// -----------------------------------------------------------------------------
+void IMFViewer_UI::importData(const QString &filePath)
+{
+  VSController* controller = m_Internals->vsWidget->getController();
+  controller->importData(filePath);
 }
 
 // -----------------------------------------------------------------------------
@@ -91,7 +115,7 @@ void IMFViewer_UI::readSettings()
   // Read the window settings from the prefs file
   readWindowSettings(prefs.data());
 
-//  QtSRecentFileList::instance()->readList(prefs.data());
+  QtSRecentFileList::instance()->readList(prefs.data());
 }
 
 // -----------------------------------------------------------------------------
@@ -131,7 +155,7 @@ void IMFViewer_UI::writeSettings()
   // Write the window settings to the prefs file
   writeWindowSettings(prefs.data());
 
-//  QtSRecentFileList::instance()->writeList(prefs.data());
+  QtSRecentFileList::instance()->writeList(prefs.data());
 }
 
 // -----------------------------------------------------------------------------
@@ -148,3 +172,44 @@ void IMFViewer_UI::writeWindowSettings(QtSSettings* prefs)
   prefs->endGroup();
 }
 
+// -----------------------------------------------------------------------------
+//
+// -----------------------------------------------------------------------------
+QMenuBar* IMFViewer_UI::getMenuBar()
+{
+  return m_MenuBar;
+}
+
+// -----------------------------------------------------------------------------
+//
+// -----------------------------------------------------------------------------
+void IMFViewer_UI::createMenu()
+{
+  SIMPLViewMenuItems* menuItems = SIMPLViewMenuItems::Instance();
+
+  m_MenuBar = new QMenuBar();
+
+  // File Menu
+  QMenu* fileMenu = new QMenu("File", m_MenuBar);
+
+  QAction* importAction = new QAction("Import");
+  importAction->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_I));
+  connect(importAction, &QAction::triggered, this, &IMFViewer_UI::importSignal);
+  //connect(importAction, &QAction::triggered, this, &IMFViewerApplication::importFile);
+  fileMenu->addAction(importAction);
+
+  fileMenu->addSeparator();
+
+  QMenu* recentsMenu = menuItems->getMenuRecentFiles();
+  QAction* clearRecentsAction = menuItems->getActionClearRecentFiles();
+  fileMenu->addMenu(recentsMenu);
+
+  m_MenuBar->addMenu(fileMenu);
+
+  // Add Filter Menu
+  QMenu* filterMenu = m_Internals->vsWidget->getFilterMenu();
+  m_MenuBar->addMenu(filterMenu);
+
+  // Apply Menu Bar
+  setMenuBar(m_MenuBar);
+}

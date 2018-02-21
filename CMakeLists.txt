@@ -108,18 +108,6 @@ if("${SIMPLVtkLibProj_SOURCE_DIR}" STREQUAL "")
   message(STATUS "SIMPLVtkLibProj_SOURCE_DIR: ${SIMPLVtkLibProj_SOURCE_DIR}")
 endif()
 
-#------------------------------------------------------------------------------
-# If the developer has set another Moderni directory then use that, otherwise look
-# for the Moderni directory in the ExternalProjects directory
-if("${ModerniProj_SOURCE_DIR}" STREQUAL "")
-  if(EXISTS "${IMFViewer_ExternalProject_DIR}/Moderni")
-    set(ModerniProj_SOURCE_DIR "${IMFViewer_ExternalProject_DIR}/Moderni")
-  else()
-    message(FATAL_ERROR "ModerniProj_SOURCE_DIR was not set. Please set the ModerniProj_SOURCE_DIR variable to the Moderni directory.")
-  endif()
-  message(STATUS "ModerniProj_SOURCE_DIR: ${ModerniProj_SOURCE_DIR}")
-endif()
-
 #Enable use of Solution Folders
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 #set_property(GLOBAL PROPERTY USE_FOLDERS OFF)

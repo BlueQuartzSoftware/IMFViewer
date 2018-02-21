@@ -50,18 +50,17 @@ class IMFController : public QObject
     IMFController(QObject* parent = nullptr);
     ~IMFController();
 
-  public slots:
     /**
      * @brief importFile
      * @param filePath
+     * @param instance
      */
-    void importFile(IMFViewer_UI *instance);
+    bool importFile(const QString &filePath, IMFViewer_UI *instance);
 
   protected:
     void setupGui();
 
   private:
-    QString                                 m_OpenDialogLastDirectory = "";
 
     /**
      * @brief openDREAM3DFile
