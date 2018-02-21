@@ -39,29 +39,20 @@
 
 #include <QtCore/QDebug>
 #include <QtCore/QFile>
-#include <QtCore/QMimeDatabase>
-
-#include <QtWidgets/QFileDialog>
 
 #include "SVWidgetsLib/QtSupport/QtSStyles.h"
 #include "SVWidgetsLib/QtSupport/QtSRecentFileList.h"
 #include "SVWidgetsLib/Widgets/SIMPLViewMenuItems.h"
 
-#include "IMFViewer/IMFController.h"
 #include "IMFViewer/IMFViewer_UI.h"
 
 // -----------------------------------------------------------------------------
 //
 // -----------------------------------------------------------------------------
 IMFViewerApplication::IMFViewerApplication(int& argc, char** argv) :
-  QApplication(argc, argv),
-  m_Controller(new IMFController())
+  QApplication(argc, argv)
 {
 //  loadStyleSheet("light");
-
-  // Connection to update the recent files list on all windows when it changes
-  QtSRecentFileList* recentsList = QtSRecentFileList::instance();
-  connect(recentsList, SIGNAL(fileListChanged(const QString&)), this, SLOT(updateRecentFileList(const QString&)));
 }
 
 // -----------------------------------------------------------------------------
@@ -69,93 +60,7 @@ IMFViewerApplication::IMFViewerApplication(int& argc, char** argv) :
 // -----------------------------------------------------------------------------
 IMFViewerApplication::~IMFViewerApplication()
 {
-  delete m_Controller;
-}
 
-// -----------------------------------------------------------------------------
-//
-// -----------------------------------------------------------------------------
-void IMFViewerApplication::updateRecentFileList(const QString& file)
-{
-  SIMPLViewMenuItems* menuItems = SIMPLViewMenuItems::Instance();
-  QMenu* recentFilesMenu = menuItems->getMenuRecentFiles();
-  QAction* clearRecentFilesAction = menuItems->getActionClearRecentFiles();
-
-  // Clear the Recent Items Menu
-  recentFilesMenu->clear();
-
-  // Get the list from the static object
-  QStringList files = QtSRecentFileList::instance()->fileList();
-  foreach(QString file, files)
-  {
-    QAction* action = recentFilesMenu->addAction(QtSRecentFileList::instance()->parentAndFileName(file));
-    action->setData(file);
-    action->setVisible(true);
-    connect(action, SIGNAL(triggered()), this, SLOT(openRecentFile()));
-  }
-
-  recentFilesMenu->addSeparator();
-  recentFilesMenu->addAction(clearRecentFilesAction);
-}
-
-// -----------------------------------------------------------------------------
-//
-// -----------------------------------------------------------------------------
-void IMFViewerApplication::openRecentFile()
-{
-  QAction* action = qobject_cast<QAction*>(sender());
-
-  if(action && m_ActiveInstance)
-  {
-    QString filePath = action->data().toString();
-
-    bool success = m_Controller->importFile(filePath, m_ActiveInstance);
-
-    if (success)
-    {
-      m_OpenDialogLastDirectory = filePath;
-    }
-  }
-}
-
-// -----------------------------------------------------------------------------
-//
-// -----------------------------------------------------------------------------
-void IMFViewerApplication::importFile()
-{
-  if (m_ActiveInstance != nullptr)
-  {
-    QMimeDatabase db;
-
-    QMimeType pngType = db.mimeTypeForName("image/png");
-    QStringList pngSuffixes = pngType.suffixes();
-    QString pngSuffixStr = pngSuffixes.join(" *.");
-    pngSuffixStr.prepend("*.");
-
-    QMimeType tiffType = db.mimeTypeForName("image/tiff");
-    QStringList tiffSuffixes = tiffType.suffixes();
-    QString tiffSuffixStr = tiffSuffixes.join(" *.");
-    tiffSuffixStr.prepend("*.");
-
-    QMimeType jpegType = db.mimeTypeForName("image/jpeg");
-    QStringList jpegSuffixes = jpegType.suffixes();
-    QString jpegSuffixStr = jpegSuffixes.join(" *.");
-    jpegSuffixStr.prepend("*.");
-
-    // Open a file in the application
-    QString filter = tr("Data Files (*.dream3d *.vtk *.vti *.vtp *.vtr *.vts *.vtu *.stl %1 %3 %3);;"
-                        "DREAM.3D Files (*.dream3d);;"
-                        "Image Files (%1 %2 %3);;"
-                        "VTK Files (*.vtk *.vti *.vtp *.vtr *.vts *.vtu);;"
-                        "STL Files (*.stl)").arg(pngSuffixStr).arg(tiffSuffixStr).arg(jpegSuffixStr);
-    QString filePath = QFileDialog::getOpenFileName(m_ActiveInstance, "Open Input File", m_OpenDialogLastDirectory, filter);
-    if (filePath.isEmpty())
-    {
-      return;
-    }
-
-    m_Controller->importFile(filePath, m_ActiveInstance);
-  }
 }
 
 // -----------------------------------------------------------------------------
@@ -193,15 +98,6 @@ void IMFViewerApplication::setActiveInstance(IMFViewer_UI* instance)
   {
     return;
   }
-
-  // Disconnections from the old instance
-  if (nullptr != m_ActiveInstance)
-  {
-    disconnect(instance, &IMFViewer_UI::importSignal, this, &IMFViewerApplication::importFile);
-  }
-
-  // Connections to the new instance
-  connect(instance, &IMFViewer_UI::importSignal, this, &IMFViewerApplication::importFile);
 
   m_ActiveInstance = instance;
 }
