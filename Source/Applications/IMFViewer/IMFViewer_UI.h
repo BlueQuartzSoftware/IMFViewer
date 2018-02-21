@@ -62,6 +62,22 @@ class IMFViewer_UI : public QMainWindow
      */
     void importData(const QString &filePath);
 
+    /**
+     * @brief Saves this session to the file at sessionFilePath
+     * @param sessionFilePath
+     * @param instance
+     * @return
+     */
+    bool saveSession(const QString &sessionFilePath);
+
+    /**
+     * @brief Loads the session stored in the file at sessionFilePath
+     * @param sessionFilePath
+     * @param instance
+     * @return
+     */
+    bool loadSession(const QString &sessionFilePath);
+
   protected:
     /**
      * @brief setupGui

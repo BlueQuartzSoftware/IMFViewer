@@ -103,6 +103,24 @@ void IMFViewer_UI::importData(const QString &filePath)
 }
 
 // -----------------------------------------------------------------------------
+//
+// -----------------------------------------------------------------------------
+bool IMFViewer_UI::saveSession(const QString &sessionFilePath)
+{
+  VSController* controller = m_Internals->vsWidget->getController();
+  return controller->saveSession(sessionFilePath);
+}
+
+// -----------------------------------------------------------------------------
+//
+// -----------------------------------------------------------------------------
+bool IMFViewer_UI::loadSession(const QString &sessionFilePath)
+{
+  VSController* controller = m_Internals->vsWidget->getController();
+  return controller->loadSession(sessionFilePath);
+}
+
+// -----------------------------------------------------------------------------
 //  Read our settings from a file
 // -----------------------------------------------------------------------------
 void IMFViewer_UI::readSettings()

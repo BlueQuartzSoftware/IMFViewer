@@ -60,10 +60,30 @@ public:
   IMFViewer_UI* getNewIMFViewerInstance();
 
 private slots:
+  /**
+   * @brief importFile
+   */
   void importFile();
 
+  /**
+   * @brief saveSession
+   */
+  void saveSession();
+
+  /**
+   * @brief loadSession
+   */
+  void loadSession();
+
+  /**
+   * @brief openRecentFile
+   */
   void openRecentFile();
 
+  /**
+   * @brief updateRecentFileList
+   * @param file
+   */
   void updateRecentFileList(const QString& file);
 
 private:

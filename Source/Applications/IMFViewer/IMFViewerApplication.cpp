@@ -91,12 +91,72 @@ void IMFViewerApplication::createApplicationMenu()
 
   fileMenu->addSeparator();
 
+  QAction* openAction = menuItems->getActionOpen();
+  connect(openAction, &QAction::triggered, this, &IMFViewerApplication::loadSession);
+  fileMenu->addAction(openAction);
+
+  QAction* saveAction = menuItems->getActionSave();
+  connect(saveAction, &QAction::triggered, this, &IMFViewerApplication::saveSession);
+  fileMenu->addAction(saveAction);
+
+  fileMenu->addSeparator();
+
   QMenu* recentsMenu = menuItems->getMenuRecentFiles();
-  QAction* clearRecentsAction = menuItems->getActionClearRecentFiles();
   fileMenu->addMenu(recentsMenu);
 
-
   m_ApplicationMenuBar->addMenu(fileMenu);
+}
+
+// -----------------------------------------------------------------------------
+//
+// -----------------------------------------------------------------------------
+void IMFViewerApplication::saveSession()
+{
+  if (m_ActiveInstance != nullptr)
+  {
+    QMimeDatabase db;
+
+    QMimeType jsonType = db.mimeTypeForName("application/json");
+    QStringList jsonSuffixes = jsonType.suffixes();
+    QString jsonSuffixStr = jsonSuffixes.join(" *.");
+    jsonSuffixStr.prepend("*.");
+
+    // Open a file in the application
+    QString filter = tr("JSON Files (%1)").arg(jsonSuffixStr);
+    QString filePath = QFileDialog::getSaveFileName(m_ActiveInstance, "Open Input File", m_OpenDialogLastDirectory, filter);
+    if (filePath.isEmpty())
+    {
+      return;
+    }
+
+    m_ActiveInstance->saveSession(filePath);
+  }
+}
+
+// -----------------------------------------------------------------------------
+//
+// -----------------------------------------------------------------------------
+void IMFViewerApplication::loadSession()
+{
+  if (m_ActiveInstance != nullptr)
+  {
+    QMimeDatabase db;
+
+    QMimeType jsonType = db.mimeTypeForName("application/json");
+    QStringList jsonSuffixes = jsonType.suffixes();
+    QString jsonSuffixStr = jsonSuffixes.join(" *.");
+    jsonSuffixStr.prepend("*.");
+
+    // Open a file in the application
+    QString filter = tr("JSON Files (%1)").arg(jsonSuffixStr);
+    QString filePath = QFileDialog::getOpenFileName(m_ActiveInstance, "Open Session File", m_OpenDialogLastDirectory, filter);
+    if (filePath.isEmpty())
+    {
+      return;
+    }
+
+    m_ActiveInstance->loadSession(filePath);
+  }
 }
 
 // -----------------------------------------------------------------------------
