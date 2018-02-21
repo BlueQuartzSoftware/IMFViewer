@@ -59,44 +59,8 @@ public:
 
   IMFViewer_UI* getNewIMFViewerInstance();
 
-private slots:
-  /**
-   * @brief importFile
-   */
-  void importFile();
-
-  /**
-   * @brief saveSession
-   */
-  void saveSession();
-
-  /**
-   * @brief loadSession
-   */
-  void loadSession();
-
-  /**
-   * @brief openRecentFile
-   */
-  void openRecentFile();
-
-  /**
-   * @brief updateRecentFileList
-   * @param file
-   */
-  void updateRecentFileList(const QString& file);
-
 private:
   IMFViewer_UI*                           m_ActiveInstance = nullptr;
-  IMFController*                          m_Controller = nullptr;
-  QMenuBar*                               m_ApplicationMenuBar = nullptr;
-
-  QString                                 m_OpenDialogLastDirectory = "";
-
-  /**
-   * @brief createApplicationMenu
-   */
-  void createApplicationMenu();
 
   /**
    * @brief loadStyleSheet

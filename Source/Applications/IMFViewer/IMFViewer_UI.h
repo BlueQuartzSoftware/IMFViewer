@@ -36,6 +36,7 @@
 #pragma once
 
 #include <QtWidgets/QMainWindow>
+#include <QtWidgets/QMenuBar>
 
 #include "SIMPLib/DataContainers/DataContainerArray.h"
 
@@ -63,26 +64,33 @@ class IMFViewer_UI : public QMainWindow
     void importData(const QString &filePath);
 
     /**
-     * @brief Saves this session to the file at sessionFilePath
-     * @param sessionFilePath
-     * @param instance
+     * @brief Saves this session to a file
      * @return
      */
-    bool saveSession(const QString &sessionFilePath);
+    void saveSession();
 
     /**
-     * @brief Loads the session stored in the file at sessionFilePath
-     * @param sessionFilePath
-     * @param instance
+     * @brief Loads the session from a file
      * @return
      */
-    bool loadSession(const QString &sessionFilePath);
+    void loadSession();
+
+    /**
+    * @brief Returns the QMenuBar for the window
+    * @return
+    */
+    QMenuBar* getMenuBar();
 
   protected:
     /**
      * @brief setupGui
      */
     void setupGui();
+
+    /**
+    * @brief createApplicationMenu
+    */
+    void createMenu();
 
     /**
      * @brief readSettings
@@ -106,9 +114,43 @@ class IMFViewer_UI : public QMainWindow
      */
     void writeWindowSettings(QtSSettings* prefs);
 
+  protected slots:
+    /**
+     * @brief importFile
+     */
+    void importFile();
+
+    /**
+     * @brief openRecentFile
+     */
+    void openRecentFile();
+
+    /**
+     * @brief updateRecentFileList
+     * @param file
+     */
+    void updateRecentFileList(const QString& file);
+
   private:
     class vsInternals;
     vsInternals*                        m_Internals;
+
+    QMenuBar*                           m_MenuBar;
+
+    QString                                 m_OpenDialogLastDirectory = "";
+
+    /**
+     * @brief importFile
+     * @param filePath
+     */
+    bool importFile(const QString &filePath);
+
+    /**
+     * @brief openDREAM3DFile
+     * @param filePath
+     * @param instance
+     */
+    bool openDREAM3DFile(const QString &filePath);
 
     IMFViewer_UI(const IMFViewer_UI&); // Copy Constructor Not Implemented
     void operator=(const IMFViewer_UI&); // Operator '=' Not Implemented

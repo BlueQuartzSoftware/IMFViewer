@@ -36,9 +36,19 @@
 #include "IMFViewer_UI.h"
 
 #include <QtCore/QFileInfo>
+#include <QtCore/QMimeDatabase>
+
+#include <QtWidgets/QFileDialog>
+#include <QtWidgets/QMessageBox>
+
+#include "IMFViewer/Dialogs/LoadHDF5FileDialog.h"
+
+#include "SIMPLib/Utilities/SIMPLH5DataReader.h"
+#include "SIMPLib/Utilities/SIMPLH5DataReaderRequirements.h"
 
 #include "SVWidgetsLib/QtSupport/QtSSettings.h"
 #include "SVWidgetsLib/QtSupport/QtSRecentFileList.h"
+#include "SVWidgetsLib/Widgets/SIMPLViewMenuItems.h"
 
 #include "ui_IMFViewer_UI.h"
 
@@ -82,6 +92,12 @@ void IMFViewer_UI::setupGui()
 
   m_Internals->vsWidget->setFilterView(m_Internals->treeView);
   m_Internals->vsWidget->setInfoWidget(m_Internals->infoWidget);
+
+  createMenu();
+
+  // Connection to update the recent files list on all windows when it changes
+  QtSRecentFileList* recentsList = QtSRecentFileList::instance();
+  connect(recentsList, SIGNAL(fileListChanged(const QString&)), this, SLOT(updateRecentFileList(const QString&)));
 }
 
 // -----------------------------------------------------------------------------
@@ -105,19 +121,273 @@ void IMFViewer_UI::importData(const QString &filePath)
 // -----------------------------------------------------------------------------
 //
 // -----------------------------------------------------------------------------
-bool IMFViewer_UI::saveSession(const QString &sessionFilePath)
+void IMFViewer_UI::importFile()
 {
-  VSController* controller = m_Internals->vsWidget->getController();
-  return controller->saveSession(sessionFilePath);
+  QMimeDatabase db;
+
+  QMimeType pngType = db.mimeTypeForName("image/png");
+  QStringList pngSuffixes = pngType.suffixes();
+  QString pngSuffixStr = pngSuffixes.join(" *.");
+  pngSuffixStr.prepend("*.");
+
+  QMimeType tiffType = db.mimeTypeForName("image/tiff");
+  QStringList tiffSuffixes = tiffType.suffixes();
+  QString tiffSuffixStr = tiffSuffixes.join(" *.");
+  tiffSuffixStr.prepend("*.");
+
+  QMimeType jpegType = db.mimeTypeForName("image/jpeg");
+  QStringList jpegSuffixes = jpegType.suffixes();
+  QString jpegSuffixStr = jpegSuffixes.join(" *.");
+  jpegSuffixStr.prepend("*.");
+
+  // Open a file in the application
+  QString filter = tr("Data Files (*.dream3d *.vtk *.vti *.vtp *.vtr *.vts *.vtu *.stl %1 %3 %3);;"
+                      "DREAM.3D Files (*.dream3d);;"
+                      "Image Files (%1 %2 %3);;"
+                      "VTK Files (*.vtk *.vti *.vtp *.vtr *.vts *.vtu);;"
+                      "STL Files (*.stl)").arg(pngSuffixStr).arg(tiffSuffixStr).arg(jpegSuffixStr);
+  QString filePath = QFileDialog::getOpenFileName(this, "Open Input File", m_OpenDialogLastDirectory, filter);
+  if (filePath.isEmpty())
+  {
+    return;
+  }
+
+  importFile(filePath);
 }
 
 // -----------------------------------------------------------------------------
 //
 // -----------------------------------------------------------------------------
-bool IMFViewer_UI::loadSession(const QString &sessionFilePath)
+bool IMFViewer_UI::importFile(const QString &filePath)
 {
-  VSController* controller = m_Internals->vsWidget->getController();
-  return controller->loadSession(sessionFilePath);
+  QMimeDatabase db;
+
+  QMimeType mimeType = db.mimeTypeForFile(filePath, QMimeDatabase::MatchContent);
+  QString mimeName = mimeType.name();
+
+  QFileInfo fi(filePath);
+  QString ext = fi.completeSuffix().toLower();
+  bool success = false;
+  if (ext == "dream3d")
+  {
+    success = openDREAM3DFile(filePath);
+  }
+  else if (mimeType.inherits("image/png") || mimeType.inherits("image/tiff") || mimeType.inherits("image/jpeg"))
+  {
+    importData(filePath);
+    success = true;
+  }
+  else if (ext == "vtk" || ext == "vti" || ext == "vtp" || ext == "vtr"
+           || ext == "vts" || ext == "vtu")
+  {
+    importData(filePath);
+    success = true;
+  }
+  else if (ext == "stl")
+  {
+    importData(filePath);
+    success = true;
+  }
+  else
+  {
+    QMessageBox::critical(this, "Invalid File Type",
+                          tr("IMF Viewer failed to open the file because the file extension, '.%1', is not supported by the "
+                             "application.").arg(ext), QMessageBox::StandardButton::Ok);
+    return false;
+  }
+
+  if (success)
+  {
+    // Add file to the recent files list
+    QtSRecentFileList* list = QtSRecentFileList::instance();
+    list->addFile(filePath);
+  }
+
+  return success;
+}
+
+// -----------------------------------------------------------------------------
+//
+// -----------------------------------------------------------------------------
+bool IMFViewer_UI::openDREAM3DFile(const QString &filePath)
+{
+  QFileInfo fi(filePath);
+
+  SIMPLH5DataReader reader;
+  bool success = reader.openFile(filePath);
+  if (success)
+  {
+    int err = 0;
+    SIMPLH5DataReaderRequirements req(SIMPL::Defaults::AnyPrimitive, SIMPL::Defaults::AnyComponentSize, AttributeMatrix::Type::Any, IGeometry::Type::Any);
+    DataContainerArrayProxy proxy = reader.readDataContainerArrayStructure(&req, err);
+    if (proxy.dataContainers.isEmpty())
+    {
+      QMessageBox::critical(this, "Empty File",
+                            tr("IMF Viewer opened the file '%1', but it was empty.").arg(fi.fileName()), QMessageBox::StandardButton::Ok);
+      return false;
+    }
+
+    bool containsCellAttributeMatrices = false;
+    bool containsValidArrays = false;
+
+    QStringList dcNames = proxy.dataContainers.keys();
+    for (int i = 0; i < dcNames.size(); i++)
+    {
+      QString dcName = dcNames[i];
+      DataContainerProxy dcProxy = proxy.dataContainers[dcName];
+
+      // We want only data containers with geometries displayed
+      if (dcProxy.dcType == static_cast<unsigned int>(DataContainer::Type::Unknown))
+      {
+        proxy.dataContainers.remove(dcName);
+      }
+      else
+      {
+        QStringList amNames = dcProxy.attributeMatricies.keys();
+        for (int j = 0; j < amNames.size(); j++)
+        {
+          QString amName = amNames[j];
+          AttributeMatrixProxy amProxy = dcProxy.attributeMatricies[amName];
+
+          // We want only cell attribute matrices displayed
+          if (amProxy.amType != AttributeMatrix::Type::Cell)
+          {
+            dcProxy.attributeMatricies.remove(amName);
+            proxy.dataContainers[dcName] = dcProxy;
+          }
+          else
+          {
+            containsCellAttributeMatrices = true;
+
+            if (amProxy.dataArrays.size() > 0)
+            {
+              containsValidArrays = true;
+            }
+          }
+        }
+      }
+    }
+
+    if (proxy.dataContainers.size() <= 0)
+    {
+      QMessageBox::critical(this, "Invalid Data",
+                            tr("IMF Viewer failed to open file '%1' because the file does not "
+                               "contain any data containers with a supported geometry.").arg(fi.fileName()), QMessageBox::StandardButton::Ok);
+      return false;
+    }
+
+    QSharedPointer<LoadHDF5FileDialog> dialog = QSharedPointer<LoadHDF5FileDialog>(new LoadHDF5FileDialog());
+    dialog->setProxy(proxy);
+    int ret = dialog->exec();
+
+    if (ret == QDialog::Accepted)
+    {
+      DataContainerArrayProxy dcaProxy = dialog->getDataStructureProxy();
+      DataContainerArray::Pointer dca = reader.readSIMPLDataUsingProxy(dcaProxy, false);
+      importDataContainerArray(filePath, dca);
+      return true;
+    }
+  }
+
+  return false;
+}
+
+// -----------------------------------------------------------------------------
+//
+// -----------------------------------------------------------------------------
+void IMFViewer_UI::updateRecentFileList(const QString& file)
+{
+  SIMPLViewMenuItems* menuItems = SIMPLViewMenuItems::Instance();
+  QMenu* recentFilesMenu = menuItems->getMenuRecentFiles();
+  QAction* clearRecentFilesAction = menuItems->getActionClearRecentFiles();
+
+  // Clear the Recent Items Menu
+  recentFilesMenu->clear();
+
+  // Get the list from the static object
+  QStringList files = QtSRecentFileList::instance()->fileList();
+  foreach(QString file, files)
+  {
+    QAction* action = recentFilesMenu->addAction(QtSRecentFileList::instance()->parentAndFileName(file));
+    action->setData(file);
+    action->setVisible(true);
+    connect(action, SIGNAL(triggered()), this, SLOT(openRecentFile()));
+  }
+
+  recentFilesMenu->addSeparator();
+  recentFilesMenu->addAction(clearRecentFilesAction);
+}
+
+// -----------------------------------------------------------------------------
+//
+// -----------------------------------------------------------------------------
+void IMFViewer_UI::openRecentFile()
+{
+  QAction* action = qobject_cast<QAction*>(sender());
+
+  if(action)
+  {
+    QString filePath = action->data().toString();
+
+    bool success = importFile(filePath);
+
+    if (success)
+    {
+      m_OpenDialogLastDirectory = filePath;
+    }
+  }
+}
+
+// -----------------------------------------------------------------------------
+//
+// -----------------------------------------------------------------------------
+void IMFViewer_UI::saveSession()
+{
+    QMimeDatabase db;
+
+    QMimeType jsonType = db.mimeTypeForName("application/json");
+    QStringList jsonSuffixes = jsonType.suffixes();
+    QString jsonSuffixStr = jsonSuffixes.join(" *.");
+    jsonSuffixStr.prepend("*.");
+
+    // Open a file in the application
+    QString filter = tr("JSON Files (%1)").arg(jsonSuffixStr);
+    QString filePath = QFileDialog::getSaveFileName(this, "Open Input File", m_OpenDialogLastDirectory, filter);
+    if (filePath.isEmpty())
+    {
+      return;
+    }
+
+    m_OpenDialogLastDirectory = filePath;
+
+    VSController* controller = m_Internals->vsWidget->getController();
+    controller->saveSession(filePath);
+}
+
+// -----------------------------------------------------------------------------
+//
+// -----------------------------------------------------------------------------
+void IMFViewer_UI::loadSession()
+{
+    QMimeDatabase db;
+
+    QMimeType jsonType = db.mimeTypeForName("application/json");
+    QStringList jsonSuffixes = jsonType.suffixes();
+    QString jsonSuffixStr = jsonSuffixes.join(" *.");
+    jsonSuffixStr.prepend("*.");
+
+    // Open a file in the application
+    QString filter = tr("JSON Files (%1)").arg(jsonSuffixStr);
+    QString filePath = QFileDialog::getOpenFileName(this, "Open Session File", m_OpenDialogLastDirectory, filter);
+    if (filePath.isEmpty())
+    {
+      return;
+    }
+
+    m_OpenDialogLastDirectory = filePath;
+
+    VSController* controller = m_Internals->vsWidget->getController();
+    controller->loadSession(filePath);
 }
 
 // -----------------------------------------------------------------------------
@@ -187,3 +457,52 @@ void IMFViewer_UI::writeWindowSettings(QtSSettings* prefs)
   prefs->endGroup();
 }
 
+// -----------------------------------------------------------------------------
+//
+// -----------------------------------------------------------------------------
+QMenuBar* IMFViewer_UI::getMenuBar()
+{
+  return m_MenuBar;
+}
+
+// -----------------------------------------------------------------------------
+//
+// -----------------------------------------------------------------------------
+void IMFViewer_UI::createMenu()
+{
+  SIMPLViewMenuItems* menuItems = SIMPLViewMenuItems::Instance();
+
+  m_MenuBar = new QMenuBar();
+
+  // File Menu
+  QMenu* fileMenu = new QMenu("File", m_MenuBar);
+
+  QAction* importAction = new QAction("Import");
+  importAction->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_I));
+  connect(importAction, &QAction::triggered, this, static_cast<void (IMFViewer_UI::*)(void)>(&IMFViewer_UI::importFile));
+  fileMenu->addAction(importAction);
+
+  fileMenu->addSeparator();
+    
+  QAction* openAction = menuItems->getActionOpen();
+  connect(openAction, &QAction::triggered, this, &IMFViewer_UI::loadSession);
+  fileMenu->addAction(openAction);
+    
+  QAction* saveAction = menuItems->getActionSave();
+  connect(saveAction, &QAction::triggered, this, &IMFViewer_UI::saveSession);
+  fileMenu->addAction(saveAction);
+    
+  fileMenu->addSeparator();
+
+  QMenu* recentsMenu = menuItems->getMenuRecentFiles();
+  fileMenu->addMenu(recentsMenu);
+
+  m_MenuBar->addMenu(fileMenu);
+
+  // Add Filter Menu
+  QMenu* filterMenu = m_Internals->vsWidget->getFilterMenu();
+  m_MenuBar->addMenu(filterMenu);
+
+  // Apply Menu Bar
+  setMenuBar(m_MenuBar);
+}

@@ -39,31 +39,20 @@
 
 #include <QtCore/QDebug>
 #include <QtCore/QFile>
-#include <QtCore/QMimeDatabase>
-
-#include <QtWidgets/QFileDialog>
 
 #include "SVWidgetsLib/QtSupport/QtSStyles.h"
 #include "SVWidgetsLib/QtSupport/QtSRecentFileList.h"
 #include "SVWidgetsLib/Widgets/SIMPLViewMenuItems.h"
 
-#include "IMFViewer/IMFController.h"
 #include "IMFViewer/IMFViewer_UI.h"
 
 // -----------------------------------------------------------------------------
 //
 // -----------------------------------------------------------------------------
 IMFViewerApplication::IMFViewerApplication(int& argc, char** argv) :
-  QApplication(argc, argv),
-  m_Controller(new IMFController())
+  QApplication(argc, argv)
 {
 //  loadStyleSheet("light");
-
-  createApplicationMenu();
-
-  // Connection to update the recent files list on all windows when it changes
-  QtSRecentFileList* recentsList = QtSRecentFileList::instance();
-  connect(recentsList, SIGNAL(fileListChanged(const QString&)), this, SLOT(updateRecentFileList(const QString&)));
 }
 
 // -----------------------------------------------------------------------------
@@ -71,178 +60,7 @@ IMFViewerApplication::IMFViewerApplication(int& argc, char** argv) :
 // -----------------------------------------------------------------------------
 IMFViewerApplication::~IMFViewerApplication()
 {
-  delete m_Controller;
-}
 
-// -----------------------------------------------------------------------------
-//
-// -----------------------------------------------------------------------------
-void IMFViewerApplication::createApplicationMenu()
-{
-  SIMPLViewMenuItems* menuItems = SIMPLViewMenuItems::Instance();
-
-  m_ApplicationMenuBar = new QMenuBar();
-  QMenu* fileMenu = new QMenu("File", m_ApplicationMenuBar);
-
-  QAction* importAction = new QAction("Import");
-  importAction->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_I));
-  connect(importAction, &QAction::triggered, this, &IMFViewerApplication::importFile);
-  fileMenu->addAction(importAction);
-
-  fileMenu->addSeparator();
-
-  QAction* openAction = menuItems->getActionOpen();
-  connect(openAction, &QAction::triggered, this, &IMFViewerApplication::loadSession);
-  fileMenu->addAction(openAction);
-
-  QAction* saveAction = menuItems->getActionSave();
-  connect(saveAction, &QAction::triggered, this, &IMFViewerApplication::saveSession);
-  fileMenu->addAction(saveAction);
-
-  fileMenu->addSeparator();
-
-  QMenu* recentsMenu = menuItems->getMenuRecentFiles();
-  fileMenu->addMenu(recentsMenu);
-
-  m_ApplicationMenuBar->addMenu(fileMenu);
-}
-
-// -----------------------------------------------------------------------------
-//
-// -----------------------------------------------------------------------------
-void IMFViewerApplication::saveSession()
-{
-  if (m_ActiveInstance != nullptr)
-  {
-    QMimeDatabase db;
-
-    QMimeType jsonType = db.mimeTypeForName("application/json");
-    QStringList jsonSuffixes = jsonType.suffixes();
-    QString jsonSuffixStr = jsonSuffixes.join(" *.");
-    jsonSuffixStr.prepend("*.");
-
-    // Open a file in the application
-    QString filter = tr("JSON Files (%1)").arg(jsonSuffixStr);
-    QString filePath = QFileDialog::getSaveFileName(m_ActiveInstance, "Open Input File", m_OpenDialogLastDirectory, filter);
-    if (filePath.isEmpty())
-    {
-      return;
-    }
-
-    m_ActiveInstance->saveSession(filePath);
-  }
-}
-
-// -----------------------------------------------------------------------------
-//
-// -----------------------------------------------------------------------------
-void IMFViewerApplication::loadSession()
-{
-  if (m_ActiveInstance != nullptr)
-  {
-    QMimeDatabase db;
-
-    QMimeType jsonType = db.mimeTypeForName("application/json");
-    QStringList jsonSuffixes = jsonType.suffixes();
-    QString jsonSuffixStr = jsonSuffixes.join(" *.");
-    jsonSuffixStr.prepend("*.");
-
-    // Open a file in the application
-    QString filter = tr("JSON Files (%1)").arg(jsonSuffixStr);
-    QString filePath = QFileDialog::getOpenFileName(m_ActiveInstance, "Open Session File", m_OpenDialogLastDirectory, filter);
-    if (filePath.isEmpty())
-    {
-      return;
-    }
-
-    m_ActiveInstance->loadSession(filePath);
-  }
-}
-
-// -----------------------------------------------------------------------------
-//
-// -----------------------------------------------------------------------------
-void IMFViewerApplication::updateRecentFileList(const QString& file)
-{
-  SIMPLViewMenuItems* menuItems = SIMPLViewMenuItems::Instance();
-  QMenu* recentFilesMenu = menuItems->getMenuRecentFiles();
-  QAction* clearRecentFilesAction = menuItems->getActionClearRecentFiles();
-
-  // Clear the Recent Items Menu
-  recentFilesMenu->clear();
-
-  // Get the list from the static object
-  QStringList files = QtSRecentFileList::instance()->fileList();
-  foreach(QString file, files)
-  {
-    QAction* action = recentFilesMenu->addAction(QtSRecentFileList::instance()->parentAndFileName(file));
-    action->setData(file);
-    action->setVisible(true);
-    connect(action, SIGNAL(triggered()), this, SLOT(openRecentFile()));
-  }
-
-  recentFilesMenu->addSeparator();
-  recentFilesMenu->addAction(clearRecentFilesAction);
-}
-
-// -----------------------------------------------------------------------------
-//
-// -----------------------------------------------------------------------------
-void IMFViewerApplication::openRecentFile()
-{
-  QAction* action = qobject_cast<QAction*>(sender());
-
-  if(action && m_ActiveInstance)
-  {
-    QString filePath = action->data().toString();
-
-    bool success = m_Controller->importFile(filePath, m_ActiveInstance);
-
-    if (success)
-    {
-      m_OpenDialogLastDirectory = filePath;
-    }
-  }
-}
-
-// -----------------------------------------------------------------------------
-//
-// -----------------------------------------------------------------------------
-void IMFViewerApplication::importFile()
-{
-  if (m_ActiveInstance != nullptr)
-  {
-    QMimeDatabase db;
-
-    QMimeType pngType = db.mimeTypeForName("image/png");
-    QStringList pngSuffixes = pngType.suffixes();
-    QString pngSuffixStr = pngSuffixes.join(" *.");
-    pngSuffixStr.prepend("*.");
-
-    QMimeType tiffType = db.mimeTypeForName("image/tiff");
-    QStringList tiffSuffixes = tiffType.suffixes();
-    QString tiffSuffixStr = tiffSuffixes.join(" *.");
-    tiffSuffixStr.prepend("*.");
-
-    QMimeType jpegType = db.mimeTypeForName("image/jpeg");
-    QStringList jpegSuffixes = jpegType.suffixes();
-    QString jpegSuffixStr = jpegSuffixes.join(" *.");
-    jpegSuffixStr.prepend("*.");
-
-    // Open a file in the application
-    QString filter = tr("Data Files (*.dream3d *.vtk *.vti *.vtp *.vtr *.vts *.vtu *.stl %1 %3 %3);;"
-                        "DREAM.3D Files (*.dream3d);;"
-                        "Image Files (%1 %2 %3);;"
-                        "VTK Files (*.vtk *.vti *.vtp *.vtr *.vts *.vtu);;"
-                        "STL Files (*.stl)").arg(pngSuffixStr).arg(tiffSuffixStr).arg(jpegSuffixStr);
-    QString filePath = QFileDialog::getOpenFileName(m_ActiveInstance, "Open Input File", m_OpenDialogLastDirectory, filter);
-    if (filePath.isEmpty())
-    {
-      return;
-    }
-
-    m_Controller->importFile(filePath, m_ActiveInstance);
-  }
 }
 
 // -----------------------------------------------------------------------------
@@ -254,10 +72,6 @@ IMFViewer_UI* IMFViewerApplication::getNewIMFViewerInstance()
   IMFViewer_UI* newInstance = new IMFViewer_UI(NULL);
   newInstance->setAttribute(Qt::WA_DeleteOnClose);
   newInstance->setWindowTitle("IMF Viewer");
-
-  #if defined(Q_OS_WIN)
-  newInstance->setMenuBar(m_ApplicationMenuBar);
-  #endif
 
   setActiveInstance(newInstance);
 
@@ -280,18 +94,10 @@ void IMFViewerApplication::loadStyleSheet(const QString &sheetName)
 // -----------------------------------------------------------------------------
 void IMFViewerApplication::setActiveInstance(IMFViewer_UI* instance)
 {
-  if (instance == nullptr)
+  if (nullptr == instance)
   {
     return;
   }
-
-  // Disconnections from the old instance
-  if (m_ActiveInstance != nullptr)
-  {
-
-  }
-
-  // Connections to the new instance
 
   m_ActiveInstance = instance;
 }
