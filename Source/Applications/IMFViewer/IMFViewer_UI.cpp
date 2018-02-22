@@ -437,6 +437,11 @@ void IMFViewer_UI::readWindowSettings(QtSSettings* prefs)
     restoreState(layout_data);
   }
 
+  QByteArray splitterGeometry = prefs->value("Splitter_Geometry", QByteArray());
+  m_Internals->splitter->restoreGeometry(splitterGeometry);
+  QByteArray splitterSizes = prefs->value("Splitter_Sizes", QByteArray());
+  m_Internals->splitter->restoreState(splitterSizes);
+
   prefs->endGroup();
 }
 
@@ -463,6 +468,11 @@ void IMFViewer_UI::writeWindowSettings(QtSSettings* prefs)
   QByteArray layout_data = saveState();
   prefs->setValue(QString("MainWindowGeometry"), geo_data);
   prefs->setValue(QString("MainWindowState"), layout_data);
+
+  QByteArray splitterGeometry = m_Internals->splitter->saveGeometry();
+  QByteArray splitterSizes = m_Internals->splitter->saveState();
+  prefs->setValue(QString("Splitter_Geometry"), splitterGeometry);
+  prefs->setValue(QString("Splitter_Sizes"), splitterSizes);
 
   prefs->endGroup();
 }
