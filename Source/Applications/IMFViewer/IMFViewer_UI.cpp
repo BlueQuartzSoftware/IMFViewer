@@ -88,16 +88,16 @@ IMFViewer_UI::~IMFViewer_UI()
 // -----------------------------------------------------------------------------
 void IMFViewer_UI::setupGui()
 {
+  // Connection to update the recent files list on all windows when it changes
+  QtSRecentFileList* recentsList = QtSRecentFileList::instance(5, this);
+  connect(recentsList, SIGNAL(fileListChanged(const QString&)), this, SLOT(updateRecentFileList(const QString&)));
+
   readSettings();
 
   m_Internals->vsWidget->setFilterView(m_Internals->treeView);
   m_Internals->vsWidget->setInfoWidget(m_Internals->infoWidget);
 
   createMenu();
-
-  // Connection to update the recent files list on all windows when it changes
-  QtSRecentFileList* recentsList = QtSRecentFileList::instance();
-  connect(recentsList, SIGNAL(fileListChanged(const QString&)), this, SLOT(updateRecentFileList(const QString&)));
 }
 
 // -----------------------------------------------------------------------------
@@ -194,13 +194,6 @@ bool IMFViewer_UI::importFile(const QString &filePath)
                           tr("IMF Viewer failed to open the file because the file extension, '.%1', is not supported by the "
                              "application.").arg(ext), QMessageBox::StandardButton::Ok);
     return false;
-  }
-
-  if (success)
-  {
-    // Add file to the recent files list
-    QtSRecentFileList* list = QtSRecentFileList::instance();
-    list->addFile(filePath);
   }
 
   return success;
@@ -329,12 +322,7 @@ void IMFViewer_UI::openRecentFile()
   {
     QString filePath = action->data().toString();
 
-    bool success = importFile(filePath);
-
-    if (success)
-    {
-      m_OpenDialogLastDirectory = filePath;
-    }
+    loadSessionFromFile(filePath);
   }
 }
 
@@ -361,7 +349,14 @@ void IMFViewer_UI::saveSession()
     m_OpenDialogLastDirectory = filePath;
 
     VSController* controller = m_Internals->vsWidget->getController();
-    controller->saveSession(filePath);
+    bool success = controller->saveSession(filePath);
+
+    if (success)
+    {
+      // Add file to the recent files list
+      QtSRecentFileList* list = QtSRecentFileList::instance();
+      list->addFile(filePath);
+    }
 }
 
 // -----------------------------------------------------------------------------
@@ -386,8 +381,23 @@ void IMFViewer_UI::loadSession()
 
     m_OpenDialogLastDirectory = filePath;
 
-    VSController* controller = m_Internals->vsWidget->getController();
-    controller->loadSession(filePath);
+    loadSessionFromFile(filePath);
+}
+
+// -----------------------------------------------------------------------------
+//
+// -----------------------------------------------------------------------------
+void IMFViewer_UI::loadSessionFromFile(const QString &filePath)
+{
+  VSController* controller = m_Internals->vsWidget->getController();
+  bool success = controller->loadSession(filePath);
+
+  if (success)
+  {
+    // Add file to the recent files list
+    QtSRecentFileList* list = QtSRecentFileList::instance();
+    list->addFile(filePath);
+  }
 }
 
 // -----------------------------------------------------------------------------
@@ -496,6 +506,22 @@ void IMFViewer_UI::createMenu()
 
   QMenu* recentsMenu = menuItems->getMenuRecentFiles();
   fileMenu->addMenu(recentsMenu);
+
+  QAction* clearRecentsAction = menuItems->getActionClearRecentFiles();
+  connect(clearRecentsAction, &QAction::triggered, [=] {
+    // Clear the Recent Items Menu
+    recentsMenu->clear();
+    recentsMenu->addSeparator();
+    recentsMenu->addAction(clearRecentsAction);
+
+    // Clear the actual list
+    QtSRecentFileList* recents = QtSRecentFileList::instance();
+    recents->clear();
+
+    // Write out the empty list
+    QSharedPointer<QtSSettings> prefs = QSharedPointer<QtSSettings>(new QtSSettings());
+    recents->writeList(prefs.data());
+  });
 
   m_MenuBar->addMenu(fileMenu);
 
