@@ -135,7 +135,9 @@ class IMFViewer_UI : public QMainWindow
     class vsInternals;
     vsInternals*                        m_Internals;
 
-    QMenuBar*                           m_MenuBar;
+    QMenuBar*                           m_MenuBar = nullptr;
+    QMenu*                              m_RecentFilesMenu = nullptr;
+    QAction*                            m_ClearRecentsAction = nullptr;
 
     QString                                 m_OpenDialogLastDirectory = "";
 

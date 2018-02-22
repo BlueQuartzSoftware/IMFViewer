@@ -37,12 +37,9 @@
 
 #include "IMFViewerApplication.h"
 
-#include <QtCore/QDebug>
 #include <QtCore/QFile>
 
 #include "SVWidgetsLib/QtSupport/QtSStyles.h"
-#include "SVWidgetsLib/QtSupport/QtSRecentFileList.h"
-#include "SVWidgetsLib/Widgets/SIMPLViewMenuItems.h"
 
 #include "IMFViewer/IMFViewer_UI.h"
 

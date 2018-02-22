@@ -48,7 +48,6 @@
 
 #include "SVWidgetsLib/QtSupport/QtSSettings.h"
 #include "SVWidgetsLib/QtSupport/QtSRecentFileList.h"
-#include "SVWidgetsLib/Widgets/SIMPLViewMenuItems.h"
 
 #include "ui_IMFViewer_UI.h"
 
@@ -80,6 +79,9 @@ IMFViewer_UI::IMFViewer_UI(QWidget* parent) :
 // -----------------------------------------------------------------------------
 IMFViewer_UI::~IMFViewer_UI()
 {
+  delete m_RecentFilesMenu;
+  delete m_ClearRecentsAction;
+
   writeSettings();
 }
 
@@ -92,12 +94,12 @@ void IMFViewer_UI::setupGui()
   QtSRecentFileList* recentsList = QtSRecentFileList::instance(5, this);
   connect(recentsList, SIGNAL(fileListChanged(const QString&)), this, SLOT(updateRecentFileList(const QString&)));
 
+  createMenu();
+
   readSettings();
 
   m_Internals->vsWidget->setFilterView(m_Internals->treeView);
   m_Internals->vsWidget->setInfoWidget(m_Internals->infoWidget);
-
-  createMenu();
 }
 
 // -----------------------------------------------------------------------------
@@ -290,25 +292,22 @@ bool IMFViewer_UI::openDREAM3DFile(const QString &filePath)
 // -----------------------------------------------------------------------------
 void IMFViewer_UI::updateRecentFileList(const QString& file)
 {
-  SIMPLViewMenuItems* menuItems = SIMPLViewMenuItems::Instance();
-  QMenu* recentFilesMenu = menuItems->getMenuRecentFiles();
-  QAction* clearRecentFilesAction = menuItems->getActionClearRecentFiles();
-
   // Clear the Recent Items Menu
-  recentFilesMenu->clear();
+  m_RecentFilesMenu->clear();
 
   // Get the list from the static object
   QStringList files = QtSRecentFileList::instance()->fileList();
   foreach(QString file, files)
   {
-    QAction* action = recentFilesMenu->addAction(QtSRecentFileList::instance()->parentAndFileName(file));
+    QAction* action = m_RecentFilesMenu->addAction(QtSRecentFileList::instance()->parentAndFileName(file));
     action->setData(file);
     action->setVisible(true);
     connect(action, SIGNAL(triggered()), this, SLOT(openRecentFile()));
   }
 
-  recentFilesMenu->addSeparator();
-  recentFilesMenu->addAction(clearRecentFilesAction);
+  m_RecentFilesMenu->addSeparator();
+
+  m_RecentFilesMenu->addAction(m_ClearRecentsAction);
 }
 
 // -----------------------------------------------------------------------------
@@ -490,39 +489,39 @@ QMenuBar* IMFViewer_UI::getMenuBar()
 // -----------------------------------------------------------------------------
 void IMFViewer_UI::createMenu()
 {
-  SIMPLViewMenuItems* menuItems = SIMPLViewMenuItems::Instance();
-
   m_MenuBar = new QMenuBar();
 
   // File Menu
   QMenu* fileMenu = new QMenu("File", m_MenuBar);
 
-  QAction* importAction = new QAction("Import");
+  QAction* importAction = new QAction("Import Data");
   importAction->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_I));
   connect(importAction, &QAction::triggered, this, static_cast<void (IMFViewer_UI::*)(void)>(&IMFViewer_UI::importFile));
   fileMenu->addAction(importAction);
 
   fileMenu->addSeparator();
     
-  QAction* openAction = menuItems->getActionOpen();
+  QAction* openAction = new QAction("Open Session");
+  openAction->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_O));
   connect(openAction, &QAction::triggered, this, &IMFViewer_UI::loadSession);
   fileMenu->addAction(openAction);
     
-  QAction* saveAction = menuItems->getActionSave();
+  QAction* saveAction = new QAction("Save Session");
+  openAction->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_S));
   connect(saveAction, &QAction::triggered, this, &IMFViewer_UI::saveSession);
   fileMenu->addAction(saveAction);
     
   fileMenu->addSeparator();
 
-  QMenu* recentsMenu = menuItems->getMenuRecentFiles();
-  fileMenu->addMenu(recentsMenu);
+  m_RecentFilesMenu = new QMenu("Recent Sessions", this);
+  fileMenu->addMenu(m_RecentFilesMenu);
 
-  QAction* clearRecentsAction = menuItems->getActionClearRecentFiles();
-  connect(clearRecentsAction, &QAction::triggered, [=] {
+  m_ClearRecentsAction = new QAction("Clear Recent Sessions", this);
+  connect(m_ClearRecentsAction, &QAction::triggered, [=] {
     // Clear the Recent Items Menu
-    recentsMenu->clear();
-    recentsMenu->addSeparator();
-    recentsMenu->addAction(clearRecentsAction);
+    m_RecentFilesMenu->clear();
+    m_RecentFilesMenu->addSeparator();
+    m_RecentFilesMenu->addAction(m_ClearRecentsAction);
 
     // Clear the actual list
     QtSRecentFileList* recents = QtSRecentFileList::instance();
