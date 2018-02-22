@@ -140,6 +140,13 @@ class IMFViewer_UI : public QMainWindow
     QString                                 m_OpenDialogLastDirectory = "";
 
     /**
+     * @brief loadSession
+     * @param filePath
+     * @return
+     */
+    void loadSessionFromFile(const QString &filePath);
+
+    /**
      * @brief importFile
      * @param filePath
      */
