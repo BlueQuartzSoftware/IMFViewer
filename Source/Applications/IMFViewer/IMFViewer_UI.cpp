@@ -140,12 +140,17 @@ void IMFViewer_UI::importFile()
   QString jpegSuffixStr = jpegSuffixes.join(" *.");
   jpegSuffixStr.prepend("*.");
 
+  QMimeType bmpType = db.mimeTypeForName("image/bmp");
+  QStringList bmpSuffixes = bmpType.suffixes();
+  QString bmpSuffixStr = bmpSuffixes.join(" *.");
+  bmpSuffixStr.prepend("*.");
+
   // Open a file in the application
-  QString filter = tr("Data Files (*.dream3d *.vtk *.vti *.vtp *.vtr *.vts *.vtu *.stl %1 %3 %3);;"
+  QString filter = tr("Data Files (*.dream3d *.vtk *.vti *.vtp *.vtr *.vts *.vtu *.stl %1 %3 %3 %4);;"
                       "DREAM.3D Files (*.dream3d);;"
-                      "Image Files (%1 %2 %3);;"
+                      "Image Files (%1 %2 %3 %4);;"
                       "VTK Files (*.vtk *.vti *.vtp *.vtr *.vts *.vtu);;"
-                      "STL Files (*.stl)").arg(pngSuffixStr).arg(tiffSuffixStr).arg(jpegSuffixStr);
+                      "STL Files (*.stl)").arg(pngSuffixStr).arg(tiffSuffixStr).arg(jpegSuffixStr).arg(bmpSuffixStr);
   QString filePath = QFileDialog::getOpenFileName(this, "Open Input File", m_OpenDialogLastDirectory, filter);
   if (filePath.isEmpty())
   {
@@ -172,7 +177,7 @@ bool IMFViewer_UI::importFile(const QString &filePath)
   {
     success = openDREAM3DFile(filePath);
   }
-  else if (mimeType.inherits("image/png") || mimeType.inherits("image/tiff") || mimeType.inherits("image/jpeg"))
+  else if (mimeType.inherits("image/png") || mimeType.inherits("image/tiff") || mimeType.inherits("image/jpeg") || mimeType.inherits("image/bmp"))
   {
     importData(filePath);
     success = true;
