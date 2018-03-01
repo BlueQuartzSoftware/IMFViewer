@@ -35,6 +35,9 @@
 
 #pragma once
 
+#include <QtCore/QSemaphore>
+#include <QtCore/QFutureWatcher>
+
 #include <QtWidgets/QMainWindow>
 #include <QtWidgets/QMenuBar>
 
@@ -116,9 +119,9 @@ class IMFViewer_UI : public QMainWindow
 
   protected slots:
     /**
-     * @brief importFile
+     * @brief importFiles
      */
-    void importFile();
+    void importFiles();
 
     /**
      * @brief openRecentFile
@@ -131,6 +134,24 @@ class IMFViewer_UI : public QMainWindow
      */
     void updateRecentFileList(const QString& file);
 
+  signals:
+    void proxyFromFilePathGenerated(DataContainerArrayProxy proxy, const QString &filePath);
+
+  private slots:
+    /**
+     * @brief generateError
+     * @param title
+     * @param msg
+     * @param code
+     */
+    void generateError(const QString &title, const QString &msg, const int &code);
+
+    /**
+     * @brief launchSIMPLSelectionDialog
+     * @param proxy
+     */
+    void launchSIMPLSelectionDialog(DataContainerArrayProxy proxy, const QString &filePath);
+
   private:
     class vsInternals;
     vsInternals*                        m_Internals;
@@ -140,6 +161,11 @@ class IMFViewer_UI : public QMainWindow
     QAction*                            m_ClearRecentsAction = nullptr;
 
     QString                                 m_OpenDialogLastDirectory = "";
+
+    QStringList                         m_ImportFileOrder;
+    QSemaphore                          m_ImportFileOrderLock;
+    QVector< QSharedPointer<QFutureWatcher<void>> >   m_ImportFileWatchers;
+    int                                 m_NumOfFinishedImportFileThreads = 0;
 
     /**
      * @brief loadSession
@@ -152,14 +178,14 @@ class IMFViewer_UI : public QMainWindow
      * @brief importFile
      * @param filePath
      */
-    bool importFile(const QString &filePath);
+    void importFilesUsingThread();
 
     /**
      * @brief openDREAM3DFile
      * @param filePath
      * @param instance
      */
-    bool openDREAM3DFile(const QString &filePath);
+    void openDREAM3DFile(const QString &filePath);
 
     IMFViewer_UI(const IMFViewer_UI&); // Copy Constructor Not Implemented
     void operator=(const IMFViewer_UI&); // Operator '=' Not Implemented

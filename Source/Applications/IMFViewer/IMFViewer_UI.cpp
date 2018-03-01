@@ -35,6 +35,8 @@
 
 #include "IMFViewer_UI.h"
 
+#include <QtConcurrent>
+
 #include <QtCore/QFileInfo>
 #include <QtCore/QMimeDatabase>
 
@@ -68,6 +70,7 @@ public:
 IMFViewer_UI::IMFViewer_UI(QWidget* parent) :
   QMainWindow(parent)
 , m_Internals(new vsInternals())
+, m_ImportFileOrderLock(1)
 {
   m_Internals->setupUi(this);
 
@@ -93,6 +96,8 @@ void IMFViewer_UI::setupGui()
   // Connection to update the recent files list on all windows when it changes
   QtSRecentFileList* recentsList = QtSRecentFileList::instance(5, this);
   connect(recentsList, SIGNAL(fileListChanged(const QString&)), this, SLOT(updateRecentFileList(const QString&)));
+
+  connect(this, SIGNAL(proxyFromFilePathGenerated(DataContainerArrayProxy, const QString &)), this, SLOT(launchSIMPLSelectionDialog(DataContainerArrayProxy, const QString &)));
 
   createMenu();
 
@@ -123,8 +128,12 @@ void IMFViewer_UI::importData(const QString &filePath)
 // -----------------------------------------------------------------------------
 //
 // -----------------------------------------------------------------------------
-void IMFViewer_UI::importFile()
+void IMFViewer_UI::importFiles()
 {
+  m_NumOfFinishedImportFileThreads = 0;
+  m_ImportFileOrder.clear();
+  m_ImportFileWatchers.clear();
+
   QMimeDatabase db;
 
   QMimeType pngType = db.mimeTypeForName("image/png");
@@ -148,67 +157,97 @@ void IMFViewer_UI::importFile()
                       "Image Files (%1 %2 %3);;"
                       "VTK Files (*.vtk *.vti *.vtp *.vtr *.vts *.vtu);;"
                       "STL Files (*.stl)").arg(pngSuffixStr).arg(tiffSuffixStr).arg(jpegSuffixStr);
-  QString filePath = QFileDialog::getOpenFileName(this, "Open Input File", m_OpenDialogLastDirectory, filter);
-  if (filePath.isEmpty())
+  m_ImportFileOrder = QFileDialog::getOpenFileNames(this, "Open Input File", m_OpenDialogLastDirectory, filter);
+  if (m_ImportFileOrder.isEmpty())
   {
     return;
   }
 
-  importFile(filePath);
+  size_t threadCount = QThreadPool::globalInstance()->maxThreadCount();
+  if (m_ImportFileOrder.size() < threadCount)
+  {
+    threadCount = m_ImportFileOrder.size();
+  }
+
+  for (int i = 0; i < threadCount; i++)
+  {
+    QSharedPointer<QFutureWatcher<void>> watcher(new QFutureWatcher<void>());
+    connect(watcher.data(), &QFutureWatcher<void>::finished, this, [=] {
+      m_NumOfFinishedImportFileThreads++;
+
+      if (m_NumOfFinishedImportFileThreads == threadCount)
+      {
+
+      }
+    });
+
+    QFuture<void> future = QtConcurrent::run(this, &IMFViewer_UI::importFilesUsingThread);
+    watcher->setFuture(future);
+
+    m_ImportFileWatchers.push_back(watcher);
+  }
 }
 
 // -----------------------------------------------------------------------------
 //
 // -----------------------------------------------------------------------------
-bool IMFViewer_UI::importFile(const QString &filePath)
+void IMFViewer_UI::importFilesUsingThread()
 {
-  QMimeDatabase db;
+  while (m_ImportFileOrder.size() > 0)
+  {
+    if (m_ImportFileOrderLock.tryAcquire() == true)
+    {
+      QString filePath = m_ImportFileOrder.front();
+      m_ImportFileOrder.pop_front();
 
-  QMimeType mimeType = db.mimeTypeForFile(filePath, QMimeDatabase::MatchContent);
-  QString mimeName = mimeType.name();
+      m_ImportFileOrderLock.release();
 
-  QFileInfo fi(filePath);
-  QString ext = fi.completeSuffix().toLower();
-  bool success = false;
-  if (ext == "dream3d")
-  {
-    success = openDREAM3DFile(filePath);
-  }
-  else if (mimeType.inherits("image/png") || mimeType.inherits("image/tiff") || mimeType.inherits("image/jpeg"))
-  {
-    importData(filePath);
-    success = true;
-  }
-  else if (ext == "vtk" || ext == "vti" || ext == "vtp" || ext == "vtr"
-           || ext == "vts" || ext == "vtu")
-  {
-    importData(filePath);
-    success = true;
-  }
-  else if (ext == "stl")
-  {
-    importData(filePath);
-    success = true;
-  }
-  else
-  {
-    QMessageBox::critical(this, "Invalid File Type",
-                          tr("IMF Viewer failed to open the file because the file extension, '.%1', is not supported by the "
-                             "application.").arg(ext), QMessageBox::StandardButton::Ok);
-    return false;
-  }
+      QMimeDatabase db;
 
-  return success;
+      QMimeType mimeType = db.mimeTypeForFile(filePath, QMimeDatabase::MatchContent);
+      QString mimeName = mimeType.name();
+
+      QFileInfo fi(filePath);
+      QString ext = fi.completeSuffix().toLower();
+      if (ext == "dream3d")
+      {
+        openDREAM3DFile(filePath);
+      }
+      else if (mimeType.inherits("image/png") || mimeType.inherits("image/tiff") || mimeType.inherits("image/jpeg"))
+      {
+        importData(filePath);
+      }
+      else if (ext == "vtk" || ext == "vti" || ext == "vtp" || ext == "vtr"
+               || ext == "vts" || ext == "vtu")
+      {
+        importData(filePath);
+      }
+      else if (ext == "stl")
+      {
+        importData(filePath);
+      }
+      else
+      {
+        QMessageBox::critical(this, "Invalid File Type",
+                              tr("IMF Viewer failed to open the file because the file extension, '.%1', is not supported by the "
+                                 "application.").arg(ext), QMessageBox::StandardButton::Ok);
+        continue;
+      }
+    }
+  }
 }
 
 // -----------------------------------------------------------------------------
 //
 // -----------------------------------------------------------------------------
-bool IMFViewer_UI::openDREAM3DFile(const QString &filePath)
+void IMFViewer_UI::openDREAM3DFile(const QString &filePath)
 {
   QFileInfo fi(filePath);
 
   SIMPLH5DataReader reader;
+  connect(&reader, SIGNAL(errorGenerated(const QString &, const QString &, const int &)),
+          this, SLOT(generateError(const QString &, const QString &, const int &)));
+
   bool success = reader.openFile(filePath);
   if (success)
   {
@@ -217,9 +256,7 @@ bool IMFViewer_UI::openDREAM3DFile(const QString &filePath)
     DataContainerArrayProxy proxy = reader.readDataContainerArrayStructure(&req, err);
     if (proxy.dataContainers.isEmpty())
     {
-      QMessageBox::critical(this, "Empty File",
-                            tr("IMF Viewer opened the file '%1', but it was empty.").arg(fi.fileName()), QMessageBox::StandardButton::Ok);
-      return false;
+      return;
     }
 
     bool containsCellAttributeMatrices = false;
@@ -268,23 +305,45 @@ bool IMFViewer_UI::openDREAM3DFile(const QString &filePath)
       QMessageBox::critical(this, "Invalid Data",
                             tr("IMF Viewer failed to open file '%1' because the file does not "
                                "contain any data containers with a supported geometry.").arg(fi.fileName()), QMessageBox::StandardButton::Ok);
-      return false;
+      return;
     }
 
-    QSharedPointer<LoadHDF5FileDialog> dialog = QSharedPointer<LoadHDF5FileDialog>(new LoadHDF5FileDialog());
-    dialog->setProxy(proxy);
-    int ret = dialog->exec();
-
-    if (ret == QDialog::Accepted)
-    {
-      DataContainerArrayProxy dcaProxy = dialog->getDataStructureProxy();
-      DataContainerArray::Pointer dca = reader.readSIMPLDataUsingProxy(dcaProxy, false);
-      importDataContainerArray(filePath, dca);
-      return true;
-    }
+    emit proxyFromFilePathGenerated(proxy, filePath);
   }
+}
 
-  return false;
+// -----------------------------------------------------------------------------
+//
+// -----------------------------------------------------------------------------
+void IMFViewer_UI::launchSIMPLSelectionDialog(DataContainerArrayProxy proxy, const QString &filePath)
+{
+  QSharedPointer<LoadHDF5FileDialog> dialog = QSharedPointer<LoadHDF5FileDialog>(new LoadHDF5FileDialog());
+  dialog->setProxy(proxy);
+  int ret = dialog->exec();
+
+  if (ret == QDialog::Accepted)
+  {
+    SIMPLH5DataReader reader;
+    connect(&reader, SIGNAL(errorGenerated(const QString &, const QString &, const int &)),
+            this, SLOT(generateError(const QString &, const QString &, const int &)));
+
+    DataContainerArrayProxy dcaProxy = dialog->getDataStructureProxy();
+    DataContainerArray::Pointer dca = reader.readSIMPLDataUsingProxy(dcaProxy, false);
+    if (dca.get() != nullptr)
+    {
+      return;
+    }
+
+    importDataContainerArray(filePath, dca);
+  }
+}
+
+// -----------------------------------------------------------------------------
+//
+// -----------------------------------------------------------------------------
+void IMFViewer_UI::generateError(const QString &title, const QString &msg, const int &code)
+{
+  QMessageBox::critical(this, title, msg, QMessageBox::StandardButton::Ok);
 }
 
 // -----------------------------------------------------------------------------
@@ -496,7 +555,7 @@ void IMFViewer_UI::createMenu()
 
   QAction* importAction = new QAction("Import Data");
   importAction->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_I));
-  connect(importAction, &QAction::triggered, this, static_cast<void (IMFViewer_UI::*)(void)>(&IMFViewer_UI::importFile));
+  connect(importAction, &QAction::triggered, this, static_cast<void (IMFViewer_UI::*)(void)>(&IMFViewer_UI::importFiles));
   fileMenu->addAction(importAction);
 
   fileMenu->addSeparator();

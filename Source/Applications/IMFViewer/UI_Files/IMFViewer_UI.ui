@@ -76,6 +76,9 @@
              <height>250</height>
             </size>
            </property>
+           <property name="selectionMode">
+            <enum>QAbstractItemView::ExtendedSelection</enum>
+           </property>
           </widget>
           <widget class="VSInfoWidget" name="infoWidget" native="true">
            <property name="sizePolicy">
