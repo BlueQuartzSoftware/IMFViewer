@@ -120,10 +120,15 @@ void IMFViewer_UI::importFiles()
   QString jpegSuffixStr = jpegSuffixes.join(" *.");
   jpegSuffixStr.prepend("*.");
 
+  QMimeType bmpType = db.mimeTypeForName("image/bmp");
+  QStringList bmpSuffixes = bmpType.suffixes();
+  QString bmpSuffixStr = bmpSuffixes.join(" *.");
+  bmpSuffixStr.prepend("*.");
+
   // Open a file in the application
-  QString filter = tr("Data Files (*.dream3d *.vtk *.vti *.vtp *.vtr *.vts *.vtu *.stl %1 %3 %3);;"
+  QString filter = tr("Data Files (*.dream3d *.vtk *.vti *.vtp *.vtr *.vts *.vtu *.stl %1 %3 %3 %4);;"
                       "DREAM.3D Files (*.dream3d);;"
-                      "Image Files (%1 %2 %3);;"
+                      "Image Files (%1 %2 %3 %4);;"
                       "VTK Files (*.vtk *.vti *.vtp *.vtr *.vts *.vtu);;"
                       "STL Files (*.stl)").arg(pngSuffixStr).arg(tiffSuffixStr).arg(jpegSuffixStr);
   QStringList filePaths = QFileDialog::getOpenFileNames(this, "Open Input File", m_OpenDialogLastDirectory, filter);
