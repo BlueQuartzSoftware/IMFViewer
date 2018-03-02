@@ -35,9 +35,6 @@
 
 #pragma once
 
-#include <QtCore/QSemaphore>
-#include <QtCore/QFutureWatcher>
-
 #include <QtWidgets/QMainWindow>
 #include <QtWidgets/QMenuBar>
 
@@ -52,19 +49,6 @@ class IMFViewer_UI : public QMainWindow
   public:
     IMFViewer_UI(QWidget* parent = 0);
     ~IMFViewer_UI();
-
-    /**
-     * @brief displayDataContainerArray
-     * @param filePath
-     * @param dca
-     */
-    void importDataContainerArray(QString filePath, DataContainerArray::Pointer dca);
-
-    /**
-     * @brief importData
-     * @param filePath
-     */
-    void importData(const QString &filePath);
 
     /**
      * @brief Saves this session to a file
@@ -134,24 +118,6 @@ class IMFViewer_UI : public QMainWindow
      */
     void updateRecentFileList(const QString& file);
 
-  signals:
-    void proxyFromFilePathGenerated(DataContainerArrayProxy proxy, const QString &filePath);
-
-  private slots:
-    /**
-     * @brief generateError
-     * @param title
-     * @param msg
-     * @param code
-     */
-    void generateError(const QString &title, const QString &msg, const int &code);
-
-    /**
-     * @brief launchSIMPLSelectionDialog
-     * @param proxy
-     */
-    void launchSIMPLSelectionDialog(DataContainerArrayProxy proxy, const QString &filePath);
-
   private:
     class vsInternals;
     vsInternals*                        m_Internals;
@@ -162,30 +128,12 @@ class IMFViewer_UI : public QMainWindow
 
     QString                                 m_OpenDialogLastDirectory = "";
 
-    QStringList                         m_ImportFileOrder;
-    QSemaphore                          m_ImportFileOrderLock;
-    QVector< QSharedPointer<QFutureWatcher<void>> >   m_ImportFileWatchers;
-    int                                 m_NumOfFinishedImportFileThreads = 0;
-
     /**
      * @brief loadSession
      * @param filePath
      * @return
      */
     void loadSessionFromFile(const QString &filePath);
-
-    /**
-     * @brief importFile
-     * @param filePath
-     */
-    void importFilesUsingThread();
-
-    /**
-     * @brief openDREAM3DFile
-     * @param filePath
-     * @param instance
-     */
-    void openDREAM3DFile(const QString &filePath);
 
     IMFViewer_UI(const IMFViewer_UI&); // Copy Constructor Not Implemented
     void operator=(const IMFViewer_UI&); // Operator '=' Not Implemented
