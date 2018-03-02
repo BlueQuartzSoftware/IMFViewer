@@ -38,6 +38,8 @@
 
 #include <QVTKOpenGLWidget.h>
 
+#include "SIMPLib/Filtering/QMetaObjectUtilities.h"
+
 #include "IMFViewer/IMFViewer_UI.h"
 #include "IMFViewer/IMFViewerApplication.h"
 
@@ -48,6 +50,7 @@ int main(int argc, char* argv[])
   QCoreApplication::setOrganizationDomain("bluequartz.net");
   QCoreApplication::setOrganizationName("BlueQuartz Software");
   QCoreApplication::setAttribute(Qt::AA_UseHighDpiPixmaps);
+  QMetaObjectUtilities::RegisterMetaTypes();
 
   IMFViewerApplication app(argc, argv);
 

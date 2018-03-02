@@ -51,19 +51,6 @@ class IMFViewer_UI : public QMainWindow
     ~IMFViewer_UI();
 
     /**
-     * @brief displayDataContainerArray
-     * @param filePath
-     * @param dca
-     */
-    void importDataContainerArray(QString filePath, DataContainerArray::Pointer dca);
-
-    /**
-     * @brief importData
-     * @param filePath
-     */
-    void importData(const QString &filePath);
-
-    /**
      * @brief Saves this session to a file
      * @return
      */
@@ -116,9 +103,9 @@ class IMFViewer_UI : public QMainWindow
 
   protected slots:
     /**
-     * @brief importFile
+     * @brief importFiles
      */
-    void importFile();
+    void importFiles();
 
     /**
      * @brief openRecentFile
@@ -135,7 +122,9 @@ class IMFViewer_UI : public QMainWindow
     class vsInternals;
     vsInternals*                        m_Internals;
 
-    QMenuBar*                           m_MenuBar;
+    QMenuBar*                           m_MenuBar = nullptr;
+    QMenu*                              m_RecentFilesMenu = nullptr;
+    QAction*                            m_ClearRecentsAction = nullptr;
 
     QString                                 m_OpenDialogLastDirectory = "";
 
@@ -145,19 +134,6 @@ class IMFViewer_UI : public QMainWindow
      * @return
      */
     void loadSessionFromFile(const QString &filePath);
-
-    /**
-     * @brief importFile
-     * @param filePath
-     */
-    bool importFile(const QString &filePath);
-
-    /**
-     * @brief openDREAM3DFile
-     * @param filePath
-     * @param instance
-     */
-    bool openDREAM3DFile(const QString &filePath);
 
     IMFViewer_UI(const IMFViewer_UI&); // Copy Constructor Not Implemented
     void operator=(const IMFViewer_UI&); // Operator '=' Not Implemented

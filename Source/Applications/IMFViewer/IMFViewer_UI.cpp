@@ -35,20 +35,15 @@
 
 #include "IMFViewer_UI.h"
 
+#include <QtConcurrent>
+
 #include <QtCore/QFileInfo>
 #include <QtCore/QMimeDatabase>
 
 #include <QtWidgets/QFileDialog>
-#include <QtWidgets/QMessageBox>
-
-#include "IMFViewer/Dialogs/LoadHDF5FileDialog.h"
-
-#include "SIMPLib/Utilities/SIMPLH5DataReader.h"
-#include "SIMPLib/Utilities/SIMPLH5DataReaderRequirements.h"
 
 #include "SVWidgetsLib/QtSupport/QtSSettings.h"
 #include "SVWidgetsLib/QtSupport/QtSRecentFileList.h"
-#include "SVWidgetsLib/Widgets/SIMPLViewMenuItems.h"
 
 #include "ui_IMFViewer_UI.h"
 
@@ -80,6 +75,9 @@ IMFViewer_UI::IMFViewer_UI(QWidget* parent) :
 // -----------------------------------------------------------------------------
 IMFViewer_UI::~IMFViewer_UI()
 {
+  delete m_RecentFilesMenu;
+  delete m_ClearRecentsAction;
+
   writeSettings();
 }
 
@@ -92,36 +90,18 @@ void IMFViewer_UI::setupGui()
   QtSRecentFileList* recentsList = QtSRecentFileList::instance(5, this);
   connect(recentsList, SIGNAL(fileListChanged(const QString&)), this, SLOT(updateRecentFileList(const QString&)));
 
+  createMenu();
+
   readSettings();
 
   m_Internals->vsWidget->setFilterView(m_Internals->treeView);
   m_Internals->vsWidget->setInfoWidget(m_Internals->infoWidget);
-
-  createMenu();
 }
 
 // -----------------------------------------------------------------------------
 //
 // -----------------------------------------------------------------------------
-void IMFViewer_UI::importDataContainerArray(QString filePath, DataContainerArray::Pointer dca)
-{
-  VSController* controller = m_Internals->vsWidget->getController();
-  controller->importDataContainerArray(filePath, dca);
-}
-
-// -----------------------------------------------------------------------------
-//
-// -----------------------------------------------------------------------------
-void IMFViewer_UI::importData(const QString &filePath)
-{
-  VSController* controller = m_Internals->vsWidget->getController();
-  controller->importData(filePath);
-}
-
-// -----------------------------------------------------------------------------
-//
-// -----------------------------------------------------------------------------
-void IMFViewer_UI::importFile()
+void IMFViewer_UI::importFiles()
 {
   QMimeDatabase db;
 
@@ -150,144 +130,15 @@ void IMFViewer_UI::importFile()
                       "DREAM.3D Files (*.dream3d);;"
                       "Image Files (%1 %2 %3 %4);;"
                       "VTK Files (*.vtk *.vti *.vtp *.vtr *.vts *.vtu);;"
-                      "STL Files (*.stl)").arg(pngSuffixStr).arg(tiffSuffixStr).arg(jpegSuffixStr).arg(bmpSuffixStr);
-  QString filePath = QFileDialog::getOpenFileName(this, "Open Input File", m_OpenDialogLastDirectory, filter);
-  if (filePath.isEmpty())
+                      "STL Files (*.stl)").arg(pngSuffixStr).arg(tiffSuffixStr).arg(jpegSuffixStr);
+  QStringList filePaths = QFileDialog::getOpenFileNames(this, "Open Input File", m_OpenDialogLastDirectory, filter);
+  if (filePaths.isEmpty())
   {
     return;
   }
 
-  importFile(filePath);
-}
-
-// -----------------------------------------------------------------------------
-//
-// -----------------------------------------------------------------------------
-bool IMFViewer_UI::importFile(const QString &filePath)
-{
-  QMimeDatabase db;
-
-  QMimeType mimeType = db.mimeTypeForFile(filePath, QMimeDatabase::MatchContent);
-  QString mimeName = mimeType.name();
-
-  QFileInfo fi(filePath);
-  QString ext = fi.completeSuffix().toLower();
-  bool success = false;
-  if (ext == "dream3d")
-  {
-    success = openDREAM3DFile(filePath);
-  }
-  else if (mimeType.inherits("image/png") || mimeType.inherits("image/tiff") || mimeType.inherits("image/jpeg") || mimeType.inherits("image/bmp"))
-  {
-    importData(filePath);
-    success = true;
-  }
-  else if (ext == "vtk" || ext == "vti" || ext == "vtp" || ext == "vtr"
-           || ext == "vts" || ext == "vtu")
-  {
-    importData(filePath);
-    success = true;
-  }
-  else if (ext == "stl")
-  {
-    importData(filePath);
-    success = true;
-  }
-  else
-  {
-    QMessageBox::critical(this, "Invalid File Type",
-                          tr("IMF Viewer failed to open the file because the file extension, '.%1', is not supported by the "
-                             "application.").arg(ext), QMessageBox::StandardButton::Ok);
-    return false;
-  }
-
-  return success;
-}
-
-// -----------------------------------------------------------------------------
-//
-// -----------------------------------------------------------------------------
-bool IMFViewer_UI::openDREAM3DFile(const QString &filePath)
-{
-  QFileInfo fi(filePath);
-
-  SIMPLH5DataReader reader;
-  bool success = reader.openFile(filePath);
-  if (success)
-  {
-    int err = 0;
-    SIMPLH5DataReaderRequirements req(SIMPL::Defaults::AnyPrimitive, SIMPL::Defaults::AnyComponentSize, AttributeMatrix::Type::Any, IGeometry::Type::Any);
-    DataContainerArrayProxy proxy = reader.readDataContainerArrayStructure(&req, err);
-    if (proxy.dataContainers.isEmpty())
-    {
-      QMessageBox::critical(this, "Empty File",
-                            tr("IMF Viewer opened the file '%1', but it was empty.").arg(fi.fileName()), QMessageBox::StandardButton::Ok);
-      return false;
-    }
-
-    bool containsCellAttributeMatrices = false;
-    bool containsValidArrays = false;
-
-    QStringList dcNames = proxy.dataContainers.keys();
-    for (int i = 0; i < dcNames.size(); i++)
-    {
-      QString dcName = dcNames[i];
-      DataContainerProxy dcProxy = proxy.dataContainers[dcName];
-
-      // We want only data containers with geometries displayed
-      if (dcProxy.dcType == static_cast<unsigned int>(DataContainer::Type::Unknown))
-      {
-        proxy.dataContainers.remove(dcName);
-      }
-      else
-      {
-        QStringList amNames = dcProxy.attributeMatricies.keys();
-        for (int j = 0; j < amNames.size(); j++)
-        {
-          QString amName = amNames[j];
-          AttributeMatrixProxy amProxy = dcProxy.attributeMatricies[amName];
-
-          // We want only cell attribute matrices displayed
-          if (amProxy.amType != AttributeMatrix::Type::Cell)
-          {
-            dcProxy.attributeMatricies.remove(amName);
-            proxy.dataContainers[dcName] = dcProxy;
-          }
-          else
-          {
-            containsCellAttributeMatrices = true;
-
-            if (amProxy.dataArrays.size() > 0)
-            {
-              containsValidArrays = true;
-            }
-          }
-        }
-      }
-    }
-
-    if (proxy.dataContainers.size() <= 0)
-    {
-      QMessageBox::critical(this, "Invalid Data",
-                            tr("IMF Viewer failed to open file '%1' because the file does not "
-                               "contain any data containers with a supported geometry.").arg(fi.fileName()), QMessageBox::StandardButton::Ok);
-      return false;
-    }
-
-    QSharedPointer<LoadHDF5FileDialog> dialog = QSharedPointer<LoadHDF5FileDialog>(new LoadHDF5FileDialog());
-    dialog->setProxy(proxy);
-    int ret = dialog->exec();
-
-    if (ret == QDialog::Accepted)
-    {
-      DataContainerArrayProxy dcaProxy = dialog->getDataStructureProxy();
-      DataContainerArray::Pointer dca = reader.readSIMPLDataUsingProxy(dcaProxy, false);
-      importDataContainerArray(filePath, dca);
-      return true;
-    }
-  }
-
-  return false;
+  VSMainWidgetBase* baseWidget = dynamic_cast<VSMainWidgetBase*>(m_Internals->vsWidget);
+  QtConcurrent::run(baseWidget, &VSMainWidgetBase::importFiles, filePaths);
 }
 
 // -----------------------------------------------------------------------------
@@ -295,25 +146,22 @@ bool IMFViewer_UI::openDREAM3DFile(const QString &filePath)
 // -----------------------------------------------------------------------------
 void IMFViewer_UI::updateRecentFileList(const QString& file)
 {
-  SIMPLViewMenuItems* menuItems = SIMPLViewMenuItems::Instance();
-  QMenu* recentFilesMenu = menuItems->getMenuRecentFiles();
-  QAction* clearRecentFilesAction = menuItems->getActionClearRecentFiles();
-
   // Clear the Recent Items Menu
-  recentFilesMenu->clear();
+  m_RecentFilesMenu->clear();
 
   // Get the list from the static object
   QStringList files = QtSRecentFileList::instance()->fileList();
   foreach(QString file, files)
   {
-    QAction* action = recentFilesMenu->addAction(QtSRecentFileList::instance()->parentAndFileName(file));
+    QAction* action = m_RecentFilesMenu->addAction(QtSRecentFileList::instance()->parentAndFileName(file));
     action->setData(file);
     action->setVisible(true);
     connect(action, SIGNAL(triggered()), this, SLOT(openRecentFile()));
   }
 
-  recentFilesMenu->addSeparator();
-  recentFilesMenu->addAction(clearRecentFilesAction);
+  m_RecentFilesMenu->addSeparator();
+
+  m_RecentFilesMenu->addAction(m_ClearRecentsAction);
 }
 
 // -----------------------------------------------------------------------------
@@ -442,6 +290,11 @@ void IMFViewer_UI::readWindowSettings(QtSSettings* prefs)
     restoreState(layout_data);
   }
 
+  QByteArray splitterGeometry = prefs->value("Splitter_Geometry", QByteArray());
+  m_Internals->splitter->restoreGeometry(splitterGeometry);
+  QByteArray splitterSizes = prefs->value("Splitter_Sizes", QByteArray());
+  m_Internals->splitter->restoreState(splitterSizes);
+
   prefs->endGroup();
 }
 
@@ -469,6 +322,11 @@ void IMFViewer_UI::writeWindowSettings(QtSSettings* prefs)
   prefs->setValue(QString("MainWindowGeometry"), geo_data);
   prefs->setValue(QString("MainWindowState"), layout_data);
 
+  QByteArray splitterGeometry = m_Internals->splitter->saveGeometry();
+  QByteArray splitterSizes = m_Internals->splitter->saveState();
+  prefs->setValue(QString("Splitter_Geometry"), splitterGeometry);
+  prefs->setValue(QString("Splitter_Sizes"), splitterSizes);
+
   prefs->endGroup();
 }
 
@@ -485,39 +343,39 @@ QMenuBar* IMFViewer_UI::getMenuBar()
 // -----------------------------------------------------------------------------
 void IMFViewer_UI::createMenu()
 {
-  SIMPLViewMenuItems* menuItems = SIMPLViewMenuItems::Instance();
-
   m_MenuBar = new QMenuBar();
 
   // File Menu
   QMenu* fileMenu = new QMenu("File", m_MenuBar);
 
-  QAction* importAction = new QAction("Import");
+  QAction* importAction = new QAction("Import Data");
   importAction->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_I));
-  connect(importAction, &QAction::triggered, this, static_cast<void (IMFViewer_UI::*)(void)>(&IMFViewer_UI::importFile));
+  connect(importAction, &QAction::triggered, this, static_cast<void (IMFViewer_UI::*)(void)>(&IMFViewer_UI::importFiles));
   fileMenu->addAction(importAction);
 
   fileMenu->addSeparator();
     
-  QAction* openAction = menuItems->getActionOpen();
+  QAction* openAction = new QAction("Open Session");
+  openAction->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_O));
   connect(openAction, &QAction::triggered, this, &IMFViewer_UI::loadSession);
   fileMenu->addAction(openAction);
     
-  QAction* saveAction = menuItems->getActionSave();
+  QAction* saveAction = new QAction("Save Session");
+  openAction->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_S));
   connect(saveAction, &QAction::triggered, this, &IMFViewer_UI::saveSession);
   fileMenu->addAction(saveAction);
     
   fileMenu->addSeparator();
 
-  QMenu* recentsMenu = menuItems->getMenuRecentFiles();
-  fileMenu->addMenu(recentsMenu);
+  m_RecentFilesMenu = new QMenu("Recent Sessions", this);
+  fileMenu->addMenu(m_RecentFilesMenu);
 
-  QAction* clearRecentsAction = menuItems->getActionClearRecentFiles();
-  connect(clearRecentsAction, &QAction::triggered, [=] {
+  m_ClearRecentsAction = new QAction("Clear Recent Sessions", this);
+  connect(m_ClearRecentsAction, &QAction::triggered, [=] {
     // Clear the Recent Items Menu
-    recentsMenu->clear();
-    recentsMenu->addSeparator();
-    recentsMenu->addAction(clearRecentsAction);
+    m_RecentFilesMenu->clear();
+    m_RecentFilesMenu->addSeparator();
+    m_RecentFilesMenu->addAction(m_ClearRecentsAction);
 
     // Clear the actual list
     QtSRecentFileList* recents = QtSRecentFileList::instance();
