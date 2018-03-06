@@ -52,14 +52,19 @@ cmp_IDE_GENERATED_PROPERTIES("IMFViewer/UI_Files" "${IMFViewer_UIS}" "")
 # SET(IMFViewer_RCS ${IMFViewer_SOURCE_DIR}/Templates.qrc)
 SET(IMFViewer_RCS
     ${PROJECT_RESOURCES_DIR}/icons/images/Icons.qrc
-    ${ModerniProj_SOURCE_DIR}/Resources.qrc
 )
 
 # -- Run MOC and UIC on the necessary files
 QT5_ADD_RESOURCES( IMFViewer_Generated_RC_SRCS ${IMFViewer_RCS} ${QRC_LICENSE_FILES})
+foreach(h ${IMFViewer_Generated_RC_SRCS})
+  set_property(SOURCE ${h} PROPERTY SKIP_AUTOMOC ON)
+endforeach()
 
 # this will run uic on .ui files:
 QT5_WRAP_UI( IMFViewer_Generated_UI_HDRS ${IMFViewer_UIS} )
+foreach(h ${IMFViewer_Generated_UI_HDRS})
+  set_property(SOURCE ${h} PROPERTY SKIP_AUTOMOC ON)
+endforeach()
 
 # and finally this will run moc:
 #QT5_WRAP_CPP( IMFViewer_Generated_MOC_SRCS ${IMFViewer_MOC_HDRS} )
