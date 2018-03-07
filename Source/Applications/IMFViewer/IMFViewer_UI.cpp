@@ -130,7 +130,7 @@ void IMFViewer_UI::importFiles()
                       "DREAM.3D Files (*.dream3d);;"
                       "Image Files (%1 %2 %3 %4);;"
                       "VTK Files (*.vtk *.vti *.vtp *.vtr *.vts *.vtu);;"
-                      "STL Files (*.stl)").arg(pngSuffixStr).arg(tiffSuffixStr).arg(jpegSuffixStr);
+                      "STL Files (*.stl)").arg(pngSuffixStr).arg(tiffSuffixStr).arg(jpegSuffixStr).arg(bmpSuffixStr);
   QStringList filePaths = QFileDialog::getOpenFileNames(this, "Open Input File", m_OpenDialogLastDirectory, filter);
   if (filePaths.isEmpty())
   {
