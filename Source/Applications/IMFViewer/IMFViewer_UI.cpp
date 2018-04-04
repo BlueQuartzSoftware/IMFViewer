@@ -1,37 +1,37 @@
 /* ============================================================================
-* Copyright (c) 2009-2015 BlueQuartz Software, LLC
-*
-* Redistribution and use in source and binary forms, with or without modification,
-* are permitted provided that the following conditions are met:
-*
-* Redistributions of source code must retain the above copyright notice, this
-* list of conditions and the following disclaimer.
-*
-* Redistributions in binary form must reproduce the above copyright notice, this
-* list of conditions and the following disclaimer in the documentation and/or
-* other materials provided with the distribution.
-*
-* Neither the name of BlueQuartz Software, the US Air Force, nor the names of its
-* contributors may be used to endorse or promote products derived from this software
-* without specific prior written permission.
-*
-* THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-* AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-* IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-* DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
-* FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
-* DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
-* SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
-* CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
-* OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
-* USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-*
-* The code contained herein was partially funded by the followig contracts:
-*    United States Air Force Prime Contract FA8650-07-D-5800
-*    United States Air Force Prime Contract FA8650-10-D-5210
-*    United States Prime Contract Navy N00173-07-C-2068
-*
-* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
+ * Copyright (c) 2009-2015 BlueQuartz Software, LLC
+ *
+ * Redistribution and use in source and binary forms, with or without modification,
+ * are permitted provided that the following conditions are met:
+ *
+ * Redistributions of source code must retain the above copyright notice, this
+ * list of conditions and the following disclaimer.
+ *
+ * Redistributions in binary form must reproduce the above copyright notice, this
+ * list of conditions and the following disclaimer in the documentation and/or
+ * other materials provided with the distribution.
+ *
+ * Neither the name of BlueQuartz Software, the US Air Force, nor the names of its
+ * contributors may be used to endorse or promote products derived from this software
+ * without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
+ * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * The code contained herein was partially funded by the followig contracts:
+ *    United States Air Force Prime Contract FA8650-07-D-5800
+ *    United States Air Force Prime Contract FA8650-10-D-5210
+ *    United States Prime Contract Navy N00173-07-C-2068
+ *
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
 #include "IMFViewer_UI.h"
 
@@ -42,8 +42,8 @@
 
 #include <QtWidgets/QFileDialog>
 
-#include "SVWidgetsLib/QtSupport/QtSSettings.h"
 #include "SVWidgetsLib/QtSupport/QtSRecentFileList.h"
+#include "SVWidgetsLib/QtSupport/QtSSettings.h"
 
 #include "ui_IMFViewer_UI.h"
 
@@ -61,8 +61,8 @@ public:
 // -----------------------------------------------------------------------------
 //
 // -----------------------------------------------------------------------------
-IMFViewer_UI::IMFViewer_UI(QWidget* parent) :
-  QMainWindow(parent)
+IMFViewer_UI::IMFViewer_UI(QWidget* parent)
+: QMainWindow(parent)
 , m_Internals(new vsInternals())
 {
   m_Internals->setupUi(this);
@@ -130,9 +130,13 @@ void IMFViewer_UI::importFiles()
                       "DREAM.3D Files (*.dream3d);;"
                       "Image Files (%1 %2 %3 %4);;"
                       "VTK Files (*.vtk *.vti *.vtp *.vtr *.vts *.vtu);;"
-                      "STL Files (*.stl)").arg(pngSuffixStr).arg(tiffSuffixStr).arg(jpegSuffixStr).arg(bmpSuffixStr);
+                      "STL Files (*.stl)")
+                       .arg(pngSuffixStr)
+                       .arg(tiffSuffixStr)
+                       .arg(jpegSuffixStr)
+                       .arg(bmpSuffixStr);
   QStringList filePaths = QFileDialog::getOpenFileNames(this, "Open Input File", m_OpenDialogLastDirectory, filter);
-  if (filePaths.isEmpty())
+  if(filePaths.isEmpty())
   {
     return;
   }
@@ -184,32 +188,32 @@ void IMFViewer_UI::openRecentFile()
 // -----------------------------------------------------------------------------
 void IMFViewer_UI::saveSession()
 {
-    QMimeDatabase db;
+  QMimeDatabase db;
 
-    QMimeType jsonType = db.mimeTypeForName("application/json");
-    QStringList jsonSuffixes = jsonType.suffixes();
-    QString jsonSuffixStr = jsonSuffixes.join(" *.");
-    jsonSuffixStr.prepend("*.");
+  QMimeType jsonType = db.mimeTypeForName("application/json");
+  QStringList jsonSuffixes = jsonType.suffixes();
+  QString jsonSuffixStr = jsonSuffixes.join(" *.");
+  jsonSuffixStr.prepend("*.");
 
-    // Open a file in the application
-    QString filter = tr("JSON Files (%1)").arg(jsonSuffixStr);
-    QString filePath = QFileDialog::getSaveFileName(this, "Open Input File", m_OpenDialogLastDirectory, filter);
-    if (filePath.isEmpty())
-    {
-      return;
-    }
+  // Open a file in the application
+  QString filter = tr("JSON Files (%1)").arg(jsonSuffixStr);
+  QString filePath = QFileDialog::getSaveFileName(this, "Open Input File", m_OpenDialogLastDirectory, filter);
+  if(filePath.isEmpty())
+  {
+    return;
+  }
 
-    m_OpenDialogLastDirectory = filePath;
+  m_OpenDialogLastDirectory = filePath;
 
-    VSController* controller = m_Internals->vsWidget->getController();
-    bool success = controller->saveSession(filePath);
+  VSController* controller = m_Internals->vsWidget->getController();
+  bool success = controller->saveSession(filePath);
 
-    if (success)
-    {
-      // Add file to the recent files list
-      QtSRecentFileList* list = QtSRecentFileList::instance();
-      list->addFile(filePath);
-    }
+  if(success)
+  {
+    // Add file to the recent files list
+    QtSRecentFileList* list = QtSRecentFileList::instance();
+    list->addFile(filePath);
+  }
 }
 
 // -----------------------------------------------------------------------------
@@ -217,35 +221,35 @@ void IMFViewer_UI::saveSession()
 // -----------------------------------------------------------------------------
 void IMFViewer_UI::loadSession()
 {
-    QMimeDatabase db;
+  QMimeDatabase db;
 
-    QMimeType jsonType = db.mimeTypeForName("application/json");
-    QStringList jsonSuffixes = jsonType.suffixes();
-    QString jsonSuffixStr = jsonSuffixes.join(" *.");
-    jsonSuffixStr.prepend("*.");
+  QMimeType jsonType = db.mimeTypeForName("application/json");
+  QStringList jsonSuffixes = jsonType.suffixes();
+  QString jsonSuffixStr = jsonSuffixes.join(" *.");
+  jsonSuffixStr.prepend("*.");
 
-    // Open a file in the application
-    QString filter = tr("JSON Files (%1)").arg(jsonSuffixStr);
-    QString filePath = QFileDialog::getOpenFileName(this, "Open Session File", m_OpenDialogLastDirectory, filter);
-    if (filePath.isEmpty())
-    {
-      return;
-    }
+  // Open a file in the application
+  QString filter = tr("JSON Files (%1)").arg(jsonSuffixStr);
+  QString filePath = QFileDialog::getOpenFileName(this, "Open Session File", m_OpenDialogLastDirectory, filter);
+  if(filePath.isEmpty())
+  {
+    return;
+  }
 
-    m_OpenDialogLastDirectory = filePath;
+  m_OpenDialogLastDirectory = filePath;
 
-    loadSessionFromFile(filePath);
+  loadSessionFromFile(filePath);
 }
 
 // -----------------------------------------------------------------------------
 //
 // -----------------------------------------------------------------------------
-void IMFViewer_UI::loadSessionFromFile(const QString &filePath)
+void IMFViewer_UI::loadSessionFromFile(const QString& filePath)
 {
   VSController* controller = m_Internals->vsWidget->getController();
   bool success = controller->loadSession(filePath);
 
-  if (success)
+  if(success)
   {
     // Add file to the recent files list
     QtSRecentFileList* list = QtSRecentFileList::instance();
@@ -354,17 +358,17 @@ void IMFViewer_UI::createMenu()
   fileMenu->addAction(importAction);
 
   fileMenu->addSeparator();
-    
+
   QAction* openAction = new QAction("Open Session");
   openAction->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_O));
   connect(openAction, &QAction::triggered, this, &IMFViewer_UI::loadSession);
   fileMenu->addAction(openAction);
-    
+
   QAction* saveAction = new QAction("Save Session");
   openAction->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_S));
   connect(saveAction, &QAction::triggered, this, &IMFViewer_UI::saveSession);
   fileMenu->addAction(saveAction);
-    
+
   fileMenu->addSeparator();
 
   m_RecentFilesMenu = new QMenu("Recent Sessions", this);
