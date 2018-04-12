@@ -142,7 +142,7 @@ void IMFViewer_UI::importFiles()
   }
 
   VSMainWidgetBase* baseWidget = dynamic_cast<VSMainWidgetBase*>(m_Internals->vsWidget);
-  QtConcurrent::run(baseWidget, &VSMainWidgetBase::importFiles, filePaths);
+  baseWidget->importFiles(filePaths);
 }
 
 // -----------------------------------------------------------------------------
