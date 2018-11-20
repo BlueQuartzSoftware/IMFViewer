@@ -87,7 +87,7 @@ IMFViewer_UI::~IMFViewer_UI()
 void IMFViewer_UI::setupGui()
 {
   // Connection to update the recent files list on all windows when it changes
-  QtSRecentFileList* recentsList = QtSRecentFileList::instance(5, this);
+  QtSRecentFileList* recentsList = QtSRecentFileList::Instance(5, this);
   connect(recentsList, SIGNAL(fileListChanged(const QString&)), this, SLOT(updateRecentFileList(const QString&)));
 
   createMenu();
@@ -154,10 +154,10 @@ void IMFViewer_UI::updateRecentFileList(const QString& file)
   m_RecentFilesMenu->clear();
 
   // Get the list from the static object
-  QStringList files = QtSRecentFileList::instance()->fileList();
+  QStringList files = QtSRecentFileList::Instance()->fileList();
   foreach(QString file, files)
   {
-    QAction* action = m_RecentFilesMenu->addAction(QtSRecentFileList::instance()->parentAndFileName(file));
+    QAction* action = m_RecentFilesMenu->addAction(QtSRecentFileList::Instance()->parentAndFileName(file));
     action->setData(file);
     action->setVisible(true);
     connect(action, SIGNAL(triggered()), this, SLOT(openRecentFile()));
@@ -211,7 +211,7 @@ void IMFViewer_UI::saveSession()
   if(success)
   {
     // Add file to the recent files list
-    QtSRecentFileList* list = QtSRecentFileList::instance();
+    QtSRecentFileList* list = QtSRecentFileList::Instance();
     list->addFile(filePath);
   }
 }
@@ -252,7 +252,7 @@ void IMFViewer_UI::loadSessionFromFile(const QString& filePath)
   if(success)
   {
     // Add file to the recent files list
-    QtSRecentFileList* list = QtSRecentFileList::instance();
+    QtSRecentFileList* list = QtSRecentFileList::Instance();
     list->addFile(filePath);
   }
 }
@@ -267,7 +267,7 @@ void IMFViewer_UI::readSettings()
   // Read the window settings from the prefs file
   readWindowSettings(prefs.data());
 
-  QtSRecentFileList::instance()->readList(prefs.data());
+  QtSRecentFileList::Instance()->readList(prefs.data());
 }
 
 // -----------------------------------------------------------------------------
@@ -312,7 +312,7 @@ void IMFViewer_UI::writeSettings()
   // Write the window settings to the prefs file
   writeWindowSettings(prefs.data());
 
-  QtSRecentFileList::instance()->writeList(prefs.data());
+  QtSRecentFileList::Instance()->writeList(prefs.data());
 }
 
 // -----------------------------------------------------------------------------
@@ -382,7 +382,7 @@ void IMFViewer_UI::createMenu()
     m_RecentFilesMenu->addAction(m_ClearRecentsAction);
 
     // Clear the actual list
-    QtSRecentFileList* recents = QtSRecentFileList::instance();
+    QtSRecentFileList* recents = QtSRecentFileList::Instance();
     recents->clear();
 
     // Write out the empty list
