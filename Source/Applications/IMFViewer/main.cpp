@@ -39,8 +39,12 @@
 
 #include "SIMPLib/Filtering/QMetaObjectUtilities.h"
 
+#include "SVWidgetsLib/Widgets/SVStyle.h"
+
 #include "IMFViewer/IMFViewerApplication.h"
 #include "IMFViewer/IMFViewer_UI.h"
+
+#include "BrandedStrings.h"
 
 int main(int argc, char* argv[])
 {
@@ -52,6 +56,11 @@ int main(int argc, char* argv[])
   QMetaObjectUtilities::RegisterMetaTypes();
 
   IMFViewerApplication app(argc, argv);
+
+  // Initialize the Default Stylesheet
+  SVStyle* style = SVStyle::Instance();
+  QString defaultLoadedThemePath = BrandedStrings::DefaultStyleDirectory + "/" + BrandedStrings::DefaultLoadedTheme + ".json";
+  style->loadStyleSheet(defaultLoadedThemePath);
 
   IMFViewer_UI* viewer = app.getNewIMFViewerInstance();
   viewer->show();
