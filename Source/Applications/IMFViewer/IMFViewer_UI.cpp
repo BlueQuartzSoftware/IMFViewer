@@ -45,6 +45,8 @@
 #include "SVWidgetsLib/QtSupport/QtSRecentFileList.h"
 #include "SVWidgetsLib/QtSupport/QtSSettings.h"
 
+#include "SIMPLVtkLib/Wizards/GenericMontage/GenericMontageWizard.h"
+
 #include "ui_IMFViewer_UI.h"
 
 // -----------------------------------------------------------------------------
@@ -143,6 +145,21 @@ void IMFViewer_UI::importFiles()
 
   VSMainWidgetBase* baseWidget = dynamic_cast<VSMainWidgetBase*>(m_Internals->vsWidget);
   baseWidget->importFiles(filePaths);
+}
+
+// -----------------------------------------------------------------------------
+//
+// -----------------------------------------------------------------------------
+void IMFViewer_UI::importGenericMontage()
+{
+  GenericMontageWizard* genericWizard = new GenericMontageWizard(this);
+  genericWizard->exec();
+
+  // Store all the generic wizard's selections in the settings object here
+
+  // Call ITK function(s) to stitch the montage together using the metadata in the settings object.
+
+  delete genericWizard;
 }
 
 // -----------------------------------------------------------------------------
@@ -352,10 +369,19 @@ void IMFViewer_UI::createMenu()
   // File Menu
   QMenu* fileMenu = new QMenu("File", m_MenuBar);
 
-  QAction* importAction = new QAction("Import Data");
-  importAction->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_I));
-  connect(importAction, &QAction::triggered, this, static_cast<void (IMFViewer_UI::*)(void)>(&IMFViewer_UI::importFiles));
-  fileMenu->addAction(importAction);
+  QAction* importDataAction = new QAction("Import Data");
+  importDataAction->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_I));
+  connect(importDataAction, &QAction::triggered, this, static_cast<void (IMFViewer_UI::*)(void)>(&IMFViewer_UI::importFiles));
+  fileMenu->addAction(importDataAction);
+
+  fileMenu->addSeparator();
+
+  QMenu* importMontageMenu = new QMenu("Import Montage");
+  fileMenu->addMenu(importMontageMenu);
+
+  QAction* genericMontageAction = new QAction("Generic Montage");
+  connect(genericMontageAction, &QAction::triggered, this, static_cast<void (IMFViewer_UI::*)(void)>(&IMFViewer_UI::importGenericMontage));
+  importMontageMenu->addAction(genericMontageAction);
 
   fileMenu->addSeparator();
 
