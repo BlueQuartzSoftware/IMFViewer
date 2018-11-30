@@ -156,6 +156,7 @@ void IMFViewer_UI::importGenericMontage()
   genericWizard->exec();
 
   // Store all the generic wizard's selections in the settings object here
+  GenericMontageSettings* montageSettings = genericWizard->getMontageSettings();
 
   // Call ITK function(s) to stitch the montage together using the metadata in the settings object.
 
