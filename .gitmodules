@@ -3,7 +3,7 @@
 	url = https://github.com/BlueQuartzSoftware/SIMPL.git
 	branch = feature/OSD_GUI
 [submodule "Source/MultiscaleFusion"]
-	path = Source/MultiscaleFusion
+	path = Source/Plugins/MultiscaleFusion
 	url = https://github.com/BlueQuartzSoftware/MultiscaleFusion.git
 	branch = feature/OSD_GUI
 [submodule "Source/CMP"]
@@ -15,5 +15,5 @@
 	url = https://github.com/BlueQuartzSoftware/SIMPLVtkLib.git
 	branch = develop
 [submodule "Source/ITKImageProcessing"]
-	path = Source/ITKImageProcessing
+	path = Source/Plugins/ITKImageProcessing
 	url = https://github.com/BlueQuartzSoftware/ITKImageProcessing.git
