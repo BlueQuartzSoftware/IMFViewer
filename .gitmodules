@@ -14,3 +14,6 @@
 	path = Source/SIMPLVtkLib
 	url = https://github.com/BlueQuartzSoftware/SIMPLVtkLib.git
 	branch = develop
+[submodule "Source/ITKImageProcessing"]
+	path = Source/ITKImageProcessing
+	url = https://github.com/BlueQuartzSoftware/ITKImageProcessing.git

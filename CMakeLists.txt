@@ -108,6 +108,34 @@ if("${SIMPLVtkLibProj_SOURCE_DIR}" STREQUAL "")
   message(STATUS "SIMPLVtkLibProj_SOURCE_DIR: ${SIMPLVtkLibProj_SOURCE_DIR}")
 endif()
 
+#------------------------------------------------------------------------------
+# If the developer has set another MultiscaleFusion directory then use that, otherwise look
+# for the MultiscaleFusion directory in the Source or ExternalProjects directory
+if("${MultiscaleFusionProj_SOURCE_DIR}" STREQUAL "")
+  if(EXISTS "${PROJECT_SOURCE_DIR}/Source/MultiscaleFusion")
+    set(MultiscaleFusionProj_SOURCE_DIR ${PROJECT_SOURCE_DIR}/Source/MultiscaleFusion)
+  elseif(EXISTS "${IMFViewer_ExternalProject_DIR}/MultiscaleFusion")
+    set(MultiscaleFusionProj_SOURCE_DIR ${IMFViewer_ExternalProject_DIR}/MultiscaleFusion)
+  else()
+    message(FATAL_ERROR "MultiscaleFusionProj_SOURCE_DIR was not set. Please set the MultiscaleFusionProj_SOURCE_DIR variable to the MultiscaleFusion directory.")
+  endif()
+  message(STATUS "MultiscaleFusionProj_SOURCE_DIR: ${MultiscaleFusionProj_SOURCE_DIR}")
+endif()
+
+#------------------------------------------------------------------------------
+# If the developer has set another ITKImageProcessing directory then use that, otherwise look
+# for the ITKImageProcessing directory in the Source or ExternalProjects directory
+if("${ITKImageProcessingProj_SOURCE_DIR}" STREQUAL "")
+  if(EXISTS "${PROJECT_SOURCE_DIR}/Source/ITKImageProcessing")
+    set(ITKImageProcessingProj_SOURCE_DIR ${PROJECT_SOURCE_DIR}/Source/ITKImageProcessing)
+  elseif(EXISTS "${IMFViewer_ExternalProject_DIR}/ITKImageProcessing")
+    set(ITKImageProcessingProj_SOURCE_DIR ${IMFViewer_ExternalProject_DIR}/ITKImageProcessing)
+  else()
+    message(FATAL_ERROR "ITKImageProcessingProj_SOURCE_DIR was not set. Please set the ITKImageProcessingProj_SOURCE_DIR variable to the ITKImageProcessing directory.")
+  endif()
+  message(STATUS "ITKImageProcessingProj_SOURCE_DIR: ${ITKImageProcessingProj_SOURCE_DIR}")
+endif()
+
 #Enable use of Solution Folders
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 #set_property(GLOBAL PROPERTY USE_FOLDERS OFF)
@@ -273,6 +301,16 @@ add_subdirectory( ${SIMPLProj_SOURCE_DIR} ${PROJECT_BINARY_DIR}/SIMPL)
 # Add in the SIMPLVtkLib Sources
 # -----------------------------------------------------------------------
 add_subdirectory( ${SIMPLVtkLibProj_SOURCE_DIR} ${PROJECT_BINARY_DIR}/SIMPLVtkLib)
+
+# # -----------------------------------------------------------------------
+# # Add in the MultiscaleFusion Sources
+# # -----------------------------------------------------------------------
+# add_subdirectory( ${MultiscaleFusionProj_SOURCE_DIR} ${PROJECT_BINARY_DIR}/MultiscaleFusion)
+
+# # -----------------------------------------------------------------------
+# # Add in the ITKImageProcessing Sources
+# # -----------------------------------------------------------------------
+# add_subdirectory( ${ITKImageProcessingProj_SOURCE_DIR} ${PROJECT_BINARY_DIR}/ITKImageProcessing)
 
 # -----------------------------------------------------------------------
 # Add in the Necessary IMFViewer Sources
