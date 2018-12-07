@@ -239,6 +239,11 @@ CMP_FindVtkComponents(QT5_REQUIRED TRUE
 # Now that we have found all of our required libraries and packages we can start the all
 # the tests
 
+#-------------------------------------------------------------------------------
+# Compile the Core Plugins that come with DREAM3D and any other Plugins that the
+# developer has added.
+include(${PROJECT_SOURCE_DIR}/Source/Plugins/Plugins.cmake)
+
 # We do NOT want to install any of the headers
 set(IMFViewerProj_INSTALL_FILES "${PROJECT_INSTALL_HEADERS}")
 
