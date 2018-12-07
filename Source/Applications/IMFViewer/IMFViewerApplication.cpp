@@ -67,7 +67,7 @@
 IMFViewerApplication::IMFViewerApplication(int& argc, char** argv)
 : QApplication(argc, argv)
 {
-
+  initialize(argc, argv);
 }
 
 // -----------------------------------------------------------------------------
