@@ -112,8 +112,8 @@ endif()
 # If the developer has set another MultiscaleFusion directory then use that, otherwise look
 # for the MultiscaleFusion directory in the Source or ExternalProjects directory
 if("${MultiscaleFusionProj_SOURCE_DIR}" STREQUAL "")
-  if(EXISTS "${PROJECT_SOURCE_DIR}/Source/MultiscaleFusion")
-    set(MultiscaleFusionProj_SOURCE_DIR ${PROJECT_SOURCE_DIR}/Source/MultiscaleFusion)
+  if(EXISTS "${PROJECT_SOURCE_DIR}/Source/Plugins/MultiscaleFusion")
+    set(MultiscaleFusionProj_SOURCE_DIR ${PROJECT_SOURCE_DIR}/Source/Plugins/MultiscaleFusion)
   elseif(EXISTS "${IMFViewer_ExternalProject_DIR}/MultiscaleFusion")
     set(MultiscaleFusionProj_SOURCE_DIR ${IMFViewer_ExternalProject_DIR}/MultiscaleFusion)
   else()
@@ -126,8 +126,8 @@ endif()
 # If the developer has set another ITKImageProcessing directory then use that, otherwise look
 # for the ITKImageProcessing directory in the Source or ExternalProjects directory
 if("${ITKImageProcessingProj_SOURCE_DIR}" STREQUAL "")
-  if(EXISTS "${PROJECT_SOURCE_DIR}/Source/ITKImageProcessing")
-    set(ITKImageProcessingProj_SOURCE_DIR ${PROJECT_SOURCE_DIR}/Source/ITKImageProcessing)
+  if(EXISTS "${PROJECT_SOURCE_DIR}/Source/Plugins/ITKImageProcessing")
+    set(ITKImageProcessingProj_SOURCE_DIR ${PROJECT_SOURCE_DIR}/Source/Plugins/ITKImageProcessing)
   elseif(EXISTS "${IMFViewer_ExternalProject_DIR}/ITKImageProcessing")
     set(ITKImageProcessingProj_SOURCE_DIR ${IMFViewer_ExternalProject_DIR}/ITKImageProcessing)
   else()
