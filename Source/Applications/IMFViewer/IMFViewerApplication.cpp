@@ -243,7 +243,7 @@ QVector<ISIMPLibPlugin*> IMFViewerApplication::loadPlugins()
   FilterManager::RegisterKnownFilters(filterManager);
 
   PluginManager* pluginManager = PluginManager::Instance();
-  QList<PluginProxy::Pointer> proxies = AboutPlugins::ReadPluginCache();
+  QList<PluginProxy::Pointer> proxies = AboutPlugins::readPluginCache();
   QMap<QString, bool> loadingMap;
   for(QList<PluginProxy::Pointer>::iterator nameIter = proxies.begin(); nameIter != proxies.end(); nameIter++)
   {
