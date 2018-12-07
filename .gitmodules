@@ -1,19 +1,30 @@
 [submodule "Source/SIMPL"]
-	path = Source/SIMPL
+	path = Source/External_Projects/SIMPL/SIMPL
 	url = https://github.com/BlueQuartzSoftware/SIMPL.git
 	branch = feature/OSD_GUI
 [submodule "Source/MultiscaleFusion"]
-	path = Source/MultiscaleFusion
+	path = Source/Plugins/MultiscaleFusion/MultiscaleFusion
 	url = https://github.com/BlueQuartzSoftware/MultiscaleFusion.git
 	branch = feature/OSD_GUI
 [submodule "Source/CMP"]
-	path = Source/CMP
+	path = Source/External_Projects/CMP/CMP
 	url = https://github.com/BlueQuartzSoftware/CMP.git
-	branch = develop
-[submodule "Source/SIMPLVtkLib"]
-	path = Source/SIMPLVtkLib
-	url = https://github.com/BlueQuartzSoftware/SIMPLVtkLib.git
 	branch = develop
 [submodule "Source/ITKImageProcessing"]
 	path = Source/ITKImageProcessing
 	url = https://github.com/BlueQuartzSoftware/ITKImageProcessing.git
+[submodule "Source/External_Projects/SIMPL"]
+	path = Source/External_Projects/SIMPL
+	url = https://joeykleingers@github.com/BlueQuartzSoftware/SIMPL.git
+[submodule "Source/External_Projects/SIMPLVtkLib"]
+	path = Source/External_Projects/SIMPLVtkLib
+	url = https://joeykleingers@github.com/BlueQuartzSoftware/SIMPLVtkLib.git
+[submodule "Source/External_Projects/CMP"]
+	path = Source/External_Projects/CMP
+	url = https://joeykleingers@github.com/BlueQuartzSoftware/CMP.git
+[submodule "Source/Plugins/ITKImageProcessing"]
+	path = Source/Plugins/ITKImageProcessing
+	url = https://joeykleingers@github.com/BlueQuartzSoftware/ITKImageProcessing.git
+[submodule "Source/Plugins/MultiscaleFusion"]
+	path = Source/Plugins/MultiscaleFusion
+	url = https://joeykleingers@github.com/BlueQuartzSoftware/MultiscaleFusion.git
