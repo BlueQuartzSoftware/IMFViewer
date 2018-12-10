@@ -51,7 +51,6 @@
 #include "SVWidgetsLib/QtSupport/QtSRecentFileList.h"
 #include "SVWidgetsLib/QtSupport/QtSSettings.h"
 
-#include "SIMPLVtkLib/Wizards/GenericMontage/GenericMontageWizard.h"
 #include "SIMPLVtkLib/Wizards/ImportData/ImportDataWizard.h"
 
 #include "ui_IMFViewer_UI.h"
@@ -152,22 +151,6 @@ void IMFViewer_UI::importFiles()
 
   VSMainWidgetBase* baseWidget = dynamic_cast<VSMainWidgetBase*>(m_Internals->vsWidget);
   baseWidget->importFiles(filePaths);
-}
-
-// -----------------------------------------------------------------------------
-//
-// -----------------------------------------------------------------------------
-void IMFViewer_UI::importGenericMontage()
-{
-  GenericMontageWizard* genericWizard = new GenericMontageWizard(this);
-  genericWizard->exec();
-
-  // Store all the generic wizard's selections in the settings object here
-  GenericMontageSettings* montageSettings = genericWizard->getMontageSettings();
-
-  // Call ITK function(s) to stitch the montage together using the metadata in the settings object.
-
-  delete genericWizard;
 }
 
 // -----------------------------------------------------------------------------

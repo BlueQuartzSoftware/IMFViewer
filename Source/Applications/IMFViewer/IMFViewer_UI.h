@@ -113,11 +113,6 @@ protected slots:
   void importData();
 
   /**
-   * @brief importGenericMontage
-   */
-  void importGenericMontage();
-
-  /**
    * @brief openRecentFile
    */
   void openRecentFile();
