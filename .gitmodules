@@ -16,5 +16,5 @@
 	branch = feature/OSD_GUI
 [submodule "Source/Plugins/MultiscaleFusion"]
 	path = Source/Plugins/MultiscaleFusion
-	url = https://www.github.com/tplatt77/MultiscaleFusion.git
+	url = https://www.github.com/bluequartzsoftware/MultiscaleFusion.git
 	branch = feature/OSD_GUI
