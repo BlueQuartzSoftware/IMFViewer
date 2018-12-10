@@ -180,6 +180,10 @@ void IMFViewer_UI::importData()
 	{
 		QStringList filePaths;
 		QString dream3dFile = montageSettings->getOutputFileName();
+		if (dream3dFile.isEmpty())
+		{
+			return;
+		}
 		filePaths.append(dream3dFile);
 		VSMainWidgetBase* baseWidget = dynamic_cast<VSMainWidgetBase*>(m_Internals->vsWidget);
 		baseWidget->importFiles(filePaths);
