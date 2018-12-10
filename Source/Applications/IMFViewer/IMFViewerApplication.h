@@ -48,6 +48,9 @@ class IMFViewer;
 class IMFViewerMenu;
 class IMFViewer_UI;
 class IMFController;
+class ISIMPLibPlugin;
+class QSplashScreen;
+class QPluginLoader;
 
 class IMFViewerApplication : public QApplication
 {
@@ -57,16 +60,37 @@ public:
   IMFViewerApplication(int& argc, char** argv);
   virtual ~IMFViewerApplication();
 
+  /**
+   * @brief initialize
+   * @param argc
+   * @param argv
+   * @return
+   */
+  bool initialize(int argc, char* argv[]);
+
+  /**
+   * @brief getNewIMFViewerInstance
+   * @return
+   */
   IMFViewer_UI* getNewIMFViewerInstance();
 
 private:
   IMFViewer_UI* m_ActiveInstance = nullptr;
+
+  QSplashScreen* m_SplashScreen;
+  QVector<QPluginLoader*> m_PluginLoaders;
 
   /**
    * @brief loadStyleSheet
    * @param sheetName
    */
   void loadStyleSheet(const QString& sheetName);
+
+  /**
+   * @brief loadPlugins
+   * @return
+   */
+  QVector<ISIMPLibPlugin*> loadPlugins();
 
   /**
    * @brief setActiveInstance

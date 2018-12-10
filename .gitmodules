@@ -1,20 +1,20 @@
-[submodule "Source/SIMPL"]
-	path = Source/SIMPL
-	url = https://github.com/BlueQuartzSoftware/SIMPL.git
+[submodule "Source/External_Projects/SIMPL"]
+	path = Source/External_Projects/SIMPL
+	url = https://www.github.com/tplatt77/SIMPL.git
 	branch = feature/OSD_GUI
-[submodule "Source/CMP"]
-	path = Source/CMP
-	url = https://github.com/BlueQuartzSoftware/CMP.git
+[submodule "Source/External_Projects/SIMPLVtkLib"]
+	path = Source/External_Projects/SIMPLVtkLib
+	url = https://www.github.com/tplatt77/SIMPLVtkLib.git
+	branch = feature/OSD_GUI
+[submodule "Source/External_Projects/CMP"]
+	path = Source/External_Projects/CMP
+	url = https://www.github.com/tplatt77/CMP.git
 	branch = develop
-[submodule "Source/SIMPLVtkLib"]
-	path = Source/SIMPLVtkLib
-	url = https://github.com/BlueQuartzSoftware/SIMPLVtkLib.git
-    branch = feature/OSD_GUI
-[submodule "Source/Plugins/MultiscaleFusion"]
-	path = Source/Plugins/MultiscaleFusion
-	url = https://github.com/BlueQuartzSoftware/MultiscaleFusion.git
-	branch = feature/OSD_GUI
 [submodule "Source/Plugins/ITKImageProcessing"]
 	path = Source/Plugins/ITKImageProcessing
-	url = https://github.com/BlueQuartzSoftware/ITKImageProcessing.git
-	branch = develop
+	url = https://www.github.com/bluequartzsoftware/ITKImageProcessing.git
+	branch = feature/OSD_GUI
+[submodule "Source/Plugins/MultiscaleFusion"]
+	path = Source/Plugins/MultiscaleFusion
+	url = https://www.github.com/tplatt77/MultiscaleFusion.git
+	branch = feature/OSD_GUI
