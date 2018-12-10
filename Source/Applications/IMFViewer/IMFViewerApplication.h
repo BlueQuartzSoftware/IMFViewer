@@ -77,7 +77,9 @@ public:
 private:
   IMFViewer_UI* m_ActiveInstance = nullptr;
 
-  QSplashScreen* m_SplashScreen;
+  QSplashScreen* m_SplashScreen = nullptr;
+  bool m_ShowSplash = true;
+  int m_MinSplashTime = 3;
   QVector<QPluginLoader*> m_PluginLoaders;
 
   /**

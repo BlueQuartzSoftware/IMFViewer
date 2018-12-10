@@ -24,7 +24,7 @@ if(${CMAKE_MAJOR_VERSION} STREQUAL "3")
   # CMake 3.0 introduces VERSION variables for each Project.
   cmake_policy(SET CMP0048 NEW)
   # CMake 3.0 introduces some OS X RPath policies
-  cmake_policy(SET CMP0042 OLD)
+  cmake_policy(SET CMP0042 NEW)
   # CMake 3.1 introduces if() policies on dereferencing variables in quotes
   cmake_policy(SET CMP0054 NEW)
 endif()
@@ -70,8 +70,14 @@ if(MSVC_IDE OR XCODE)
   file(MAKE_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/Release)
 endif()
 
-set(IMFViewer_ExternalProject_DIR "${PROJECT_SOURCE_DIR}/Source/External_Projects")
-set(IMFViewer_Plugins_DIR "${PROJECT_SOURCE_DIR}/Source/Plugins")
+set(IMFViewer_ExternalProject_DIR "${IMFViewerProj_SOURCE_DIR}/Source/External_Projects")
+set(IMFViewer_Plugins_DIR "${IMFViewerProj_SOURCE_DIR}/Source/Plugins")
+
+get_filename_component(IMFViewer_PARENT ${IMFViewerProj_SOURCE_DIR} DIRECTORY CACHE)
+set(UnitTestAnalysisFile ${IMFViewerProj_BINARY_DIR}/UnitTestAnalysis.md)
+file(WRITE ${UnitTestAnalysisFile} "## Unit Test Analysis ##\n")
+set(TotalFilters 0)
+set(TotalTestedFilters 0)
 
 #------------------------------------------------------------------------------
 # If the developer has set another CMP directory then use that, otherwise look
