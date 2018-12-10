@@ -44,6 +44,9 @@
 #include <QtCore/QFile>
 #include <QtCore/QDir>
 #include <QtCore/QPluginLoader>
+#include <QtCore/QThread>
+
+#include <QtGui/QScreen>
 
 #include <QtWidgets/QSplashScreen>
 #include <QtWidgets/QMessageBox>
@@ -75,7 +78,8 @@ IMFViewerApplication::IMFViewerApplication(int& argc, char** argv)
 // -----------------------------------------------------------------------------
 IMFViewerApplication::~IMFViewerApplication()
 {
-
+  delete this->m_SplashScreen;
+  this->m_SplashScreen = nullptr;
 }
 
 // -----------------------------------------------------------------------------
@@ -83,8 +87,50 @@ IMFViewerApplication::~IMFViewerApplication()
 // -----------------------------------------------------------------------------
 bool IMFViewerApplication::initialize(int argc, char* argv[])
 {
+  // Assume we are launching on the main screen.
+  float pixelRatio = qApp->screens().at(0)->devicePixelRatio();
+
+  QString name(":/splash/branded_splash");
+  if(pixelRatio >= 2)
+  {
+    name.append("@2x");
+  }
+
+  name.append(".png");
+
+  // Create and show the splash screen as the main window is being created.
+  QPixmap pixmap(name);
+
+  this->m_SplashScreen = new QSplashScreen(pixmap);
+  this->m_SplashScreen->show();
+
+  std::clock_t startClock = std::clock();
+
   // Load application plugins.
   QVector<ISIMPLibPlugin*> plugins = loadPlugins();
+
+  // give GUI components time to update before the mainwindow is shown
+  QApplication::instance()->processEvents();
+  if(m_ShowSplash)
+  {
+    //   delay(1);
+    // if official release, enforce the minimum duration for splash screen
+    QString releaseType = QString::fromLatin1(SIMPLViewProj_RELEASE_TYPE);
+    if(releaseType.compare("Official") == 0)
+    {
+      double splashDuration = (std::clock() - startClock) / (double)CLOCKS_PER_SEC;
+      if(splashDuration < m_MinSplashTime)
+      {
+        QString msg = QObject::tr("");
+        this->m_SplashScreen->showMessage(msg, Qt::AlignVCenter | Qt::AlignRight, Qt::white);
+
+        unsigned long extendedDuration = static_cast<unsigned long>((m_MinSplashTime - splashDuration) * 1000);
+        QThread::msleep(extendedDuration);
+      }
+    }
+    this->m_SplashScreen->finish(nullptr);
+  }
+  QApplication::instance()->processEvents();
 
   return true;
 }
