@@ -41,6 +41,8 @@
 #include <unistd.h>
 #endif
 
+#include <ctime>
+
 #include <QtCore/QFile>
 #include <QtCore/QDir>
 #include <QtCore/QPluginLoader>

@@ -1,14 +1,14 @@
 [submodule "Source/External_Projects/SIMPL"]
 	path = Source/External_Projects/SIMPL
-	url = https://www.github.com/joeykleingers/SIMPL.git
+	url = https://www.github.com/tplatt77/SIMPL.git
 	branch = feature/OSD_GUI
 [submodule "Source/External_Projects/SIMPLVtkLib"]
 	path = Source/External_Projects/SIMPLVtkLib
-	url = https://www.github.com/joeykleingers/SIMPLVtkLib.git
+	url = https://www.github.com/tplatt77/SIMPLVtkLib.git
 	branch = feature/OSD_GUI
 [submodule "Source/External_Projects/CMP"]
 	path = Source/External_Projects/CMP
-	url = https://www.github.com/joeykleingers/CMP.git
+	url = https://www.github.com/tplatt77/CMP.git
 	branch = develop
 [submodule "Source/Plugins/ITKImageProcessing"]
 	path = Source/Plugins/ITKImageProcessing
@@ -16,5 +16,5 @@
 	branch = feature/OSD_GUI
 [submodule "Source/Plugins/MultiscaleFusion"]
 	path = Source/Plugins/MultiscaleFusion
-	url = https://www.github.com/joeykleingers/MultiscaleFusion.git
+	url = https://www.github.com/bluequartzsoftware/MultiscaleFusion.git
 	branch = feature/OSD_GUI
