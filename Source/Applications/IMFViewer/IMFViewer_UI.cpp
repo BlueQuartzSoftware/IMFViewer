@@ -41,6 +41,9 @@
 #include <QtCore/QMimeDatabase>
 
 #include <QtWidgets/QFileDialog>
+#include <QtWidgets/QMessageBox>
+
+#include <SIMPLib/Utilities/SIMPLH5DataReader.h>
 
 #include "SIMPLib/Filtering/FilterFactory.hpp"
 #include "SIMPLib/Filtering/FilterManager.h"
@@ -51,7 +54,6 @@
 #include "SVWidgetsLib/QtSupport/QtSRecentFileList.h"
 #include "SVWidgetsLib/QtSupport/QtSSettings.h"
 
-#include "SIMPLVtkLib/Wizards/GenericMontage/GenericMontageWizard.h"
 #include "SIMPLVtkLib/Wizards/ImportData/ImportDataWizard.h"
 
 #include "ui_IMFViewer_UI.h"
@@ -110,89 +112,18 @@ void IMFViewer_UI::setupGui()
 // -----------------------------------------------------------------------------
 //
 // -----------------------------------------------------------------------------
-void IMFViewer_UI::importFiles()
-{
-  QMimeDatabase db;
-
-  QMimeType pngType = db.mimeTypeForName("image/png");
-  QStringList pngSuffixes = pngType.suffixes();
-  QString pngSuffixStr = pngSuffixes.join(" *.");
-  pngSuffixStr.prepend("*.");
-
-  QMimeType tiffType = db.mimeTypeForName("image/tiff");
-  QStringList tiffSuffixes = tiffType.suffixes();
-  QString tiffSuffixStr = tiffSuffixes.join(" *.");
-  tiffSuffixStr.prepend("*.");
-
-  QMimeType jpegType = db.mimeTypeForName("image/jpeg");
-  QStringList jpegSuffixes = jpegType.suffixes();
-  QString jpegSuffixStr = jpegSuffixes.join(" *.");
-  jpegSuffixStr.prepend("*.");
-
-  QMimeType bmpType = db.mimeTypeForName("image/bmp");
-  QStringList bmpSuffixes = bmpType.suffixes();
-  QString bmpSuffixStr = bmpSuffixes.join(" *.");
-  bmpSuffixStr.prepend("*.");
-
-  // Open a file in the application
-  QString filter = tr("Data Files (*.dream3d *.vtk *.vti *.vtp *.vtr *.vts *.vtu *.stl %1 %3 %3 %4);;"
-                      "DREAM.3D Files (*.dream3d);;"
-                      "Image Files (%1 %2 %3 %4);;"
-                      "VTK Files (*.vtk *.vti *.vtp *.vtr *.vts *.vtu);;"
-                      "STL Files (*.stl)")
-                       .arg(pngSuffixStr)
-                       .arg(tiffSuffixStr)
-                       .arg(jpegSuffixStr)
-                       .arg(bmpSuffixStr);
-  QStringList filePaths = QFileDialog::getOpenFileNames(this, "Open Input File", m_OpenDialogLastDirectory, filter);
-  if(filePaths.isEmpty())
-  {
-    return;
-  }
-
-  VSMainWidgetBase* baseWidget = dynamic_cast<VSMainWidgetBase*>(m_Internals->vsWidget);
-  baseWidget->importFiles(filePaths);
-}
-
-// -----------------------------------------------------------------------------
-//
-// -----------------------------------------------------------------------------
-void IMFViewer_UI::importGenericMontage()
-{
-  GenericMontageWizard* genericWizard = new GenericMontageWizard(this);
-  genericWizard->exec();
-
-  // Store all the generic wizard's selections in the settings object here
-  GenericMontageSettings* montageSettings = genericWizard->getMontageSettings();
-
-  // Call ITK function(s) to stitch the montage together using the metadata in the settings object.
-
-  delete genericWizard;
-}
-
-// -----------------------------------------------------------------------------
-//
-// -----------------------------------------------------------------------------
 void IMFViewer_UI::importData()
 {
 	ImportDataWizard* importDataWizard = new ImportDataWizard(this);
 	importDataWizard->exec();
 
-	// Store all the generic wizard's selections in the settings object here
-	GenericMontageSettings* montageSettings = importDataWizard->getMontageSettings();
+  ImportDataWizard::InputType inputType = importDataWizard->field("InputType").value<ImportDataWizard::InputType>();
+  VSMainWidgetBase* baseWidget = dynamic_cast<VSMainWidgetBase*>(m_Internals->vsWidget);
 
 	// Based on the type of file imported, perform next action
-	if (importDataWizard->getFileType() == ImportDataWizard::FileType::DREAM3D)
+  if (inputType == ImportDataWizard::InputType::GenericMontage)
 	{
-		QStringList filePaths;
-		QString dream3dFile = montageSettings->getOutputFileName();
-		if (dream3dFile.isEmpty())
-		{
-			return;
-		}
-		filePaths.append(dream3dFile);
-		VSMainWidgetBase* baseWidget = dynamic_cast<VSMainWidgetBase*>(m_Internals->vsWidget);
-		baseWidget->importFiles(filePaths);
+
 	}
 	else if (importDataWizard->getFileType() == ImportDataWizard::FileType::GenericMontage)
 	{
@@ -310,6 +241,54 @@ void IMFViewer_UI::importData()
 
 		}
 	}
+  else if (inputType == ImportDataWizard::InputType::DREAM3D)
+  {
+    QString dataFilePath = importDataWizard->field("DataFilePath").toString();
+
+    SIMPLH5DataReader reader;
+    bool success = reader.openFile(dataFilePath);
+    if(success)
+    {
+      connect(&reader, &SIMPLH5DataReader::errorGenerated, [=] (const QString& title, const QString& msg, const int& code) {
+        QMessageBox::critical(this, title, msg, QMessageBox::StandardButton::Ok);
+      });
+
+      DataContainerArrayProxy dream3dProxy = importDataWizard->field("DREAM3DProxy").value<DataContainerArrayProxy>();
+
+      DataContainerArray::Pointer dca = reader.readSIMPLDataUsingProxy(dream3dProxy, false);
+      if(dca.get() == nullptr)
+      {
+        return;
+      }
+
+      baseWidget->importDataContainerArray(dataFilePath, dca);
+    }
+  }
+  else if (inputType == ImportDataWizard::InputType::Image)
+  {
+    QString dataFilePath = importDataWizard->field("DataFilePath").toString();
+    baseWidget->importImageData(dataFilePath);
+  }
+  else if (inputType == ImportDataWizard::InputType::VTK)
+  {
+    QString dataFilePath = importDataWizard->field("DataFilePath").toString();
+    baseWidget->importVTKData(dataFilePath);
+  }
+  else if (inputType == ImportDataWizard::InputType::STL)
+  {
+    QString dataFilePath = importDataWizard->field("DataFilePath").toString();
+    baseWidget->importSTLData(dataFilePath);
+  }
+  else
+  {
+    QString dataFilePath = importDataWizard->field("DataFilePath").toString();
+    QFileInfo fi(dataFilePath);
+    QString ext = fi.completeSuffix();
+    QMessageBox::critical(this, "Invalid File Type",
+                          tr("IMF Viewer failed to detect the proper data file type from the given input file with extension '%1'.  "
+                             "Supported file types are DREAM3D, VTK, STL and Image files, as well as Fiji and Robomet configuration files.").arg(ext),
+                          QMessageBox::StandardButton::Ok);
+  }
 
 	delete importDataWizard;
 }

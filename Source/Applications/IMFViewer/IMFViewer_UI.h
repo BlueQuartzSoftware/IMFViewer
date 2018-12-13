@@ -103,19 +103,9 @@ protected:
 
 protected slots:
   /**
-   * @brief importFiles
-   */
-  void importFiles();
-
-  /**
    * @brief importData
    */
   void importData();
-
-  /**
-   * @brief importGenericMontage
-   */
-  void importGenericMontage();
 
   /**
    * @brief openRecentFile
