@@ -41,6 +41,9 @@
 #include <QtCore/QMimeDatabase>
 
 #include <QtWidgets/QFileDialog>
+#include <QtWidgets/QMessageBox>
+
+#include <SIMPLib/Utilities/SIMPLH5DataReader.h>
 
 #include "SIMPLib/Filtering/FilterFactory.hpp"
 #include "SIMPLib/Filtering/FilterManager.h"
@@ -109,190 +112,198 @@ void IMFViewer_UI::setupGui()
 // -----------------------------------------------------------------------------
 //
 // -----------------------------------------------------------------------------
-void IMFViewer_UI::importFiles()
-{
-  QMimeDatabase db;
-
-  QMimeType pngType = db.mimeTypeForName("image/png");
-  QStringList pngSuffixes = pngType.suffixes();
-  QString pngSuffixStr = pngSuffixes.join(" *.");
-  pngSuffixStr.prepend("*.");
-
-  QMimeType tiffType = db.mimeTypeForName("image/tiff");
-  QStringList tiffSuffixes = tiffType.suffixes();
-  QString tiffSuffixStr = tiffSuffixes.join(" *.");
-  tiffSuffixStr.prepend("*.");
-
-  QMimeType jpegType = db.mimeTypeForName("image/jpeg");
-  QStringList jpegSuffixes = jpegType.suffixes();
-  QString jpegSuffixStr = jpegSuffixes.join(" *.");
-  jpegSuffixStr.prepend("*.");
-
-  QMimeType bmpType = db.mimeTypeForName("image/bmp");
-  QStringList bmpSuffixes = bmpType.suffixes();
-  QString bmpSuffixStr = bmpSuffixes.join(" *.");
-  bmpSuffixStr.prepend("*.");
-
-  // Open a file in the application
-  QString filter = tr("Data Files (*.dream3d *.vtk *.vti *.vtp *.vtr *.vts *.vtu *.stl %1 %3 %3 %4);;"
-                      "DREAM.3D Files (*.dream3d);;"
-                      "Image Files (%1 %2 %3 %4);;"
-                      "VTK Files (*.vtk *.vti *.vtp *.vtr *.vts *.vtu);;"
-                      "STL Files (*.stl)")
-                       .arg(pngSuffixStr)
-                       .arg(tiffSuffixStr)
-                       .arg(jpegSuffixStr)
-                       .arg(bmpSuffixStr);
-  QStringList filePaths = QFileDialog::getOpenFileNames(this, "Open Input File", m_OpenDialogLastDirectory, filter);
-  if(filePaths.isEmpty())
-  {
-    return;
-  }
-
-  VSMainWidgetBase* baseWidget = dynamic_cast<VSMainWidgetBase*>(m_Internals->vsWidget);
-  baseWidget->importFiles(filePaths);
-}
-
-// -----------------------------------------------------------------------------
-//
-// -----------------------------------------------------------------------------
 void IMFViewer_UI::importData()
 {
 	ImportDataWizard* importDataWizard = new ImportDataWizard(this);
 	importDataWizard->exec();
 
-	// Store all the generic wizard's selections in the settings object here
-	GenericMontageSettings* montageSettings = importDataWizard->getMontageSettings();
+  ImportDataWizard::InputType inputType = importDataWizard->field("InputType").value<ImportDataWizard::InputType>();
+  VSMainWidgetBase* baseWidget = dynamic_cast<VSMainWidgetBase*>(m_Internals->vsWidget);
 
 	// Based on the type of file imported, perform next action
-	if (importDataWizard->getFileType() == ImportDataWizard::FileType::DREAM3D)
+  if (inputType == ImportDataWizard::InputType::GenericMontage)
 	{
-		QStringList filePaths;
-		QString dream3dFile = montageSettings->getOutputFileName();
-		if (dream3dFile.isEmpty())
-		{
-			return;
-		}
-		filePaths.append(dream3dFile);
-		VSMainWidgetBase* baseWidget = dynamic_cast<VSMainWidgetBase*>(m_Internals->vsWidget);
-		baseWidget->importFiles(filePaths);
+    // Instantiate ITK Montage filter
+    QString filterName = "ITKMontageFromFilesystem";
+    FilterManager* fm = FilterManager::Instance();
+    IFilterFactory::Pointer factory = fm->getFactoryFromClassName(filterName);
+    DataContainerArray::Pointer dca = DataContainerArray::New();
+    AbstractFilter::Pointer itkMontageFilter;
+    AbstractFilter::Pointer writer;
+
+    // Run the ITK Montage from Filesystem filter
+    if (factory.get() != nullptr)
+    {
+
+      itkMontageFilter = factory->create();
+      if (itkMontageFilter.get() != nullptr)
+      {
+        itkMontageFilter->setDataContainerArray(dca);
+        //DataContainer::Pointer dc = DataContainer::New("DataContainer");
+        //AttributeMatrix::Pointer am = AttributeMatrix::New(QVector<size_t>(1, 53), "CellAttributeMatrix", AttributeMatrix::Type::Cell);
+        //dc->addAttributeMatrix("CellAttributeMatrix", am);
+        //filter->getDataContainerArray()->addDataContainer(dc);
+
+        QVariant var;
+        bool propWasSet = false;
+
+        int numOfRows = importDataWizard->field("numOfRows").toInt();
+        int numOfCols = importDataWizard->field("numOfCols").toInt();
+
+        // Set montage size
+        IntVec3_t montageSize = { numOfCols, numOfRows, 1 };
+        var.setValue(montageSize);
+        propWasSet = itkMontageFilter->setProperty("MontageSize", var);
+
+        // Get input file names
+        FileListInfo_t inputFileInfo = importDataWizard->field("GenericFileListInfo").value<FileListInfo_t>();
+        var.setValue(inputFileInfo);
+        propWasSet = itkMontageFilter->setProperty("InputFileListInfo", var);
+
+        // Set DataContainerName
+        QString dcName = "DataContainer";
+        var.setValue(dcName);
+        propWasSet = itkMontageFilter->setProperty("DataContainerName", var);
+
+        // Set Cell Attribute Matrix Name
+        QString cellAttrMatrixName = "CellAttributeMatrix";
+        var.setValue(cellAttrMatrixName);
+        propWasSet = itkMontageFilter->setProperty("CellAttributeMatrixName", var);
+
+        // Set Metadata Attribute Matrix Name
+        QString metaDataAttributeMatrixName = "MetaDataAttributeMatrix";
+        var.setValue(metaDataAttributeMatrixName);
+        propWasSet = itkMontageFilter->setProperty("MetaDataAttributeMatrixName", var);
+
+        //itkMontageFilter->execute();
+
+        //qInfo() << "ITK Montage error cond: " << itkMontageFilter->getErrorCondition();
+      }
+    }
+
+    // For testing purposes only
+    QString dream3dWriterName = "DataContainerWriter";
+    factory = fm->getFactoryFromClassName(dream3dWriterName);
+
+    if (factory.get() != nullptr)
+    {
+      writer = factory->create();
+      if (writer.get() != nullptr)
+      {
+        writer->setDataContainerArray(dca);
+        QVariant var;
+        bool propWasSet = false;
+
+        // Set Output File
+        QString outputFile = importDataWizard->field("outputFileName").toString();
+        var.setValue(outputFile);
+        propWasSet = writer->setProperty("OutputFile", var);
+
+        // Set whether to write Xdmf file
+        bool writeXdmf = true;
+        var.setValue(writeXdmf);
+        propWasSet = writer->setProperty("WriteXdmfFile", var);
+
+        // Set whether to write time series
+        bool writeTimeSeries = false;
+        var.setValue(writeTimeSeries);
+        propWasSet = writer->setProperty("WriteTimeSeries", var);
+
+        //writer->execute();
+
+        //qInfo() << "Data Container Writer error cond: " << writer->getErrorCondition();
+      }
+    }
+
+    if (itkMontageFilter.get() != nullptr && writer.get() != nullptr)
+    {
+      FilterPipeline::Pointer pipeline = FilterPipeline::New();
+      pipeline->pushBack(itkMontageFilter);
+      pipeline->pushBack(writer);
+      pipeline->execute();
+
+      int err = pipeline->getErrorCondition();
+      qInfo() << "Pipeline err condition: " << err;
+
+      if (err >= 0)
+      {
+        QStringList filePaths;
+        QString dream3dFile = importDataWizard->field("outputFileName").toString();
+        if (dream3dFile.isEmpty())
+        {
+          return;
+        }
+
+        SIMPLH5DataReader reader;
+        bool success = reader.openFile(dream3dFile);
+        if(success)
+        {
+          connect(&reader, &SIMPLH5DataReader::errorGenerated, [=] (const QString& title, const QString& msg, const int& code) {
+            QMessageBox::critical(this, title, msg, QMessageBox::StandardButton::Ok);
+          });
+
+          DataContainerArrayProxy dream3dProxy = importDataWizard->field("DREAM3DProxy").value<DataContainerArrayProxy>();
+
+          DataContainerArray::Pointer dca = reader.readSIMPLDataUsingProxy(dream3dProxy, false);
+          if(dca.get() == nullptr)
+          {
+            return;
+          }
+
+          VSMainWidgetBase* baseWidget = dynamic_cast<VSMainWidgetBase*>(m_Internals->vsWidget);
+          baseWidget->importDataContainerArray(dream3dFile, dca);
+        }
+      }
+    }
 	}
-	else if (importDataWizard->getFileType() == ImportDataWizard::FileType::GenericMontage)
-	{
-		// Instantiate ITK Montage filter
-		QString filterName = "ITKMontageFromFilesystem";
-		FilterManager* fm = FilterManager::Instance();
-		IFilterFactory::Pointer factory = fm->getFactoryFromClassName(filterName);
-		DataContainerArray::Pointer dca = DataContainerArray::New();
-		AbstractFilter::Pointer itkMontageFilter;
-		AbstractFilter::Pointer writer;
+  else if (inputType == ImportDataWizard::InputType::DREAM3D)
+  {
+    QString dataFilePath = importDataWizard->field("DataFilePath").toString();
 
-		// Run the ITK Montage from Filesystem filter
-		if (factory.get() != nullptr)
-		{
+    SIMPLH5DataReader reader;
+    bool success = reader.openFile(dataFilePath);
+    if(success)
+    {
+      connect(&reader, &SIMPLH5DataReader::errorGenerated, [=] (const QString& title, const QString& msg, const int& code) {
+        QMessageBox::critical(this, title, msg, QMessageBox::StandardButton::Ok);
+      });
 
-			itkMontageFilter = factory->create();
-			if (itkMontageFilter.get() != nullptr)
-			{
-				itkMontageFilter->setDataContainerArray(dca);
-				//DataContainer::Pointer dc = DataContainer::New("DataContainer");
-				//AttributeMatrix::Pointer am = AttributeMatrix::New(QVector<size_t>(1, 53), "CellAttributeMatrix", AttributeMatrix::Type::Cell);
-				//dc->addAttributeMatrix("CellAttributeMatrix", am);
-				//filter->getDataContainerArray()->addDataContainer(dc);
+      DataContainerArrayProxy dream3dProxy = importDataWizard->field("DREAM3DProxy").value<DataContainerArrayProxy>();
 
-				QVariant var;
-				bool propWasSet = false;
+      DataContainerArray::Pointer dca = reader.readSIMPLDataUsingProxy(dream3dProxy, false);
+      if(dca.get() == nullptr)
+      {
+        return;
+      }
 
-				// Set montage size
-				IntVec3_t montageSize = { montageSettings->getGridSizeX(), montageSettings->getGridSizeY(), 1 };
-				var.setValue(montageSize);
-				propWasSet = itkMontageFilter->setProperty("MontageSize", var);
-
-				// Get input file names
-				FileListInfo_t inputFileInfo = montageSettings->getFileListInfo();
-				var.setValue(inputFileInfo);
-				propWasSet = itkMontageFilter->setProperty("InputFileListInfo", var);
-
-				// Set DataContainerName
-				QString dcName = "DataContainer";
-				var.setValue(dcName);
-				propWasSet = itkMontageFilter->setProperty("DataContainerName", var);
-
-				// Set Cell Attribute Matrix Name
-				QString cellAttrMatrixName = "CellAttributeMatrix";
-				var.setValue(cellAttrMatrixName);
-				propWasSet = itkMontageFilter->setProperty("CellAttributeMatrixName", var);
-
-				// Set Metadata Attribute Matrix Name
-				QString metaDataAttributeMatrixName = "MetaDataAttributeMatrix";
-				var.setValue(metaDataAttributeMatrixName);
-				propWasSet = itkMontageFilter->setProperty("MetaDataAttributeMatrixName", var);
-
-				//itkMontageFilter->execute();
-
-				//qInfo() << "ITK Montage error cond: " << itkMontageFilter->getErrorCondition();
-			}
-		}
-
-		// For testing purposes only
-		QString dream3dWriterName = "DataContainerWriter";
-		factory = fm->getFactoryFromClassName(dream3dWriterName);
-
-		if (factory.get() != nullptr)
-		{
-			writer = factory->create();
-			if (writer.get() != nullptr)
-			{
-				writer->setDataContainerArray(dca);
-				QVariant var;
-				bool propWasSet = false;
-
-				// Set Output File
-				QString outputFile = montageSettings->getOutputFileName();
-				var.setValue(outputFile);
-				propWasSet = writer->setProperty("OutputFile", var);
-
-				// Set whether to write Xdmf file
-				bool writeXdmf = true;
-				var.setValue(writeXdmf);
-				propWasSet = writer->setProperty("WriteXdmfFile", var);
-
-				// Set whether to write time series 
-				bool writeTimeSeries = false;
-				var.setValue(writeTimeSeries);
-				propWasSet = writer->setProperty("WriteTimeSeries", var);
-
-				//writer->execute();
-
-				//qInfo() << "Data Container Writer error cond: " << writer->getErrorCondition();
-			}
-		}
-
-		if (itkMontageFilter.get() != nullptr && writer.get() != nullptr)
-		{
-			FilterPipeline::Pointer pipeline = FilterPipeline::New();
-			pipeline->pushBack(itkMontageFilter);
-			pipeline->pushBack(writer);
-			pipeline->execute();
-
-			int err = pipeline->getErrorCondition();
-			qInfo() << "Pipeline err condition: " << err;
-
-			if (err >= 0) 
-			{
-				QStringList filePaths;
-				QString dream3dFile = montageSettings->getOutputFileName();
-				if (dream3dFile.isEmpty())
-				{
-					return;
-				}
-				filePaths.append(dream3dFile);
-				VSMainWidgetBase* baseWidget = dynamic_cast<VSMainWidgetBase*>(m_Internals->vsWidget);
-				baseWidget->importFiles(filePaths);
-			}
-
-		}
-	}
+      baseWidget->importDataContainerArray(dataFilePath, dca);
+    }
+  }
+  else if (inputType == ImportDataWizard::InputType::Image)
+  {
+    QString dataFilePath = importDataWizard->field("DataFilePath").toString();
+    baseWidget->importImageData(dataFilePath);
+  }
+  else if (inputType == ImportDataWizard::InputType::VTK)
+  {
+    QString dataFilePath = importDataWizard->field("DataFilePath").toString();
+    baseWidget->importVTKData(dataFilePath);
+  }
+  else if (inputType == ImportDataWizard::InputType::STL)
+  {
+    QString dataFilePath = importDataWizard->field("DataFilePath").toString();
+    baseWidget->importSTLData(dataFilePath);
+  }
+  else
+  {
+    QString dataFilePath = importDataWizard->field("DataFilePath").toString();
+    QFileInfo fi(dataFilePath);
+    QString ext = fi.completeSuffix();
+    QMessageBox::critical(this, "Invalid File Type",
+                          tr("IMF Viewer failed to detect the proper data file type from the given input file with extension '%1'.  "
+                             "Supported file types are DREAM3D, VTK, STL and Image files, as well as Fiji and Robomet configuration files.").arg(ext),
+                          QMessageBox::StandardButton::Ok);
+  }
 
 	delete importDataWizard;
 }
