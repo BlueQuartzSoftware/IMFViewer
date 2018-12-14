@@ -55,6 +55,7 @@
 #include "SVWidgetsLib/QtSupport/QtSSettings.h"
 
 #include "SIMPLVtkLib/Wizards/ImportData/ImportDataWizard.h"
+#include "SIMPLVtkLib/Wizards/ImportData/TileConfigFileGenerator.h"
 
 #include "ui_IMFViewer_UI.h"
 
@@ -178,6 +179,12 @@ void IMFViewer_UI::importData()
         // itkMontageFilter->execute();
 
         // qInfo() << "ITK Montage error cond: " << itkMontageFilter->getErrorCondition();
+
+		// Generate tile configuration file.
+		TileConfigFileGenerator tileConfigFileGenerator(inputFileInfo, MontageSettings::MontageType::GridSnakeByRows,
+			MontageSettings::MontageOrder::RightAndDown, numOfCols, numOfRows, "TileConfiguration.txt");
+		tileConfigFileGenerator.buildTileConfigFile();
+
       }
     }
 
