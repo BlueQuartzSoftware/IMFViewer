@@ -264,7 +264,8 @@ void IMFViewer_UI::importMontage()
           TileConfigFileGenerator tileConfigFileGenerator(inputFileInfo,
             importDataWizard->field("montageType").value<MontageSettings::MontageType>(),
             importDataWizard->field("montageOrder").value<MontageSettings::MontageOrder>(),
-            numOfCols, numOfRows, "TileConfiguration.txt");
+            numOfCols, numOfRows, importDataWizard->field("tileOverlap").toDouble(),
+			  "TileConfiguration.txt");
           tileConfigFileGenerator.buildTileConfigFile();
         }
       }
