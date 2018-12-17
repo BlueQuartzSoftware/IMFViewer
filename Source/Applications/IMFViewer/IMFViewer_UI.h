@@ -108,6 +108,11 @@ protected slots:
   void importData();
 
   /**
+   * @brief importMontage
+   */
+  void importMontage();
+
+  /**
    * @brief openRecentFile
    */
   void openRecentFile();
