@@ -181,8 +181,10 @@ void IMFViewer_UI::importData()
         // qInfo() << "ITK Montage error cond: " << itkMontageFilter->getErrorCondition();
 
 		// Generate tile configuration file.
-		TileConfigFileGenerator tileConfigFileGenerator(inputFileInfo, MontageSettings::MontageType::GridSnakeByRows,
-			MontageSettings::MontageOrder::RightAndDown, numOfCols, numOfRows, "TileConfiguration.txt");
+		TileConfigFileGenerator tileConfigFileGenerator(inputFileInfo,
+			importDataWizard->field("montageType").value<MontageSettings::MontageType>(),
+			importDataWizard->field("montageOrder").value<MontageSettings::MontageOrder>(),
+			numOfCols, numOfRows, "TileConfiguration.txt");
 		tileConfigFileGenerator.buildTileConfigFile();
 
       }
