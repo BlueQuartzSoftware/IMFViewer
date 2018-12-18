@@ -136,10 +136,7 @@ void IMFViewer_UI::importData()
 
   if (ext == "dream3d")
   {
-    if (baseWidget->openDREAM3DFile(filePath) == false)
-    {
-      return;
-    }
+    baseWidget->launchHDF5SelectionDialog(filePath);
   }
   else if (ext == "vtk" || ext == "vti" || ext == "vtp" || ext == "vtr" || ext == "vts" || ext == "vtu")
   {
