@@ -41,6 +41,7 @@
 #include "SIMPLib/DataContainers/DataContainerArray.h"
 
 class QtSSettings;
+class ImportMontageWizard;
 
 class IMFViewer_UI : public QMainWindow
 {
@@ -132,6 +133,30 @@ private:
   QAction* m_ClearRecentsAction = nullptr;
 
   QString m_OpenDialogLastDirectory = "";
+
+  /**
+   * @brief importGenericMontage
+   * @param montageWizard
+   */
+  void importGenericMontage(ImportMontageWizard* montageWizard);
+
+  /**
+   * @brief importDREAM3DMontage
+   * @param montageWizard
+   */
+  void importDREAM3DMontage(ImportMontageWizard* montageWizard);
+
+  /**
+   * @brief importFijiMontage
+   * @param montageWizard
+   */
+  void importFijiMontage(ImportMontageWizard* montageWizard);
+
+  /**
+   * @brief importRobometMontage
+   * @param montageWizard
+   */
+  void importRobometMontage(ImportMontageWizard* montageWizard);
 
   /**
    * @brief loadSession
