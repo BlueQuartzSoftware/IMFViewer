@@ -54,8 +54,8 @@
 #include "SVWidgetsLib/QtSupport/QtSRecentFileList.h"
 #include "SVWidgetsLib/QtSupport/QtSSettings.h"
 
-#include "SIMPLVtkLib/Wizards/ImportData/ImportDataWizard.h"
-#include "SIMPLVtkLib/Wizards/ImportData/TileConfigFileGenerator.h"
+#include "SIMPLVtkLib/Wizards/ImportMontage/ImportMontageWizard.h"
+#include "SIMPLVtkLib/Wizards/ImportMontage/TileConfigFileGenerator.h"
 
 #include "ui_IMFViewer_UI.h"
 
@@ -190,16 +190,16 @@ void IMFViewer_UI::importData()
 // -----------------------------------------------------------------------------
 void IMFViewer_UI::importMontage()
 {
-  ImportDataWizard* importDataWizard = new ImportDataWizard(this);
-  int result = importDataWizard->exec();
+  ImportMontageWizard* montageWizard = new ImportMontageWizard(this);
+  int result = montageWizard->exec();
 
   if (result == QDialog::Accepted)
   {
-    ImportDataWizard::InputType inputType = importDataWizard->field("InputType").value<ImportDataWizard::InputType>();
+    ImportMontageWizard::InputType inputType = montageWizard->field("InputType").value<ImportMontageWizard::InputType>();
     VSMainWidgetBase* baseWidget = dynamic_cast<VSMainWidgetBase*>(m_Internals->vsWidget);
 
     // Based on the type of file imported, perform next action
-    if(inputType == ImportDataWizard::InputType::GenericMontage)
+    if(inputType == ImportMontageWizard::InputType::GenericMontage)
     {
       // Instantiate ITK Montage filter
       QString filterName = "ITKMontageFromFilesystem";
@@ -225,8 +225,8 @@ void IMFViewer_UI::importMontage()
           QVariant var;
           bool propWasSet = false;
 
-          int numOfRows = importDataWizard->field("numOfRows").toInt();
-          int numOfCols = importDataWizard->field("numOfCols").toInt();
+          int numOfRows = montageWizard->field("numOfRows").toInt();
+          int numOfCols = montageWizard->field("numOfCols").toInt();
 
           // Set montage size
           IntVec3_t montageSize = {numOfCols, numOfRows, 1};
@@ -234,7 +234,7 @@ void IMFViewer_UI::importMontage()
           propWasSet = itkMontageFilter->setProperty("MontageSize", var);
 
           // Get input file names
-          FileListInfo_t inputFileInfo = importDataWizard->field("GenericFileListInfo").value<FileListInfo_t>();
+          FileListInfo_t inputFileInfo = montageWizard->field("GenericFileListInfo").value<FileListInfo_t>();
           var.setValue(inputFileInfo);
           propWasSet = itkMontageFilter->setProperty("InputFileListInfo", var);
 
@@ -259,9 +259,9 @@ void IMFViewer_UI::importMontage()
 
           // Generate tile configuration file.
           TileConfigFileGenerator tileConfigFileGenerator(inputFileInfo,
-            importDataWizard->field("montageType").value<MontageSettings::MontageType>(),
-            importDataWizard->field("montageOrder").value<MontageSettings::MontageOrder>(),
-            numOfCols, numOfRows, importDataWizard->field("tileOverlap").toDouble(),
+            montageWizard->field("montageType").value<MontageSettings::MontageType>(),
+            montageWizard->field("montageOrder").value<MontageSettings::MontageOrder>(),
+            numOfCols, numOfRows, montageWizard->field("tileOverlap").toDouble(),
 			  "TileConfiguration.txt");
           tileConfigFileGenerator.buildTileConfigFile();
         }
@@ -281,7 +281,7 @@ void IMFViewer_UI::importMontage()
           bool propWasSet = false;
 
           // Set Output File
-          QString outputFile = importDataWizard->field("outputFileName").toString();
+          QString outputFile = montageWizard->field("outputFileName").toString();
           var.setValue(outputFile);
           propWasSet = writer->setProperty("OutputFile", var);
 
@@ -314,7 +314,7 @@ void IMFViewer_UI::importMontage()
         if(err >= 0)
         {
           QStringList filePaths;
-          QString dream3dFile = importDataWizard->field("outputFileName").toString();
+          QString dream3dFile = montageWizard->field("outputFileName").toString();
           if(dream3dFile.isEmpty())
           {
             return;
@@ -327,7 +327,7 @@ void IMFViewer_UI::importMontage()
             connect(&reader, &SIMPLH5DataReader::errorGenerated,
                     [=](const QString& title, const QString& msg, const int& code) { QMessageBox::critical(this, title, msg, QMessageBox::StandardButton::Ok); });
 
-            DataContainerArrayProxy dream3dProxy = importDataWizard->field("DREAM3DProxy").value<DataContainerArrayProxy>();
+            DataContainerArrayProxy dream3dProxy = montageWizard->field("DREAM3DProxy").value<DataContainerArrayProxy>();
 
             DataContainerArray::Pointer dca = reader.readSIMPLDataUsingProxy(dream3dProxy, false);
             if(dca.get() == nullptr)
@@ -341,9 +341,9 @@ void IMFViewer_UI::importMontage()
         }
       }
     }
-    else if(inputType == ImportDataWizard::InputType::DREAM3D)
+    else if(inputType == ImportMontageWizard::InputType::DREAM3D)
     {
-      QString dataFilePath = importDataWizard->field("DataFilePath").toString();
+      QString dataFilePath = montageWizard->field("DataFilePath").toString();
 
       SIMPLH5DataReader reader;
       bool success = reader.openFile(dataFilePath);
@@ -352,7 +352,7 @@ void IMFViewer_UI::importMontage()
         connect(&reader, &SIMPLH5DataReader::errorGenerated,
                 [=](const QString& title, const QString& msg, const int& code) { QMessageBox::critical(this, title, msg, QMessageBox::StandardButton::Ok); });
 
-        DataContainerArrayProxy dream3dProxy = importDataWizard->field("DREAM3DProxy").value<DataContainerArrayProxy>();
+        DataContainerArrayProxy dream3dProxy = montageWizard->field("DREAM3DProxy").value<DataContainerArrayProxy>();
 
         DataContainerArray::Pointer dca = reader.readSIMPLDataUsingProxy(dream3dProxy, false);
         if(dca.get() == nullptr)
@@ -363,17 +363,17 @@ void IMFViewer_UI::importMontage()
         baseWidget->importDataContainerArray(dataFilePath, dca);
       }
     }
-    else if(inputType == ImportDataWizard::InputType::Fiji)
+    else if(inputType == ImportMontageWizard::InputType::Fiji)
     {
 
     }
-    else if(inputType == ImportDataWizard::InputType::Robomet)
+    else if(inputType == ImportMontageWizard::InputType::Robomet)
     {
 
     }
     else
     {
-      QString dataFilePath = importDataWizard->field("DataFilePath").toString();
+      QString dataFilePath = montageWizard->field("DataFilePath").toString();
       QFileInfo fi(dataFilePath);
       QString ext = fi.completeSuffix();
       QMessageBox::critical(this, "Invalid File Type",
@@ -384,7 +384,7 @@ void IMFViewer_UI::importMontage()
     }
   }
 
-  delete importDataWizard;
+  delete montageWizard;
 }
 
 // -----------------------------------------------------------------------------
