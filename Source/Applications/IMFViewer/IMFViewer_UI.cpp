@@ -43,7 +43,8 @@
 #include <QtWidgets/QFileDialog>
 #include <QtWidgets/QMessageBox>
 
-#include <SIMPLib/Utilities/SIMPLH5DataReader.h>
+#include "SIMPLib/Utilities/SIMPLH5DataReader.h"
+#include "SIMPLib/Utilities/SIMPLH5DataReaderRequirements.h"
 
 #include "SIMPLib/FilterParameters/IntVec3FilterParameter.h"
 #include "SIMPLib/Filtering/FilterFactory.hpp"
@@ -362,9 +363,44 @@ void IMFViewer_UI::importGenericMontage(ImportMontageWizard* montageWizard)
         connect(&reader, &SIMPLH5DataReader::errorGenerated,
                 [=](const QString& title, const QString& msg, const int& code) { QMessageBox::critical(this, title, msg, QMessageBox::StandardButton::Ok); });
 
-        DataContainerArrayProxy dream3dProxy = montageWizard->field("DREAM3DProxy").value<DataContainerArrayProxy>();
+        int err = 0;
+        SIMPLH5DataReaderRequirements req(SIMPL::Defaults::AnyPrimitive, SIMPL::Defaults::AnyComponentSize, AttributeMatrix::Type::Any, IGeometry::Type::Any);
+        DataContainerArrayProxy proxy = reader.readDataContainerArrayStructure(&req, err);
+        if(proxy.dataContainers.isEmpty())
+        {
+          return;
+        }
 
-        DataContainerArray::Pointer dca = reader.readSIMPLDataUsingProxy(dream3dProxy, false);
+        QStringList dcNames = proxy.dataContainers.keys();
+        for(int i = 0; i < dcNames.size(); i++)
+        {
+          QString dcName = dcNames[i];
+          DataContainerProxy dcProxy = proxy.dataContainers[dcName];
+
+          // We want only data containers with geometries displayed
+          if(dcProxy.dcType == static_cast<unsigned int>(DataContainer::Type::Unknown))
+          {
+            proxy.dataContainers.remove(dcName);
+          }
+          else
+          {
+            QStringList amNames = dcProxy.attributeMatricies.keys();
+            for(int j = 0; j < amNames.size(); j++)
+            {
+              QString amName = amNames[j];
+              AttributeMatrixProxy amProxy = dcProxy.attributeMatricies[amName];
+
+              // We want only cell attribute matrices displayed
+              if(amProxy.amType != AttributeMatrix::Type::Cell)
+              {
+                dcProxy.attributeMatricies.remove(amName);
+                proxy.dataContainers[dcName] = dcProxy;
+              }
+            }
+          }
+        }
+
+        DataContainerArray::Pointer dca = reader.readSIMPLDataUsingProxy(proxy, false);
         if(dca.get() == nullptr)
         {
           return;
