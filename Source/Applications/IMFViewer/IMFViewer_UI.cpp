@@ -243,7 +243,7 @@ void IMFViewer_UI::importGenericMontage(ImportMontageWizard* montageWizard)
   IFilterFactory::Pointer factory = fm->getFactoryFromClassName(filterName);
   DataContainerArray::Pointer dca = DataContainerArray::New();
   AbstractFilter::Pointer itkMontageFilter;
-  AbstractFilter::Pointer writer;
+//  AbstractFilter::Pointer writer;
 
   // Run the ITK Montage from Filesystem filter
   if(factory.get() != nullptr)
@@ -303,45 +303,45 @@ void IMFViewer_UI::importGenericMontage(ImportMontageWizard* montageWizard)
     }
   }
 
-  // For testing purposes only
-  QString dream3dWriterName = "DataContainerWriter";
-  factory = fm->getFactoryFromClassName(dream3dWriterName);
+//  // For testing purposes only
+//  QString dream3dWriterName = "DataContainerWriter";
+//  factory = fm->getFactoryFromClassName(dream3dWriterName);
 
-  if(factory.get() != nullptr)
-  {
-    writer = factory->create();
-    if(writer.get() != nullptr)
-    {
-      writer->setDataContainerArray(dca);
-      QVariant var;
-      bool propWasSet = false;
+//  if(factory.get() != nullptr)
+//  {
+//    writer = factory->create();
+//    if(writer.get() != nullptr)
+//    {
+//      writer->setDataContainerArray(dca);
+//      QVariant var;
+//      bool propWasSet = false;
 
-      // Set Output File
-      QString outputFile = montageWizard->field("outputFileName").toString();
-      var.setValue(outputFile);
-      propWasSet = writer->setProperty("OutputFile", var);
+//      // Set Output File
+//      QString outputFile = montageWizard->field("outputFileName").toString();
+//      var.setValue(outputFile);
+//      propWasSet = writer->setProperty("OutputFile", var);
 
-      // Set whether to write Xdmf file
-      bool writeXdmf = true;
-      var.setValue(writeXdmf);
-      propWasSet = writer->setProperty("WriteXdmfFile", var);
+//      // Set whether to write Xdmf file
+//      bool writeXdmf = true;
+//      var.setValue(writeXdmf);
+//      propWasSet = writer->setProperty("WriteXdmfFile", var);
 
-      // Set whether to write time series
-      bool writeTimeSeries = false;
-      var.setValue(writeTimeSeries);
-      propWasSet = writer->setProperty("WriteTimeSeries", var);
+//      // Set whether to write time series
+//      bool writeTimeSeries = false;
+//      var.setValue(writeTimeSeries);
+//      propWasSet = writer->setProperty("WriteTimeSeries", var);
 
-      // writer->execute();
+//      // writer->execute();
 
-      // qInfo() << "Data Container Writer error cond: " << writer->getErrorCondition();
-    }
-  }
+//      // qInfo() << "Data Container Writer error cond: " << writer->getErrorCondition();
+//    }
+//  }
 
-  if(itkMontageFilter.get() != nullptr && writer.get() != nullptr)
+  if(itkMontageFilter.get() != nullptr/* && writer.get() != nullptr*/)
   {
     FilterPipeline::Pointer pipeline = FilterPipeline::New();
     pipeline->pushBack(itkMontageFilter);
-    pipeline->pushBack(writer);
+//    pipeline->pushBack(writer);
     pipeline->execute();
 
     int err = pipeline->getErrorCondition();
@@ -349,66 +349,71 @@ void IMFViewer_UI::importGenericMontage(ImportMontageWizard* montageWizard)
 
     if(err >= 0)
     {
-      QStringList filePaths;
-      QString dream3dFile = montageWizard->field("outputFileName").toString();
-      if(dream3dFile.isEmpty())
-      {
-        return;
-      }
+      DataContainerArray::Pointer dca = pipeline->getDataContainerArray();
 
-      SIMPLH5DataReader reader;
-      bool success = reader.openFile(dream3dFile);
-      if(success)
-      {
-        connect(&reader, &SIMPLH5DataReader::errorGenerated,
-                [=](const QString& title, const QString& msg, const int& code) { QMessageBox::critical(this, title, msg, QMessageBox::StandardButton::Ok); });
+      VSMainWidgetBase* baseWidget = dynamic_cast<VSMainWidgetBase*>(m_Internals->vsWidget);
+      baseWidget->importPipelineOutput(pipeline, dca);
 
-        int err = 0;
-        SIMPLH5DataReaderRequirements req(SIMPL::Defaults::AnyPrimitive, SIMPL::Defaults::AnyComponentSize, AttributeMatrix::Type::Any, IGeometry::Type::Any);
-        DataContainerArrayProxy proxy = reader.readDataContainerArrayStructure(&req, err);
-        if(proxy.dataContainers.isEmpty())
-        {
-          return;
-        }
+//      QStringList filePaths;
+//      QString dream3dFile = montageWizard->field("outputFileName").toString();
+//      if(dream3dFile.isEmpty())
+//      {
+//        return;
+//      }
 
-        QStringList dcNames = proxy.dataContainers.keys();
-        for(int i = 0; i < dcNames.size(); i++)
-        {
-          QString dcName = dcNames[i];
-          DataContainerProxy dcProxy = proxy.dataContainers[dcName];
+//      SIMPLH5DataReader reader;
+//      bool success = reader.openFile(dream3dFile);
+//      if(success)
+//      {
+//        connect(&reader, &SIMPLH5DataReader::errorGenerated,
+//                [=](const QString& title, const QString& msg, const int& code) { QMessageBox::critical(this, title, msg, QMessageBox::StandardButton::Ok); });
 
-          // We want only data containers with geometries displayed
-          if(dcProxy.dcType == static_cast<unsigned int>(DataContainer::Type::Unknown))
-          {
-            proxy.dataContainers.remove(dcName);
-          }
-          else
-          {
-            QStringList amNames = dcProxy.attributeMatricies.keys();
-            for(int j = 0; j < amNames.size(); j++)
-            {
-              QString amName = amNames[j];
-              AttributeMatrixProxy amProxy = dcProxy.attributeMatricies[amName];
+//        int err = 0;
+//        SIMPLH5DataReaderRequirements req(SIMPL::Defaults::AnyPrimitive, SIMPL::Defaults::AnyComponentSize, AttributeMatrix::Type::Any, IGeometry::Type::Any);
+//        DataContainerArrayProxy proxy = reader.readDataContainerArrayStructure(&req, err);
+//        if(proxy.dataContainers.isEmpty())
+//        {
+//          return;
+//        }
 
-              // We want only cell attribute matrices displayed
-              if(amProxy.amType != AttributeMatrix::Type::Cell)
-              {
-                dcProxy.attributeMatricies.remove(amName);
-                proxy.dataContainers[dcName] = dcProxy;
-              }
-            }
-          }
-        }
+//        QStringList dcNames = proxy.dataContainers.keys();
+//        for(int i = 0; i < dcNames.size(); i++)
+//        {
+//          QString dcName = dcNames[i];
+//          DataContainerProxy dcProxy = proxy.dataContainers[dcName];
 
-        DataContainerArray::Pointer dca = reader.readSIMPLDataUsingProxy(proxy, false);
-        if(dca.get() == nullptr)
-        {
-          return;
-        }
+//          // We want only data containers with geometries displayed
+//          if(dcProxy.dcType == static_cast<unsigned int>(DataContainer::Type::Unknown))
+//          {
+//            proxy.dataContainers.remove(dcName);
+//          }
+//          else
+//          {
+//            QStringList amNames = dcProxy.attributeMatricies.keys();
+//            for(int j = 0; j < amNames.size(); j++)
+//            {
+//              QString amName = amNames[j];
+//              AttributeMatrixProxy amProxy = dcProxy.attributeMatricies[amName];
 
-        VSMainWidgetBase* baseWidget = dynamic_cast<VSMainWidgetBase*>(m_Internals->vsWidget);
-        baseWidget->importDataContainerArray(dream3dFile, dca);
-      }
+//              // We want only cell attribute matrices displayed
+//              if(amProxy.amType != AttributeMatrix::Type::Cell)
+//              {
+//                dcProxy.attributeMatricies.remove(amName);
+//                proxy.dataContainers[dcName] = dcProxy;
+//              }
+//            }
+//          }
+//        }
+
+//        DataContainerArray::Pointer dca = reader.readSIMPLDataUsingProxy(proxy, false);
+//        if(dca.get() == nullptr)
+//        {
+//          return;
+//        }
+
+//        VSMainWidgetBase* baseWidget = dynamic_cast<VSMainWidgetBase*>(m_Internals->vsWidget);
+//        baseWidget->importDataContainerArray(dream3dFile, dca);
+//      }
     }
   }
 }
