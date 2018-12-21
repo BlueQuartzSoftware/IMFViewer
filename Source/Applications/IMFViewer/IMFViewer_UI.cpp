@@ -57,6 +57,7 @@
 
 #include "SIMPLVtkLib/Wizards/ImportMontage/ImportMontageWizard.h"
 #include "SIMPLVtkLib/Wizards/ImportMontage/TileConfigFileGenerator.h"
+#include "SIMPLVtkLib/Wizards/ImportMontage/MontageWorker.h"
 
 #include "ui_IMFViewer_UI.h"
 
@@ -243,20 +244,15 @@ void IMFViewer_UI::importGenericMontage(ImportMontageWizard* montageWizard)
   IFilterFactory::Pointer factory = fm->getFactoryFromClassName(filterName);
   DataContainerArray::Pointer dca = DataContainerArray::New();
   AbstractFilter::Pointer itkMontageFilter;
-//  AbstractFilter::Pointer writer;
 
   // Run the ITK Montage from Filesystem filter
   if(factory.get() != nullptr)
   {
 
-    itkMontageFilter = factory->create();
+	  itkMontageFilter = factory->create();
     if(itkMontageFilter.get() != nullptr)
     {
-      itkMontageFilter->setDataContainerArray(dca);
-      // DataContainer::Pointer dc = DataContainer::New("DataContainer");
-      // AttributeMatrix::Pointer am = AttributeMatrix::New(QVector<size_t>(1, 53), "CellAttributeMatrix", AttributeMatrix::Type::Cell);
-      // dc->addAttributeMatrix("CellAttributeMatrix", am);
-      // filter->getDataContainerArray()->addDataContainer(dc);
+		itkMontageFilter->setDataContainerArray(dca);
 
       QVariant var;
       bool propWasSet = false;
@@ -289,10 +285,6 @@ void IMFViewer_UI::importGenericMontage(ImportMontageWizard* montageWizard)
       var.setValue(metaDataAttributeMatrixName);
       propWasSet = itkMontageFilter->setProperty("MetaDataAttributeMatrixName", var);
 
-      // itkMontageFilter->execute();
-
-      // qInfo() << "ITK Montage error cond: " << itkMontageFilter->getErrorCondition();
-
       // Generate tile configuration file.
       TileConfigFileGenerator tileConfigFileGenerator(inputFileInfo,
         montageWizard->field("montageType").value<MontageSettings::MontageType>(),
@@ -303,119 +295,31 @@ void IMFViewer_UI::importGenericMontage(ImportMontageWizard* montageWizard)
     }
   }
 
-//  // For testing purposes only
-//  QString dream3dWriterName = "DataContainerWriter";
-//  factory = fm->getFactoryFromClassName(dream3dWriterName);
-
-//  if(factory.get() != nullptr)
-//  {
-//    writer = factory->create();
-//    if(writer.get() != nullptr)
-//    {
-//      writer->setDataContainerArray(dca);
-//      QVariant var;
-//      bool propWasSet = false;
-
-//      // Set Output File
-//      QString outputFile = montageWizard->field("outputFileName").toString();
-//      var.setValue(outputFile);
-//      propWasSet = writer->setProperty("OutputFile", var);
-
-//      // Set whether to write Xdmf file
-//      bool writeXdmf = true;
-//      var.setValue(writeXdmf);
-//      propWasSet = writer->setProperty("WriteXdmfFile", var);
-
-//      // Set whether to write time series
-//      bool writeTimeSeries = false;
-//      var.setValue(writeTimeSeries);
-//      propWasSet = writer->setProperty("WriteTimeSeries", var);
-
-//      // writer->execute();
-
-//      // qInfo() << "Data Container Writer error cond: " << writer->getErrorCondition();
-//    }
-//  }
-
-  if(itkMontageFilter.get() != nullptr/* && writer.get() != nullptr*/)
+  if(itkMontageFilter.get() != nullptr)
   {
-    FilterPipeline::Pointer pipeline = FilterPipeline::New();
-    pipeline->pushBack(itkMontageFilter);
-//    pipeline->pushBack(writer);
-    pipeline->execute();
-
-    int err = pipeline->getErrorCondition();
-    qInfo() << "Pipeline err condition: " << err;
-
-    if(err >= 0)
-    {
-      DataContainerArray::Pointer dca = pipeline->getDataContainerArray();
-
-      VSMainWidgetBase* baseWidget = dynamic_cast<VSMainWidgetBase*>(m_Internals->vsWidget);
-      baseWidget->importPipelineOutput(pipeline, dca);
-
-//      QStringList filePaths;
-//      QString dream3dFile = montageWizard->field("outputFileName").toString();
-//      if(dream3dFile.isEmpty())
-//      {
-//        return;
-//      }
-
-//      SIMPLH5DataReader reader;
-//      bool success = reader.openFile(dream3dFile);
-//      if(success)
-//      {
-//        connect(&reader, &SIMPLH5DataReader::errorGenerated,
-//                [=](const QString& title, const QString& msg, const int& code) { QMessageBox::critical(this, title, msg, QMessageBox::StandardButton::Ok); });
-
-//        int err = 0;
-//        SIMPLH5DataReaderRequirements req(SIMPL::Defaults::AnyPrimitive, SIMPL::Defaults::AnyComponentSize, AttributeMatrix::Type::Any, IGeometry::Type::Any);
-//        DataContainerArrayProxy proxy = reader.readDataContainerArrayStructure(&req, err);
-//        if(proxy.dataContainers.isEmpty())
-//        {
-//          return;
-//        }
-
-//        QStringList dcNames = proxy.dataContainers.keys();
-//        for(int i = 0; i < dcNames.size(); i++)
-//        {
-//          QString dcName = dcNames[i];
-//          DataContainerProxy dcProxy = proxy.dataContainers[dcName];
-
-//          // We want only data containers with geometries displayed
-//          if(dcProxy.dcType == static_cast<unsigned int>(DataContainer::Type::Unknown))
-//          {
-//            proxy.dataContainers.remove(dcName);
-//          }
-//          else
-//          {
-//            QStringList amNames = dcProxy.attributeMatricies.keys();
-//            for(int j = 0; j < amNames.size(); j++)
-//            {
-//              QString amName = amNames[j];
-//              AttributeMatrixProxy amProxy = dcProxy.attributeMatricies[amName];
-
-//              // We want only cell attribute matrices displayed
-//              if(amProxy.amType != AttributeMatrix::Type::Cell)
-//              {
-//                dcProxy.attributeMatricies.remove(amName);
-//                proxy.dataContainers[dcName] = dcProxy;
-//              }
-//            }
-//          }
-//        }
-
-//        DataContainerArray::Pointer dca = reader.readSIMPLDataUsingProxy(proxy, false);
-//        if(dca.get() == nullptr)
-//        {
-//          return;
-//        }
-
-//        VSMainWidgetBase* baseWidget = dynamic_cast<VSMainWidgetBase*>(m_Internals->vsWidget);
-//        baseWidget->importDataContainerArray(dream3dFile, dca);
-//      }
-    }
+	  m_workerThread = new QThread;
+	  m_pipeline = FilterPipeline::New();
+	  MontageWorker* montageWorker = new MontageWorker(m_pipeline, itkMontageFilter);
+	  montageWorker->moveToThread(m_workerThread);
+	  connect(montageWorker, SIGNAL(error(QString)), this, SLOT(errorString(QString)));
+	  connect(m_workerThread, SIGNAL(started()), montageWorker, SLOT(process()));
+	  connect(montageWorker, SIGNAL(finished()), m_workerThread, SLOT(quit()));
+	  connect(montageWorker, SIGNAL(finished()), montageWorker, SLOT(deleteLater()));
+	  connect(m_workerThread, SIGNAL(finished()), m_workerThread, SLOT(deleteLater()));
+	  connect(montageWorker, &MontageWorker::resultReady, this, &IMFViewer_UI::handleMontageResults);
+	  m_workerThread->start();
   }
+}
+
+void IMFViewer_UI::handleMontageResults(int err)
+{
+
+	if (err >= 0)
+	{
+		DataContainerArray::Pointer dca = m_pipeline->getDataContainerArray();
+		VSMainWidgetBase* baseWidget = dynamic_cast<VSMainWidgetBase*>(m_Internals->vsWidget);
+		baseWidget->importPipelineOutput(m_pipeline, dca);
+	}
 }
 
 // -----------------------------------------------------------------------------

@@ -39,6 +39,7 @@
 #include <QtWidgets/QMenuBar>
 
 #include "SIMPLib/DataContainers/DataContainerArray.h"
+#include "SIMPLib/Filtering/FilterPipeline.h"
 
 class QtSSettings;
 class ImportMontageWizard;
@@ -124,6 +125,8 @@ protected slots:
    */
   void updateRecentFileList(const QString& file);
 
+  void handleMontageResults(int err);
+
 private:
   class vsInternals;
   vsInternals* m_Internals;
@@ -133,6 +136,9 @@ private:
   QAction* m_ClearRecentsAction = nullptr;
 
   QString m_OpenDialogLastDirectory = "";
+
+  QThread *m_workerThread;
+  FilterPipeline::Pointer m_pipeline;
 
   /**
    * @brief importGenericMontage
