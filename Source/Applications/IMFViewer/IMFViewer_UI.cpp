@@ -43,14 +43,14 @@
 #include <QtWidgets/QFileDialog>
 #include <QtWidgets/QMessageBox>
 
-#include "SIMPLib/Utilities/SIMPLH5DataReader.h"
-#include "SIMPLib/Utilities/SIMPLH5DataReaderRequirements.h"
-
 #include "SIMPLib/FilterParameters/IntVec3FilterParameter.h"
 #include "SIMPLib/Filtering/FilterFactory.hpp"
 #include "SIMPLib/Filtering/FilterManager.h"
 #include "SIMPLib/Filtering/FilterPipeline.h"
+#include "SIMPLib/Plugin/PluginManager.h"
 #include "SIMPLib/Filtering/QMetaObjectUtilities.h"
+#include "SIMPLib/Utilities/SIMPLH5DataReader.h"
+#include "SIMPLib/Utilities/SIMPLH5DataReaderRequirements.h"
 
 #include "SVWidgetsLib/QtSupport/QtSRecentFileList.h"
 #include "SVWidgetsLib/QtSupport/QtSSettings.h"
@@ -881,10 +881,28 @@ void IMFViewer_UI::createMenu()
   connect(importDataAction, &QAction::triggered, this, static_cast<void (IMFViewer_UI::*)(void)>(&IMFViewer_UI::importData));
   fileMenu->addAction(importDataAction);
 
-  QAction* importMontageAction = new QAction("Import Montage");
-  importMontageAction->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_M));
-  connect(importMontageAction, &QAction::triggered, this, static_cast<void (IMFViewer_UI::*)(void)>(&IMFViewer_UI::importMontage));
-  fileMenu->addAction(importMontageAction);
+  PluginManager* pluginManager = PluginManager::Instance();
+  QStringList pluginNames = pluginManager->getPluginNames();
+  ISIMPLibPlugin* multiscaleFusionPlugin = pluginManager->findPlugin("MultiscaleFusion");
+  ISIMPLibPlugin* itkImageProcessingPlugin = pluginManager->findPlugin("ITKImageProcessing");
+
+  if (!itkImageProcessingPlugin)
+  {
+    qDebug() << "Unable to initialize montage importing APIs because ITKImageProcessing plugin is not loaded.";
+  }
+
+  if (!multiscaleFusionPlugin)
+  {
+    qDebug() << "Unable to initialize montage importing APIs because MultiscaleFusion plugin is not loaded.";
+  }
+
+  if (multiscaleFusionPlugin && itkImageProcessingPlugin)
+  {
+    QAction* importMontageAction = new QAction("Import Montage");
+    importMontageAction->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_M));
+    connect(importMontageAction, &QAction::triggered, this, static_cast<void (IMFViewer_UI::*)(void)>(&IMFViewer_UI::importMontage));
+    fileMenu->addAction(importMontageAction);
+  }
 
   fileMenu->addSeparator();
 
