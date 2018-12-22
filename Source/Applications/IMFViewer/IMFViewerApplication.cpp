@@ -59,7 +59,6 @@
 
 #include "SVWidgetsLib/Core/FilterWidgetManager.h"
 #include "SVWidgetsLib/Dialogs/AboutPlugins.h"
-#include "SVWidgetsLib/QtSupport/QtSStyles.h"
 #include "SVWidgetsLib/QtSupport/QtSSettings.h"
 
 #include "IMFViewer/IMFViewer_UI.h"
