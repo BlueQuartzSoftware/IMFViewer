@@ -12,7 +12,7 @@
 
 if(NOT "${DREAM3D_SDK}" STREQUAL "")
   include("${DREAM3D_SDK}/DREAM3D_SDK.cmake")
-  message(STATUS "DREAM3D_SDK Location: ${DREAM3D_SDK}")
+  message(STATUS "IMFViewer_SDK Location: ${DREAM3D_SDK}")
 endif()
 
 # Request C++11 standard, using new CMake variables.
