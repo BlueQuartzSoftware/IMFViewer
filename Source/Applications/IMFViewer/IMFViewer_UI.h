@@ -139,6 +139,7 @@ private:
 
   QThread *m_workerThread;
   FilterPipeline::Pointer m_pipeline;
+  DataContainerArray::Pointer m_dataContainerArray;
 
   /**
    * @brief importGenericMontage

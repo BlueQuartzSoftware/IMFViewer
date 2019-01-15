@@ -242,7 +242,7 @@ void IMFViewer_UI::importGenericMontage(ImportMontageWizard* montageWizard)
   QString filterName = "ITKMontageFromFilesystem";
   FilterManager* fm = FilterManager::Instance();
   IFilterFactory::Pointer factory = fm->getFactoryFromClassName(filterName);
-  DataContainerArray::Pointer dca = DataContainerArray::New();
+  m_dataContainerArray = DataContainerArray::New();
   AbstractFilter::Pointer itkMontageFilter;
 
   // Run the ITK Montage from Filesystem filter
@@ -252,13 +252,13 @@ void IMFViewer_UI::importGenericMontage(ImportMontageWizard* montageWizard)
 	  itkMontageFilter = factory->create();
     if(itkMontageFilter.get() != nullptr)
     {
-		itkMontageFilter->setDataContainerArray(dca);
+		itkMontageFilter->setDataContainerArray(m_dataContainerArray);
 
       QVariant var;
       bool propWasSet = false;
 
-      int numOfRows = montageWizard->field("numOfRows").toInt();
-      int numOfCols = montageWizard->field("numOfCols").toInt();
+      int numOfRows = montageWizard->field("numOfRowsGeneric").toInt();
+      int numOfCols = montageWizard->field("numOfColsGeneric").toInt();
 
       // Set montage size
       IntVec3_t montageSize = {numOfCols, numOfRows, 1};
@@ -299,7 +299,7 @@ void IMFViewer_UI::importGenericMontage(ImportMontageWizard* montageWizard)
   {
 	  m_workerThread = new QThread;
 	  m_pipeline = FilterPipeline::New();
-	  MontageWorker* montageWorker = new MontageWorker(m_pipeline, itkMontageFilter);
+	  MontageWorker* montageWorker = new MontageWorker(m_dataContainerArray, m_pipeline, itkMontageFilter);
 	  montageWorker->moveToThread(m_workerThread);
 	  connect(montageWorker, SIGNAL(error(QString)), this, SLOT(errorString(QString)));
 	  connect(m_workerThread, SIGNAL(started()), montageWorker, SLOT(process()));
@@ -311,9 +311,11 @@ void IMFViewer_UI::importGenericMontage(ImportMontageWizard* montageWizard)
   }
 }
 
+// -----------------------------------------------------------------------------
+//
+// -----------------------------------------------------------------------------
 void IMFViewer_UI::handleMontageResults(int err)
 {
-
 	if (err >= 0)
 	{
 		DataContainerArray::Pointer dca = m_pipeline->getDataContainerArray();
@@ -338,14 +340,79 @@ void IMFViewer_UI::importDREAM3DMontage(ImportMontageWizard* montageWizard)
 
     DataContainerArrayProxy dream3dProxy = montageWizard->field("DREAM3DProxy").value<DataContainerArrayProxy>();
 
-    DataContainerArray::Pointer dca = reader.readSIMPLDataUsingProxy(dream3dProxy, false);
-    if(dca.get() == nullptr)
+	m_dataContainerArray = reader.readSIMPLDataUsingProxy(dream3dProxy, false);
+    if(m_dataContainerArray.get() == nullptr)
     {
       return;
     }
 
-    VSMainWidgetBase* baseWidget = dynamic_cast<VSMainWidgetBase*>(m_Internals->vsWidget);
-    baseWidget->importDataContainerArray(dataFilePath, dca);
+	// If checkbox was checked, perform montage on DREAM3D file contents
+	if (montageWizard->field("performMontageDream3dFile").toBool())
+	{
+
+		// Instantiate GenerateMontageConfiguration filter
+		QString filterName = "GenerateMontageConfiguration";
+		FilterManager* fm = FilterManager::Instance();
+		IFilterFactory::Pointer factory = fm->getFactoryFromClassName(filterName);
+		AbstractFilter::Pointer generateMontagerFilter;
+
+		// Run the GenerateMontageConfiguration filter
+		if (factory.get() != nullptr)
+		{
+
+			generateMontagerFilter = factory->create();
+			if (generateMontagerFilter.get() != nullptr)
+			{
+				generateMontagerFilter->setDataContainerArray(m_dataContainerArray);
+
+				QVariant var;
+				bool propWasSet = false;
+
+				int numOfRows = montageWizard->field("numOfRows").toInt();
+				int numOfCols = montageWizard->field("numOfCols").toInt();
+
+				// Set montage size
+				IntVec3_t montageSize = { numOfCols, numOfRows, 1 };
+				var.setValue(montageSize);
+				propWasSet = generateMontagerFilter->setProperty("MontageSize", var);
+
+				// Set the list of image data containers
+				QStringList dcNames = m_dataContainerArray->getDataContainerNames();
+				var.setValue(dcNames);
+				propWasSet = generateMontagerFilter->setProperty("ImageDataContainers", var);
+				if (!propWasSet)
+				{
+					qDebug() << "Property was not set for ImageDataContainers";
+					return;
+				}
+
+				// Set Common Attribute Matrix Name
+				QString cellAttrMatrixName = montageWizard->field("cellAttrMatrixName").toString();
+				var.setValue(cellAttrMatrixName);
+				propWasSet = generateMontagerFilter->setProperty("CommonAttributeMatrixName", var);
+
+				// Set Common Data Array Name
+				QString commonDataArrayName = montageWizard->field("imageArrayName").toString();
+				var.setValue(commonDataArrayName);
+				propWasSet = generateMontagerFilter->setProperty("CommonDataArrayName", var);
+			}
+		}
+
+		if (generateMontagerFilter.get() != nullptr)
+		{
+			m_workerThread = new QThread;
+			m_pipeline = FilterPipeline::New();
+			MontageWorker* montageWorker = new MontageWorker(m_dataContainerArray, m_pipeline, generateMontagerFilter);
+			montageWorker->moveToThread(m_workerThread);
+			connect(montageWorker, SIGNAL(error(QString)), this, SLOT(errorString(QString)));
+			connect(m_workerThread, SIGNAL(started()), montageWorker, SLOT(process()));
+			connect(montageWorker, SIGNAL(finished()), m_workerThread, SLOT(quit()));
+			connect(montageWorker, SIGNAL(finished()), montageWorker, SLOT(deleteLater()));
+			connect(m_workerThread, SIGNAL(finished()), m_workerThread, SLOT(deleteLater()));
+			connect(montageWorker, &MontageWorker::resultReady, this, &IMFViewer_UI::handleMontageResults);
+			m_workerThread->start();
+		}
+	}
   }
 }
 
@@ -362,7 +429,7 @@ void IMFViewer_UI::importFijiMontage(ImportMontageWizard* montageWizard)
 	QString filterName = "ITKImportFijiMontage";
 	FilterManager* fm = FilterManager::Instance();
 	IFilterFactory::Pointer factory = fm->getFactoryFromClassName(filterName);
-	DataContainerArray::Pointer dca = DataContainerArray::New();
+	m_dataContainerArray = DataContainerArray::New();
 	AbstractFilter::Pointer importFijiMontageFilter;
 
 	// Set up the Generate Montage Configuration filter
@@ -371,7 +438,7 @@ void IMFViewer_UI::importFijiMontage(ImportMontageWizard* montageWizard)
 		importFijiMontageFilter = factory->create();
 		if (importFijiMontageFilter.get() != nullptr)
 		{
-			importFijiMontageFilter->setDataContainerArray(dca);
+			importFijiMontageFilter->setDataContainerArray(m_dataContainerArray);
 
 			QVariant var;
 			bool propWasSet = false;
@@ -395,6 +462,125 @@ void IMFViewer_UI::importFijiMontage(ImportMontageWizard* montageWizard)
 			QString attributeArrayName = "ImageTile";
 			var.setValue(attributeArrayName);
 			propWasSet = importFijiMontageFilter->setProperty("AttributeArrayName", var);
+		}
+	}
+
+	// Instantiate Generate Montage filter
+	filterName = "GenerateMontageConfiguration";
+	factory = fm->getFactoryFromClassName(filterName);
+	AbstractFilter::Pointer itkMontageFilter;
+
+	// Set up the Generate Montage Configuration filter
+	if (factory.get() != nullptr)
+	{
+		itkMontageFilter = factory->create();
+		if (itkMontageFilter.get() != nullptr)
+		{
+			itkMontageFilter->setDataContainerArray(m_dataContainerArray);
+
+			QVariant var;
+			bool propWasSet = false;
+
+			int numOfRows = montageWizard->field("numOfRows").toInt();
+			int numOfCols = montageWizard->field("numOfCols").toInt();
+
+			// Set montage size
+			IntVec3_t montageSize = { numOfCols, numOfRows, 1 };
+			var.setValue(montageSize);
+			propWasSet = itkMontageFilter->setProperty("MontageSize", var);
+
+			// Set Common Attribute Matrix Name
+			QString cellAttrMatrixName = "CellData";
+			var.setValue(cellAttrMatrixName);
+			propWasSet = itkMontageFilter->setProperty("CommonAttributeMatrixName", var);
+
+			// Set Common Data Array Name
+			QString commonDataArrayName = "ImageTile";
+			var.setValue(commonDataArrayName);
+			propWasSet = itkMontageFilter->setProperty("CommonDataArrayName", var);
+		}
+	}
+
+	if (itkMontageFilter.get() != nullptr)
+	{
+		MontageWorker* montageWorker = new MontageWorker(m_dataContainerArray, m_pipeline, importFijiMontageFilter, itkMontageFilter);
+		montageWorker->moveToThread(m_workerThread);
+		connect(montageWorker, SIGNAL(error(QString)), this, SLOT(errorString(QString)));
+		connect(m_workerThread, SIGNAL(started()), montageWorker, SLOT(process()));
+		connect(montageWorker, SIGNAL(finished()), m_workerThread, SLOT(quit()));
+		connect(montageWorker, SIGNAL(finished()), montageWorker, SLOT(deleteLater()));
+		connect(m_workerThread, SIGNAL(finished()), m_workerThread, SLOT(deleteLater()));
+		connect(montageWorker, &MontageWorker::resultReady, this, &IMFViewer_UI::handleMontageResults);
+		m_workerThread->start();
+	}
+}
+
+// -----------------------------------------------------------------------------
+//
+// -----------------------------------------------------------------------------
+void IMFViewer_UI::importRobometMontage(ImportMontageWizard* montageWizard)
+{
+	// Instantiate the worker thread and pipeline
+	m_workerThread = new QThread;
+	m_pipeline = FilterPipeline::New();
+
+	// Instantiate Import RoboMet Montage filter
+	QString filterName = "ITKImportRoboMetMontage";
+	FilterManager* fm = FilterManager::Instance();
+	IFilterFactory::Pointer factory = fm->getFactoryFromClassName(filterName);
+	DataContainerArray::Pointer dca = DataContainerArray::New();
+	AbstractFilter::Pointer importRoboMetMontageFilter;
+
+	// Set up the Generate Montage Configuration filter
+	if (factory.get() != nullptr)
+	{
+		importRoboMetMontageFilter = factory->create();
+		if (importRoboMetMontageFilter.get() != nullptr)
+		{
+			importRoboMetMontageFilter->setDataContainerArray(dca);
+
+			QVariant var;
+			bool propWasSet = false;
+
+			// Set the path for the Fiji Configuration File
+			QString configFilePath = montageWizard->field("DataFilePath").toString();
+			var.setValue(configFilePath);
+			propWasSet = importRoboMetMontageFilter->setProperty("RegistrationFile", var);
+
+			// Set the Data Container Prefix
+			QString dataContainerPrefix = "ImageDataContainer_";
+			var.setValue(dataContainerPrefix);
+			propWasSet = importRoboMetMontageFilter->setProperty("DataContainerPrefix", var);
+
+			// Set the Cell Attribute Matrix Name
+			QString cellAttrMatrixName = "CellData";
+			var.setValue(cellAttrMatrixName);
+			propWasSet = importRoboMetMontageFilter->setProperty("CellAttributeMatrixName", var);
+
+			// Set the Image Array Name
+			QString attributeArrayName = "ImageTile";
+			var.setValue(attributeArrayName);
+			propWasSet = importRoboMetMontageFilter->setProperty("AttributeArrayName", var);
+
+			// Slice number
+			int sliceNumber = montageWizard->field("sliceNumber").toInt();
+			var.setValue(sliceNumber);
+			propWasSet = importRoboMetMontageFilter->setProperty("SliceNumber", var);
+
+			// Image file prefix
+			QString imageFilePrefix = montageWizard->field("imageFilePrefix").toString();
+			var.setValue(imageFilePrefix);
+			propWasSet = importRoboMetMontageFilter->setProperty("ImageFilePrefix", var);
+
+			// Image file suffix
+			QString imageFileSuffix = montageWizard->field("imageFileSuffix").toString();
+			var.setValue(imageFileSuffix);
+			propWasSet = importRoboMetMontageFilter->setProperty("ImageFileSuffix", var);
+
+			// Image file extension
+			QString imageFileExtension = montageWizard->field("imageFileExtension").toString();
+			var.setValue(imageFileExtension);
+			propWasSet = importRoboMetMontageFilter->setProperty("ImageFileExtension", var);
 		}
 	}
 
@@ -436,7 +622,8 @@ void IMFViewer_UI::importFijiMontage(ImportMontageWizard* montageWizard)
 
 	if (itkMontageFilter.get() != nullptr)
 	{
-		MontageWorker* montageWorker = new MontageWorker(m_pipeline, importFijiMontageFilter, itkMontageFilter);
+		MontageWorker* montageWorker = new MontageWorker(dca, m_pipeline, importRoboMetMontageFilter,
+			itkMontageFilter);
 		montageWorker->moveToThread(m_workerThread);
 		connect(montageWorker, SIGNAL(error(QString)), this, SLOT(errorString(QString)));
 		connect(m_workerThread, SIGNAL(started()), montageWorker, SLOT(process()));
@@ -446,14 +633,6 @@ void IMFViewer_UI::importFijiMontage(ImportMontageWizard* montageWizard)
 		connect(montageWorker, &MontageWorker::resultReady, this, &IMFViewer_UI::handleMontageResults);
 		m_workerThread->start();
 	}
-}
-
-// -----------------------------------------------------------------------------
-//
-// -----------------------------------------------------------------------------
-void IMFViewer_UI::importRobometMontage(ImportMontageWizard* montageWizard)
-{
-
 }
 
 // -----------------------------------------------------------------------------
