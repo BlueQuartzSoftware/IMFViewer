@@ -125,7 +125,17 @@ protected slots:
    */
   void updateRecentFileList(const QString& file);
 
+  /**
+   * @brief handleMontageResults
+   * @param err
+   */
   void handleMontageResults(int err);
+
+  /**
+   * @brief processPipelineMessage
+   * @param pipelineMsg
+   */
+  void processPipelineMessage(const PipelineMessage &pipelineMsg);
 
 private:
   class vsInternals;
