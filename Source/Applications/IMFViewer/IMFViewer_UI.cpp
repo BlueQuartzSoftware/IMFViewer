@@ -299,7 +299,7 @@ void IMFViewer_UI::importGenericMontage(ImportMontageWizard* montageWizard)
   {
 	  m_workerThread = new QThread;
 	  m_pipeline = FilterPipeline::New();
-	  MontageWorker* montageWorker = new MontageWorker(m_dataContainerArray, m_pipeline, itkMontageFilter);
+	  MontageWorker* montageWorker = new MontageWorker(m_pipeline, itkMontageFilter);
 	  montageWorker->moveToThread(m_workerThread);
 	  connect(montageWorker, SIGNAL(error(QString)), this, SLOT(errorString(QString)));
 	  connect(m_workerThread, SIGNAL(started()), montageWorker, SLOT(process()));
@@ -350,10 +350,37 @@ void IMFViewer_UI::importDREAM3DMontage(ImportMontageWizard* montageWizard)
 	if (montageWizard->field("performMontageDream3dFile").toBool())
 	{
 
-		// Instantiate GenerateMontageConfiguration filter
-		QString filterName = "GenerateMontageConfiguration";
+		// Instantiate DREAM3D File Reader filter
+		QString filterName = "DataContainerReader";
 		FilterManager* fm = FilterManager::Instance();
 		IFilterFactory::Pointer factory = fm->getFactoryFromClassName(filterName);
+		AbstractFilter::Pointer dataContainerReader;
+
+		if (factory.get() != nullptr)
+		{
+			dataContainerReader = factory->create();
+			if (dataContainerReader.get() != nullptr)
+			{
+				dataContainerReader->setDataContainerArray(m_dataContainerArray);
+
+				QVariant var;
+				bool propWasSet = false;
+
+				// Set input file
+				var.setValue(dataFilePath);
+				propWasSet = dataContainerReader->setProperty("InputFile", var);
+
+				// Set data container array proxy
+				var.setValue(dream3dProxy);
+				propWasSet = dataContainerReader->setProperty("InputFileDataContainerArrayProxy", var);
+
+			}
+		}
+
+
+		// Instantiate GenerateMontageConfiguration filter
+		filterName = "GenerateMontageConfiguration";
+		factory = fm->getFactoryFromClassName(filterName);
 		AbstractFilter::Pointer generateMontagerFilter;
 
 		// Run the GenerateMontageConfiguration filter
@@ -375,6 +402,11 @@ void IMFViewer_UI::importDREAM3DMontage(ImportMontageWizard* montageWizard)
 				IntVec3_t montageSize = { numOfCols, numOfRows, 1 };
 				var.setValue(montageSize);
 				propWasSet = generateMontagerFilter->setProperty("MontageSize", var);
+
+				// Set tile overlap
+				double tileOverlap = montageWizard->field("tileOverlapDream3dFile").toDouble();
+				var.setValue(tileOverlap);
+				propWasSet = generateMontagerFilter->setProperty("TileOverlap", var);
 
 				// Set the list of image data containers
 				QStringList dcNames = m_dataContainerArray->getDataContainerNames();
@@ -402,7 +434,8 @@ void IMFViewer_UI::importDREAM3DMontage(ImportMontageWizard* montageWizard)
 		{
 			m_workerThread = new QThread;
 			m_pipeline = FilterPipeline::New();
-			MontageWorker* montageWorker = new MontageWorker(m_dataContainerArray, m_pipeline, generateMontagerFilter);
+			MontageWorker* montageWorker = new MontageWorker(m_pipeline, dataContainerReader,
+				generateMontagerFilter, true);
 			montageWorker->moveToThread(m_workerThread);
 			connect(montageWorker, SIGNAL(error(QString)), this, SLOT(errorString(QString)));
 			connect(m_workerThread, SIGNAL(started()), montageWorker, SLOT(process()));
@@ -503,7 +536,8 @@ void IMFViewer_UI::importFijiMontage(ImportMontageWizard* montageWizard)
 
 	if (itkMontageFilter.get() != nullptr)
 	{
-		MontageWorker* montageWorker = new MontageWorker(m_dataContainerArray, m_pipeline, importFijiMontageFilter, itkMontageFilter);
+		MontageWorker* montageWorker = new MontageWorker(m_pipeline, importFijiMontageFilter,
+			itkMontageFilter, false);
 		montageWorker->moveToThread(m_workerThread);
 		connect(montageWorker, SIGNAL(error(QString)), this, SLOT(errorString(QString)));
 		connect(m_workerThread, SIGNAL(started()), montageWorker, SLOT(process()));
@@ -622,8 +656,8 @@ void IMFViewer_UI::importRobometMontage(ImportMontageWizard* montageWizard)
 
 	if (itkMontageFilter.get() != nullptr)
 	{
-		MontageWorker* montageWorker = new MontageWorker(dca, m_pipeline, importRoboMetMontageFilter,
-			itkMontageFilter);
+		MontageWorker* montageWorker = new MontageWorker(m_pipeline, importRoboMetMontageFilter,
+			itkMontageFilter, false);
 		montageWorker->moveToThread(m_workerThread);
 		connect(montageWorker, SIGNAL(error(QString)), this, SLOT(errorString(QString)));
 		connect(m_workerThread, SIGNAL(started()), montageWorker, SLOT(process()));
