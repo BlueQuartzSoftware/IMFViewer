@@ -549,10 +549,10 @@ void IMFViewer_UI::importFijiMontage(ImportMontageWizard* montageWizard)
 
 	if (itkMontageFilter.get() != nullptr)
 	{
+		m_pipeline->addMessageReceiver(this);
 		MontageWorker* montageWorker = new MontageWorker(m_pipeline, importFijiMontageFilter,
 			itkMontageFilter, false);
 		montageWorker->moveToThread(m_workerThread);
-		m_pipeline->addMessageReceiver(this);
 		connect(montageWorker, SIGNAL(error(QString)), this, SLOT(errorString(QString)));
 		connect(m_workerThread, SIGNAL(started()), montageWorker, SLOT(process()));
 		connect(montageWorker, SIGNAL(finished()), m_workerThread, SLOT(quit()));
