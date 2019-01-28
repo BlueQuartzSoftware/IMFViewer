@@ -392,7 +392,7 @@ void IMFViewer_UI::importDREAM3DMontage(ImportMontageWizard* montageWizard)
 
 
 		// Instantiate GenerateMontageConfiguration filter
-		filterName = "GenerateMontageConfiguration";
+    filterName = "ITKGenerateMontageConfiguration";
 		factory = fm->getFactoryFromClassName(filterName);
 		AbstractFilter::Pointer generateMontagerFilter;
 
@@ -512,7 +512,7 @@ void IMFViewer_UI::importFijiMontage(ImportMontageWizard* montageWizard)
 	}
 
 	// Instantiate Generate Montage filter
-	filterName = "GenerateMontageConfiguration";
+  filterName = "ITKGenerateMontageConfiguration";
 	factory = fm->getFactoryFromClassName(filterName);
 	AbstractFilter::Pointer itkMontageFilter;
 
@@ -633,7 +633,7 @@ void IMFViewer_UI::importRobometMontage(ImportMontageWizard* montageWizard)
 	}
 
 	// Instantiate Generate Montage filter
-	filterName = "GenerateMontageConfiguration";
+  filterName = "ITKGenerateMontageConfiguration";
 	factory = fm->getFactoryFromClassName(filterName);
 	AbstractFilter::Pointer itkMontageFilter;
 
