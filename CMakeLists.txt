@@ -221,6 +221,7 @@ include(${CMP_SOURCE_DIR}/ExtLib/HDF5Support.cmake)
 # Look for Vtk 8.0 as we need it for the plugin GUI to be generated
 # These are the required component libraries
 set(VtkComponents
+    vtkFiltersTexture
     vtkGUISupportQt
     vtkRenderingCore
     vtkRenderingFreeType
