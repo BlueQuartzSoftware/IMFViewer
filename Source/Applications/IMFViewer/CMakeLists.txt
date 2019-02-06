@@ -30,7 +30,7 @@ SET(IMFViewer_MOC_HDRS
 )
 
 SET(IMFViewer_HDRS
-  ${BrandedSIMPLView_DIR}/BrandedStrings.h
+
 )
 
 set(IMFViewer_SRCS
@@ -52,7 +52,7 @@ cmp_IDE_GENERATED_PROPERTIES("IMFViewer/UI_Files" "${IMFViewer_UIS}" "")
 # SET(IMFViewer_RCS ${IMFViewer_SOURCE_DIR}/Templates.qrc)
 SET(IMFViewer_RCS
     ${PROJECT_RESOURCES_DIR}/icons/images/Icons.qrc
-    ${BrandedSIMPLView_DIR}/branded_files.qrc
+    ${BrandedIMFViewer_DIR}/branded_files.qrc
 )
 
 # -- Run MOC and UIC on the necessary files
@@ -92,7 +92,7 @@ include_directories(${IMFViewer_BINARY_DIR} )
 include_directories(${SVWidgetsLib_BINARY_DIR} )
 include_directories(${QtSupportLib_SOURCE_DIR} )
 include_directories(${SIMPLVtkLibProj_SOURCE_DIR} )
-include_directories(${BrandedSIMPLView_DIR} )
+include_directories(${BrandedIMFViewer_DIR} )
 
 
 if(APPLE)

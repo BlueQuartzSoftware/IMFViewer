@@ -170,6 +170,13 @@ if(UNIX AND NOT APPLE)
 endif()
 
 #------------------------------------------------------------------------------
+# If we have not defined a "BrandedIMFViewer_DIR" then define it to the default
+# generic set of ICONs
+if(NOT DEFINED BrandedIMFViewer_DIR)
+  set(BrandedIMFViewer_DIR ${IMFViewerProj_SOURCE_DIR}/Resources/OpenSourceEdition)
+endif()
+
+#------------------------------------------------------------------------------
 # Find the Git Package for Versioning. It should be ok if Git is NOT found
 Find_package(Git)
 
