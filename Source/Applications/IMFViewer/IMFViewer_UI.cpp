@@ -60,6 +60,8 @@
 #include "SIMPLVtkLib/Wizards/ImportMontage/TileConfigFileGenerator.h"
 #include "SIMPLVtkLib/Wizards/ImportMontage/MontageWorker.h"
 
+#include "ImportMontage/ImportMontageConstants.h"
+
 #include "BrandedStrings.h"
 
 #include "ui_IMFViewer_UI.h"
@@ -200,7 +202,7 @@ void IMFViewer_UI::importMontage()
 
   if (result == QDialog::Accepted)
   {
-    ImportMontageWizard::InputType inputType = montageWizard->field("InputType").value<ImportMontageWizard::InputType>();
+    ImportMontageWizard::InputType inputType = montageWizard->field(ImportMontage::FieldNames::InputType).value<ImportMontageWizard::InputType>();
     VSMainWidgetBase* baseWidget = dynamic_cast<VSMainWidgetBase*>(m_Internals->vsWidget);
 
     // Based on the type of file imported, perform next action
@@ -222,7 +224,7 @@ void IMFViewer_UI::importMontage()
     }
     else
     {
-      QString dataFilePath = montageWizard->field("DataFilePath").toString();
+      QString dataFilePath = montageWizard->field(ImportMontage::FieldNames::DataFilePath).toString();
       QFileInfo fi(dataFilePath);
       QString ext = fi.completeSuffix();
       QMessageBox::critical(this, "Invalid File Type",
@@ -260,8 +262,8 @@ void IMFViewer_UI::importGenericMontage(ImportMontageWizard* montageWizard)
       QVariant var;
       bool propWasSet = false;
 
-      int numOfRows = montageWizard->field("numOfRowsGeneric").toInt();
-      int numOfCols = montageWizard->field("numOfColsGeneric").toInt();
+      int numOfRows = montageWizard->field(ImportMontage::FieldNames::NumberOfRows).toInt();
+      int numOfCols = montageWizard->field(ImportMontage::FieldNames::NumberOfColumns).toInt();
 
       // Set montage size
       IntVec3_t montageSize = {numOfCols, numOfRows, 1};
@@ -269,7 +271,7 @@ void IMFViewer_UI::importGenericMontage(ImportMontageWizard* montageWizard)
       propWasSet = itkMontageFilter->setProperty("MontageSize", var);
 
       // Get input file names
-      FileListInfo_t inputFileInfo = montageWizard->field("GenericFileListInfo").value<FileListInfo_t>();
+      FileListInfo_t inputFileInfo = montageWizard->field(ImportMontage::FieldNames::GenericFileListInfo).value<FileListInfo_t>();
       var.setValue(inputFileInfo);
       propWasSet = itkMontageFilter->setProperty("InputFileListInfo", var);
 
@@ -290,9 +292,9 @@ void IMFViewer_UI::importGenericMontage(ImportMontageWizard* montageWizard)
 
       // Generate tile configuration file.
       TileConfigFileGenerator tileConfigFileGenerator(inputFileInfo,
-        montageWizard->field("montageType").value<MontageSettings::MontageType>(),
-        montageWizard->field("montageOrder").value<MontageSettings::MontageOrder>(),
-        numOfCols, numOfRows, montageWizard->field("tileOverlap").toDouble(),
+        montageWizard->field(ImportMontage::FieldNames::MontageType).value<MontageSettings::MontageType>(),
+        montageWizard->field(ImportMontage::FieldNames::MontageOrder).value<MontageSettings::MontageOrder>(),
+        numOfCols, numOfRows, montageWizard->field(ImportMontage::FieldNames::TileOverlap).toDouble(),
     "TileConfiguration.txt");
       tileConfigFileGenerator.buildTileConfigFile();
     }
@@ -345,7 +347,7 @@ void IMFViewer_UI::handleMontageResults(int err)
 // -----------------------------------------------------------------------------
 void IMFViewer_UI::importDREAM3DMontage(ImportMontageWizard* montageWizard)
 {
-  QString dataFilePath = montageWizard->field("DataFilePath").toString();
+  QString dataFilePath = montageWizard->field(ImportMontage::FieldNames::DataFilePath).toString();
 
   SIMPLH5DataReader reader;
   bool success = reader.openFile(dataFilePath);
@@ -354,7 +356,7 @@ void IMFViewer_UI::importDREAM3DMontage(ImportMontageWizard* montageWizard)
     connect(&reader, &SIMPLH5DataReader::errorGenerated,
             [=](const QString& title, const QString& msg, const int& code) { QMessageBox::critical(this, title, msg, QMessageBox::StandardButton::Ok); });
 
-    DataContainerArrayProxy dream3dProxy = montageWizard->field("DREAM3DProxy").value<DataContainerArrayProxy>();
+    DataContainerArrayProxy dream3dProxy = montageWizard->field(ImportMontage::FieldNames::DREAM3DProxy).value<DataContainerArrayProxy>();
 
 	m_dataContainerArray = reader.readSIMPLDataUsingProxy(dream3dProxy, false);
     if(m_dataContainerArray.get() == nullptr)
@@ -363,7 +365,7 @@ void IMFViewer_UI::importDREAM3DMontage(ImportMontageWizard* montageWizard)
     }
 
 	// If checkbox was checked, perform montage on DREAM3D file contents
-	if (montageWizard->field("performMontageDream3dFile").toBool())
+  if (montageWizard->field(ImportMontage::FieldNames::PerformMontageDream3dFile).toBool())
 	{
 
 		// Instantiate DREAM3D File Reader filter
@@ -411,8 +413,8 @@ void IMFViewer_UI::importDREAM3DMontage(ImportMontageWizard* montageWizard)
 				QVariant var;
 				bool propWasSet = false;
 
-				int numOfRows = montageWizard->field("numOfRows").toInt();
-				int numOfCols = montageWizard->field("numOfCols").toInt();
+        int numOfRows = montageWizard->field(ImportMontage::FieldNames::NumberOfRows).toInt();
+        int numOfCols = montageWizard->field(ImportMontage::FieldNames::NumberOfColumns).toInt();
 
 				// Set montage size
 				IntVec3_t montageSize = { numOfCols, numOfRows, 1 };
@@ -420,7 +422,7 @@ void IMFViewer_UI::importDREAM3DMontage(ImportMontageWizard* montageWizard)
 				propWasSet = generateMontagerFilter->setProperty("MontageSize", var);
 
 				// Set tile overlap
-				double tileOverlap = montageWizard->field("tileOverlapDream3dFile").toDouble();
+        double tileOverlap = montageWizard->field(ImportMontage::FieldNames::TileOverlap).toDouble();
 				var.setValue(tileOverlap);
 				propWasSet = generateMontagerFilter->setProperty("TileOverlap", var);
 
@@ -435,12 +437,12 @@ void IMFViewer_UI::importDREAM3DMontage(ImportMontageWizard* montageWizard)
 				}
 
 				// Set Common Attribute Matrix Name
-				QString cellAttrMatrixName = montageWizard->field("cellAttrMatrixName").toString();
+        QString cellAttrMatrixName = montageWizard->field(ImportMontage::FieldNames::CellAttributeMatrixName).toString();
 				var.setValue(cellAttrMatrixName);
 				propWasSet = generateMontagerFilter->setProperty("CommonAttributeMatrixName", var);
 
 				// Set Common Data Array Name
-				QString commonDataArrayName = montageWizard->field("imageArrayName").toString();
+        QString commonDataArrayName = montageWizard->field(ImportMontage::FieldNames::ImageArrayName).toString();
 				var.setValue(commonDataArrayName);
 				propWasSet = generateMontagerFilter->setProperty("CommonDataArrayName", var);
 			}
@@ -493,7 +495,7 @@ void IMFViewer_UI::importFijiMontage(ImportMontageWizard* montageWizard)
 			bool propWasSet = false;
 
 			// Set the path for the Fiji Configuration File
-			QString fijiConfigFilePath = montageWizard->field("DataFilePath").toString();
+      QString fijiConfigFilePath = montageWizard->field(ImportMontage::FieldNames::DataFilePath).toString();
 			var.setValue(fijiConfigFilePath);
 			propWasSet = importFijiMontageFilter->setProperty("FijiConfigFilePath", var);
 
@@ -530,8 +532,8 @@ void IMFViewer_UI::importFijiMontage(ImportMontageWizard* montageWizard)
 			QVariant var;
 			bool propWasSet = false;
 
-			int numOfRows = montageWizard->field("numOfRows").toInt();
-			int numOfCols = montageWizard->field("numOfCols").toInt();
+      int numOfRows = montageWizard->field(ImportMontage::FieldNames::NumberOfRows).toInt();
+      int numOfCols = montageWizard->field(ImportMontage::FieldNames::NumberOfColumns).toInt();
 
 			// Set montage size
 			IntVec3_t montageSize = { numOfCols, numOfRows, 1 };
@@ -594,7 +596,7 @@ void IMFViewer_UI::importRobometMontage(ImportMontageWizard* montageWizard)
 			bool propWasSet = false;
 
 			// Set the path for the Fiji Configuration File
-			QString configFilePath = montageWizard->field("DataFilePath").toString();
+      QString configFilePath = montageWizard->field(ImportMontage::FieldNames::DataFilePath).toString();
 			var.setValue(configFilePath);
 			propWasSet = importRoboMetMontageFilter->setProperty("RegistrationFile", var);
 
@@ -614,22 +616,22 @@ void IMFViewer_UI::importRobometMontage(ImportMontageWizard* montageWizard)
 			propWasSet = importRoboMetMontageFilter->setProperty("AttributeArrayName", var);
 
 			// Slice number
-			int sliceNumber = montageWizard->field("sliceNumber").toInt();
+      int sliceNumber = montageWizard->field(ImportMontage::FieldNames::SliceNumber).toInt();
 			var.setValue(sliceNumber);
 			propWasSet = importRoboMetMontageFilter->setProperty("SliceNumber", var);
 
 			// Image file prefix
-			QString imageFilePrefix = montageWizard->field("imageFilePrefix").toString();
+      QString imageFilePrefix = montageWizard->field(ImportMontage::FieldNames::ImageFilePrefix).toString();
 			var.setValue(imageFilePrefix);
 			propWasSet = importRoboMetMontageFilter->setProperty("ImageFilePrefix", var);
 
 			// Image file suffix
-			QString imageFileSuffix = montageWizard->field("imageFileSuffix").toString();
+      QString imageFileSuffix = montageWizard->field(ImportMontage::FieldNames::ImageFileSuffix).toString();
 			var.setValue(imageFileSuffix);
 			propWasSet = importRoboMetMontageFilter->setProperty("ImageFileSuffix", var);
 
 			// Image file extension
-			QString imageFileExtension = montageWizard->field("imageFileExtension").toString();
+      QString imageFileExtension = montageWizard->field(ImportMontage::FieldNames::ImageFileExtension).toString();
 			var.setValue(imageFileExtension);
 			propWasSet = importRoboMetMontageFilter->setProperty("ImageFileExtension", var);
 		}
@@ -651,8 +653,8 @@ void IMFViewer_UI::importRobometMontage(ImportMontageWizard* montageWizard)
 			QVariant var;
 			bool propWasSet = false;
 
-			int numOfRows = montageWizard->field("numOfRows").toInt();
-			int numOfCols = montageWizard->field("numOfCols").toInt();
+      int numOfRows = montageWizard->field(ImportMontage::FieldNames::NumberOfRows).toInt();
+      int numOfCols = montageWizard->field(ImportMontage::FieldNames::NumberOfColumns).toInt();
 
 			// Set montage size
 			IntVec3_t montageSize = { numOfCols, numOfRows, 1 };
