@@ -57,11 +57,6 @@ int main(int argc, char* argv[])
 
   IMFViewerApplication app(argc, argv);
 
-  // Initialize the Default Stylesheet
-  SVStyle* style = SVStyle::Instance();
-  QString defaultLoadedThemePath = BrandedStrings::DefaultStyleDirectory + "/" + BrandedStrings::DefaultLoadedTheme + ".json";
-  style->loadStyleSheet(defaultLoadedThemePath);
-
   IMFViewer_UI* viewer = app.getNewIMFViewerInstance();
   viewer->show();
 

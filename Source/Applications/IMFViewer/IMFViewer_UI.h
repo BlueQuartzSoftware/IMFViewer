@@ -143,13 +143,24 @@ private:
 
   QMenuBar* m_MenuBar = nullptr;
   QMenu* m_RecentFilesMenu = nullptr;
+  QMenu* m_MenuThemes = nullptr;
   QAction* m_ClearRecentsAction = nullptr;
+
+  QActionGroup*  m_ThemeActionGroup = nullptr;
 
   QString m_OpenDialogLastDirectory = "";
 
   QThread *m_workerThread;
   FilterPipeline::Pointer m_pipeline;
   DataContainerArray::Pointer m_dataContainerArray;
+
+  /**
+   * @brief createThemeMenu
+   * @param actionGroup
+   * @param parent
+   * @return
+   */
+  QMenu* createThemeMenu(QActionGroup *actionGroup, QWidget* parent = nullptr);
 
   /**
    * @brief importGenericMontage

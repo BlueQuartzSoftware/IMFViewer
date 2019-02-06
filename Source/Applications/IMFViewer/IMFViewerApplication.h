@@ -100,6 +100,16 @@ private:
    */
   void setActiveInstance(IMFViewer_UI* instance);
 
+  /**
+   * @brief readSettings
+   */
+  void readSettings();
+
+  /**
+   * @brief writeSettings
+   */
+  void writeSettings();
+
   IMFViewerApplication(const IMFViewerApplication&); // Copy Constructor Not Implemented
   void operator=(const IMFViewerApplication&);       // Operator '=' Not Implemented
 };

@@ -60,6 +60,7 @@
 #include "SVWidgetsLib/Core/FilterWidgetManager.h"
 #include "SVWidgetsLib/Dialogs/AboutPlugins.h"
 #include "SVWidgetsLib/QtSupport/QtSSettings.h"
+#include "SVWidgetsLib/Widgets/SVStyle.h"
 
 #include "IMFViewer/IMFViewer_UI.h"
 
@@ -81,6 +82,8 @@ IMFViewerApplication::~IMFViewerApplication()
 {
   delete this->m_SplashScreen;
   this->m_SplashScreen = nullptr;
+
+  writeSettings();
 }
 
 // -----------------------------------------------------------------------------
@@ -88,6 +91,13 @@ IMFViewerApplication::~IMFViewerApplication()
 // -----------------------------------------------------------------------------
 bool IMFViewerApplication::initialize(int argc, char* argv[])
 {
+  // Initialize the Default Stylesheet
+  SVStyle* style = SVStyle::Instance();
+  QString defaultLoadedThemePath = BrandedStrings::DefaultStyleDirectory + "/" + BrandedStrings::DefaultLoadedTheme + ".json";
+  style->loadStyleSheet(defaultLoadedThemePath);
+
+  readSettings();
+
   // Assume we are launching on the main screen.
   float pixelRatio = qApp->screens().at(0)->devicePixelRatio();
 
@@ -365,4 +375,40 @@ void IMFViewerApplication::setActiveInstance(IMFViewer_UI* instance)
   }
 
   m_ActiveInstance = instance;
+}
+
+// -----------------------------------------------------------------------------
+//
+// -----------------------------------------------------------------------------
+void IMFViewerApplication::readSettings()
+{
+  QSharedPointer<QtSSettings> prefs = QSharedPointer<QtSSettings>(new QtSSettings());
+
+  prefs->beginGroup("Application Settings");
+
+  SVStyle* styles = SVStyle::Instance();
+  QString themeFilePath = prefs->value("Theme File Path", QString()).toString();
+  QFileInfo fi(themeFilePath);
+  if(!themeFilePath.isEmpty() && BrandedStrings::LoadedThemeNames.contains(fi.baseName()))
+  {
+    styles->loadStyleSheet(themeFilePath);
+  }
+
+  prefs->endGroup();
+}
+
+// -----------------------------------------------------------------------------
+//
+// -----------------------------------------------------------------------------
+void IMFViewerApplication::writeSettings()
+{
+  QSharedPointer<QtSSettings> prefs = QSharedPointer<QtSSettings>(new QtSSettings());
+
+  prefs->beginGroup("Application Settings");
+
+  SVStyle* styles = SVStyle::Instance();
+  QString themeFilePath = styles->getCurrentThemeFilePath();
+  prefs->setValue("Theme File Path", themeFilePath);
+
+  prefs->endGroup();
 }

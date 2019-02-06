@@ -54,10 +54,13 @@
 
 #include "SVWidgetsLib/QtSupport/QtSRecentFileList.h"
 #include "SVWidgetsLib/QtSupport/QtSSettings.h"
+#include "SVWidgetsLib/Widgets/SVStyle.h"
 
 #include "SIMPLVtkLib/Wizards/ImportMontage/ImportMontageWizard.h"
 #include "SIMPLVtkLib/Wizards/ImportMontage/TileConfigFileGenerator.h"
 #include "SIMPLVtkLib/Wizards/ImportMontage/MontageWorker.h"
+
+#include "BrandedStrings.h"
 
 #include "ui_IMFViewer_UI.h"
 
@@ -954,10 +957,64 @@ void IMFViewer_UI::createMenu()
 
   m_MenuBar->addMenu(fileMenu);
 
+  // Add View Menu
+  QMenu* viewMenu = new QMenu("View", m_MenuBar);
+
+  QStringList themeNames = BrandedStrings::LoadedThemeNames;
+  if(!themeNames.empty()) // We are not counting the Default theme when deciding whether or not to add the theme menu
+  {
+    m_ThemeActionGroup = new QActionGroup(this);
+    m_MenuThemes = createThemeMenu(m_ThemeActionGroup, viewMenu);
+
+    viewMenu->addMenu(m_MenuThemes);
+
+    viewMenu->addSeparator();
+  }
+
+  m_MenuBar->addMenu(viewMenu);
+
   // Add Filter Menu
   QMenu* filterMenu = m_Internals->vsWidget->getFilterMenu();
   m_MenuBar->addMenu(filterMenu);
 
   // Apply Menu Bar
   setMenuBar(m_MenuBar);
+}
+
+// -----------------------------------------------------------------------------
+//
+// -----------------------------------------------------------------------------
+QMenu* IMFViewer_UI::createThemeMenu(QActionGroup* actionGroup, QWidget* parent)
+{
+  SVStyle* style = SVStyle::Instance();
+
+  QMenu* menuThemes = new QMenu("Themes", parent);
+
+  QString themePath = ":/SIMPL/StyleSheets/Default.json";
+  QAction* action = menuThemes->addAction("Default", [=] {
+    style->loadStyleSheet(themePath);
+  });
+  action->setCheckable(true);
+  if(themePath == style->getCurrentThemeFilePath())
+  {
+    action->setChecked(true);
+  }
+  actionGroup->addAction(action);
+
+  QStringList themeNames = BrandedStrings::LoadedThemeNames;
+  for (int i = 0; i < themeNames.size(); i++)
+  {
+    QString themePath = BrandedStrings::DefaultStyleDirectory + QDir::separator() + themeNames[i] + ".json";
+    QAction* action = menuThemes->addAction(themeNames[i], [=] {
+      style->loadStyleSheet(themePath);
+    });
+    action->setCheckable(true);
+    if(themePath == style->getCurrentThemeFilePath())
+    {
+      action->setChecked(true);
+    }
+    actionGroup->addAction(action);
+  }
+
+  return menuThemes;
 }
