@@ -837,6 +837,8 @@ void IMFViewer_UI::importRobometMontage(ImportMontageWizard* montageWizard)
         statusBar()->showMessage(tr("%1: ImageFileExtension property not set. Aborting.").arg(importRoboMetMontageFilter->getHumanLabel()));
         return;
       }
+
+	  m_pipeline->pushBack(importRoboMetMontageFilter);
 		}
     else
     {
@@ -897,7 +899,22 @@ void IMFViewer_UI::importRobometMontage(ImportMontageWizard* montageWizard)
       {
         statusBar()->showMessage(tr("%1: CommonDataArrayName property not set. Aborting.").arg(itkMontageFilter->getHumanLabel()));
         return;
-      }
+      }       
+	  
+	  // Set Image Data Containers
+	  importRoboMetMontageFilter->preflight();
+	  DataContainerArray::Pointer dca = importRoboMetMontageFilter->getDataContainerArray();
+	  QStringList dcNames = dca->getDataContainerNames();
+
+	  // Set the list of image data containers
+	  var.setValue(dcNames);
+	  propWasSet = itkMontageFilter->setProperty("ImageDataContainers", var);
+	  if(!propWasSet)
+	  {
+		  statusBar()->showMessage(tr("%1: ImageDataContainers property not set. Aborting.").arg(itkMontageFilter->getHumanLabel()));
+		  return;
+	  }
+	  m_pipeline->pushBack(itkMontageFilter);
 		}
     else
     {
