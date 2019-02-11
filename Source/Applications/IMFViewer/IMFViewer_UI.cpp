@@ -375,6 +375,7 @@ void IMFViewer_UI::handleMontageResults(int err)
 		DataContainerArray::Pointer dca = m_pipeline->getDataContainerArray();
 		VSMainWidgetBase* baseWidget = dynamic_cast<VSMainWidgetBase*>(m_Internals->vsWidget);
 		baseWidget->importPipelineOutput(m_pipeline, dca);
+		baseWidget->getActiveViewWidget()->getFilterViewModel()->setRepresentation(m_Representation);
 	}
 }
 
@@ -562,6 +563,10 @@ void IMFViewer_UI::importDREAM3DMontage(ImportMontageWizard* montageWizard)
 void IMFViewer_UI::importFijiMontage(ImportMontageWizard* montageWizard)
 { 
   m_pipeline = FilterPipeline::New();
+  m_workerThread = new QThread;
+
+  bool displayMontage = montageWizard->field(ImportMontage::FieldNames::DisplayMontage).toBool();
+  bool displayOutline = montageWizard->field(ImportMontage::FieldNames::DisplayOutlineOnly).toBool();
 
   // Instantiate Import Fiji Montage filter
   QString filterName = "ITKImportFijiMontage";
@@ -635,11 +640,8 @@ void IMFViewer_UI::importFijiMontage(ImportMontageWizard* montageWizard)
     return;
   }
 
-  if (montageWizard->field(ImportMontage::FieldNames::DisplayMontage).toBool())
+  if (displayMontage || displayOutline)
   {
-    // Instantiate the worker thread and pipeline
-    m_workerThread = new QThread;
-
     // Instantiate Generate Montage filter
     filterName = "ITKGenerateMontageConfiguration";
     factory = fm->getFactoryFromClassName(filterName);
@@ -704,6 +706,14 @@ void IMFViewer_UI::importFijiMontage(ImportMontageWizard* montageWizard)
         }
 
         m_pipeline->pushBack(itkMontageFilter);
+		if(displayMontage)
+		{
+			m_Representation = VSFilterViewSettings::Representation::Surface;
+		}
+		else if(displayOutline)
+		{
+			m_Representation = VSFilterViewSettings::Representation::Outline;
+		}
       }
       else
       {
@@ -739,6 +749,9 @@ void IMFViewer_UI::importRobometMontage(ImportMontageWizard* montageWizard)
 	// Instantiate the worker thread and pipeline
 	m_workerThread = new QThread;
 	m_pipeline = FilterPipeline::New();
+
+	bool displayMontage = montageWizard->field(ImportMontage::FieldNames::DisplayMontage).toBool();
+	bool displayOutline = montageWizard->field(ImportMontage::FieldNames::DisplayOutlineOnly).toBool();
 
 	// Instantiate Import RoboMet Montage filter
 	QString filterName = "ITKImportRoboMetMontage";
@@ -852,93 +865,105 @@ void IMFViewer_UI::importRobometMontage(ImportMontageWizard* montageWizard)
     return;
   }
 
-	// Instantiate Generate Montage filter
-  filterName = "ITKGenerateMontageConfiguration";
-	factory = fm->getFactoryFromClassName(filterName);
-	AbstractFilter::Pointer itkMontageFilter;
+  if(displayMontage || displayOutline)
+  {
 
-	// Set up the Generate Montage Configuration filter
-	if (factory.get() != nullptr)
-	{
-		itkMontageFilter = factory->create();
-		if (itkMontageFilter.get() != nullptr)
-		{
-			itkMontageFilter->setDataContainerArray(dca);
+	  // Instantiate Generate Montage filter
+	  filterName = "ITKGenerateMontageConfiguration";
+	  factory = fm->getFactoryFromClassName(filterName);
+	  AbstractFilter::Pointer itkMontageFilter;
 
-			QVariant var;
-			bool propWasSet = false;
-
-      int numOfRows = montageWizard->field(ImportMontage::FieldNames::NumberOfRows).toInt();
-      int numOfCols = montageWizard->field(ImportMontage::FieldNames::NumberOfColumns).toInt();
-
-			// Set montage size
-			IntVec3_t montageSize = { numOfCols, numOfRows, 1 };
-			var.setValue(montageSize);
-			propWasSet = itkMontageFilter->setProperty("MontageSize", var);
-      if (!propWasSet)
-      {
-        statusBar()->showMessage(tr("%1: MontageSize property not set. Aborting.").arg(itkMontageFilter->getHumanLabel()));
-        return;
-      }
-
-			// Set Common Attribute Matrix Name
-			QString cellAttrMatrixName = "CellData";
-			var.setValue(cellAttrMatrixName);
-			propWasSet = itkMontageFilter->setProperty("CommonAttributeMatrixName", var);
-      if (!propWasSet)
-      {
-        statusBar()->showMessage(tr("%1: CommonAttributeMatrixName property not set. Aborting.").arg(itkMontageFilter->getHumanLabel()));
-        return;
-      }
-
-			// Set Common Data Array Name
-			QString commonDataArrayName = "ImageTile";
-			var.setValue(commonDataArrayName);
-			propWasSet = itkMontageFilter->setProperty("CommonDataArrayName", var);
-      if (!propWasSet)
-      {
-        statusBar()->showMessage(tr("%1: CommonDataArrayName property not set. Aborting.").arg(itkMontageFilter->getHumanLabel()));
-        return;
-      }       
-	  
-	  // Set Image Data Containers
-	  importRoboMetMontageFilter->preflight();
-	  DataContainerArray::Pointer dca = importRoboMetMontageFilter->getDataContainerArray();
-	  QStringList dcNames = dca->getDataContainerNames();
-
-	  // Set the list of image data containers
-	  var.setValue(dcNames);
-	  propWasSet = itkMontageFilter->setProperty("ImageDataContainers", var);
-	  if(!propWasSet)
+	  // Set up the Generate Montage Configuration filter
+	  if(factory.get() != nullptr)
 	  {
-		  statusBar()->showMessage(tr("%1: ImageDataContainers property not set. Aborting.").arg(itkMontageFilter->getHumanLabel()));
+		  itkMontageFilter = factory->create();
+		  if(itkMontageFilter.get() != nullptr)
+		  {
+			  itkMontageFilter->setDataContainerArray(dca);
+
+			  QVariant var;
+			  bool propWasSet = false;
+
+			  int numOfRows = montageWizard->field(ImportMontage::FieldNames::NumberOfRows).toInt();
+			  int numOfCols = montageWizard->field(ImportMontage::FieldNames::NumberOfColumns).toInt();
+
+			  // Set montage size
+			  IntVec3_t montageSize = { numOfCols, numOfRows, 1 };
+			  var.setValue(montageSize);
+			  propWasSet = itkMontageFilter->setProperty("MontageSize", var);
+			  if(!propWasSet)
+			  {
+				  statusBar()->showMessage(tr("%1: MontageSize property not set. Aborting.").arg(itkMontageFilter->getHumanLabel()));
+				  return;
+			  }
+
+			  // Set Common Attribute Matrix Name
+			  QString cellAttrMatrixName = "CellData";
+			  var.setValue(cellAttrMatrixName);
+			  propWasSet = itkMontageFilter->setProperty("CommonAttributeMatrixName", var);
+			  if(!propWasSet)
+			  {
+				  statusBar()->showMessage(tr("%1: CommonAttributeMatrixName property not set. Aborting.").arg(itkMontageFilter->getHumanLabel()));
+				  return;
+			  }
+
+			  // Set Common Data Array Name
+			  QString commonDataArrayName = "ImageTile";
+			  var.setValue(commonDataArrayName);
+			  propWasSet = itkMontageFilter->setProperty("CommonDataArrayName", var);
+			  if(!propWasSet)
+			  {
+				  statusBar()->showMessage(tr("%1: CommonDataArrayName property not set. Aborting.").arg(itkMontageFilter->getHumanLabel()));
+				  return;
+			  }
+
+			  // Set Image Data Containers
+			  importRoboMetMontageFilter->preflight();
+			  DataContainerArray::Pointer dca = importRoboMetMontageFilter->getDataContainerArray();
+			  QStringList dcNames = dca->getDataContainerNames();
+
+			  // Set the list of image data containers
+			  var.setValue(dcNames);
+			  propWasSet = itkMontageFilter->setProperty("ImageDataContainers", var);
+			  if(!propWasSet)
+			  {
+				  statusBar()->showMessage(tr("%1: ImageDataContainers property not set. Aborting.").arg(itkMontageFilter->getHumanLabel()));
+				  return;
+			  }
+			  m_pipeline->pushBack(itkMontageFilter);
+			  if(displayMontage)
+			  {
+				  m_Representation = VSFilterViewSettings::Representation::Surface;
+			  }
+			  else if(displayOutline)
+			  {
+				  m_Representation = VSFilterViewSettings::Representation::Outline;
+			  }
+		  }
+		  else
+		  {
+			  statusBar()->showMessage(tr("Could not create filter from %1 factory. Aborting.").arg(filterName));
+			  return;
+		  }
+	  }
+	  else
+	  {
+		  statusBar()->showMessage(tr("Could not create %1 factory. Aborting.").arg(filterName));
 		  return;
 	  }
-	  m_pipeline->pushBack(itkMontageFilter);
-		}
-    else
-    {
-      statusBar()->showMessage(tr("Could not create filter from %1 factory. Aborting.").arg(filterName));
-      return;
-    }
-	}
-  else
-  {
-    statusBar()->showMessage(tr("Could not create %1 factory. Aborting.").arg(filterName));
-    return;
-  }
 
-  // Run Pipeline
-  MontageWorker* montageWorker = new MontageWorker(m_pipeline);
-  m_pipeline->addMessageReceiver(this);
-  montageWorker->moveToThread(m_workerThread);
-  connect(montageWorker, SIGNAL(error(QString)), this, SLOT(errorString(QString)));
-  connect(m_workerThread, SIGNAL(started()), montageWorker, SLOT(process()));
-  connect(montageWorker, SIGNAL(finished()), m_workerThread, SLOT(quit()));
-  connect(montageWorker, SIGNAL(finished()), montageWorker, SLOT(deleteLater()));
-  connect(m_workerThread, SIGNAL(finished()), m_workerThread, SLOT(deleteLater()));
-  connect(montageWorker, &MontageWorker::resultReady, this, &IMFViewer_UI::handleMontageResults);
-  m_workerThread->start();
+	  // Run Pipeline
+	  MontageWorker* montageWorker = new MontageWorker(m_pipeline);
+	  m_pipeline->addMessageReceiver(this);
+	  montageWorker->moveToThread(m_workerThread);
+	  connect(montageWorker, SIGNAL(error(QString)), this, SLOT(errorString(QString)));
+	  connect(m_workerThread, SIGNAL(started()), montageWorker, SLOT(process()));
+	  connect(montageWorker, SIGNAL(finished()), m_workerThread, SLOT(quit()));
+	  connect(montageWorker, SIGNAL(finished()), montageWorker, SLOT(deleteLater()));
+	  connect(m_workerThread, SIGNAL(finished()), m_workerThread, SLOT(deleteLater()));
+	  connect(montageWorker, &MontageWorker::resultReady, this, &IMFViewer_UI::handleMontageResults);
+	  m_workerThread->start();
+  }
 }
 
 // -----------------------------------------------------------------------------

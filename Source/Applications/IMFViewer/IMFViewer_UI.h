@@ -41,6 +41,8 @@
 #include "SIMPLib/DataContainers/DataContainerArray.h"
 #include "SIMPLib/Filtering/FilterPipeline.h"
 
+#include "SIMPLVtkLib/Visualization/Controllers/VSFilterViewSettings.h"
+
 class QtSSettings;
 class ImportMontageWizard;
 
@@ -153,6 +155,7 @@ private:
   QThread *m_workerThread;
   FilterPipeline::Pointer m_pipeline;
   DataContainerArray::Pointer m_dataContainerArray;
+  VSFilterViewSettings::Representation m_Representation = VSFilterViewSettings::Representation::Invalid;
 
   /**
    * @brief createThemeMenu
