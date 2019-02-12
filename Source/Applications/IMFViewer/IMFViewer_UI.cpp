@@ -262,7 +262,6 @@ void IMFViewer_UI::importGenericMontage(ImportMontageWizard* montageWizard)
       itkMontageFilter->setDataContainerArray(m_dataContainerArray);
 
       QVariant var;
-      bool propWasSet = false;
 
       int numOfRows = montageWizard->field(ImportMontage::FieldNames::GenericNumberOfRows).toInt();
       int numOfCols = montageWizard->field(ImportMontage::FieldNames::GenericNumberOfColumns).toInt();
@@ -270,52 +269,42 @@ void IMFViewer_UI::importGenericMontage(ImportMontageWizard* montageWizard)
       // Set montage size
       IntVec3_t montageSize = {numOfCols, numOfRows, 1};
       var.setValue(montageSize);
-      propWasSet = itkMontageFilter->setProperty("MontageSize", var);
-      if (!propWasSet)
-      {
-        statusBar()->showMessage(tr("%1: MontageSize property not set. Aborting.").arg(itkMontageFilter->getHumanLabel()));
-        return;
-      }
+	  if(!setFilterProperty(itkMontageFilter, "MontageSize", var))
+	  {
+		  return;
+	  }
 
       // Get input file names
       FileListInfo_t inputFileInfo = montageWizard->field(ImportMontage::FieldNames::GenericFileListInfo).value<FileListInfo_t>();
       var.setValue(inputFileInfo);
-      propWasSet = itkMontageFilter->setProperty("InputFileListInfo", var);
-      if (!propWasSet)
-      {
-        statusBar()->showMessage(tr("%1: InputFileListInfo property not set. Aborting.").arg(itkMontageFilter->getHumanLabel()));
-        return;
-      }
+	  if(!setFilterProperty(itkMontageFilter, "InputFileListInfo", var))
+	  {
+		  return;
+	  }
 
       // Set DataContainerName
       QString dcName = "DataContainer";
       var.setValue(dcName);
-      propWasSet = itkMontageFilter->setProperty("DataContainerName", var);
-      if (!propWasSet)
-      {
-        statusBar()->showMessage(tr("%1: DataContainerName property not set. Aborting.").arg(itkMontageFilter->getHumanLabel()));
-        return;
-      }
+	  if(!setFilterProperty(itkMontageFilter, "DataContainerName", var))
+	  {
+		  return;
+	  }
 
       // Set Cell Attribute Matrix Name
       QString cellAttrMatrixName = "CellAttributeMatrix";
       var.setValue(cellAttrMatrixName);
-      propWasSet = itkMontageFilter->setProperty("CellAttributeMatrixName", var);
-      if (!propWasSet)
-      {
-        statusBar()->showMessage(tr("%1: CellAttributeMatrixName property not set. Aborting.").arg(itkMontageFilter->getHumanLabel()));
-        return;
-      }
+	  if(!setFilterProperty(itkMontageFilter, "CellAttributeMatrixName", var))
+	  {
+		  return;
+	  }
 
       // Set Metadata Attribute Matrix Name
       QString metaDataAttributeMatrixName = "MetaDataAttributeMatrix";
       var.setValue(metaDataAttributeMatrixName);
-      propWasSet = itkMontageFilter->setProperty("MetaDataAttributeMatrixName", var);
-      if (!propWasSet)
-      {
-        statusBar()->showMessage(tr("%1: MetaDataAttributeMatrixName property not set. Aborting.").arg(itkMontageFilter->getHumanLabel()));
-        return;
-      }
+	  if(!setFilterProperty(itkMontageFilter, "MetaDataAttributeMatrixName", var))
+	  {
+		  return;
+	  }
 
       // Generate tile configuration file.
       TileConfigFileGenerator tileConfigFileGenerator(inputFileInfo,
@@ -373,6 +362,17 @@ void IMFViewer_UI::handleMontageResults(int err)
 	if (err >= 0)
 	{
 		DataContainerArray::Pointer dca = m_pipeline->getDataContainerArray();
+		// If Display Montage was selected, remove non-stitched image data containers
+		if(m_displayMontage)
+		{
+			for(DataContainer::Pointer dc : dca->getDataContainers())
+			{
+				if(dc->getName() != "MontageDC")
+				{
+					dca->removeDataContainer(dc->getName());
+				}
+			}
+		}
 		VSMainWidgetBase* baseWidget = dynamic_cast<VSMainWidgetBase*>(m_Internals->vsWidget);
 		baseWidget->importPipelineOutput(m_pipeline, dca);
 		baseWidget->getActiveViewWidget()->getFilterViewModel()->setRepresentation(m_Representation);
@@ -420,25 +420,20 @@ void IMFViewer_UI::importDREAM3DMontage(ImportMontageWizard* montageWizard)
         dataContainerReader->setDataContainerArray(m_dataContainerArray);
 
         QVariant var;
-        bool propWasSet = false;
 
         // Set input file
         var.setValue(dataFilePath);
-        propWasSet = dataContainerReader->setProperty("InputFile", var);
-        if (!propWasSet)
-        {
-          statusBar()->showMessage(tr("%1: InputFile property not set. Aborting.").arg(dataContainerReader->getHumanLabel()));
-          return;
-        }
+		if(!setFilterProperty(dataContainerReader, "InputFile", var))
+		{
+			return;
+		}
 
         // Set data container array proxy
         var.setValue(dream3dProxy);
-        propWasSet = dataContainerReader->setProperty("InputFileDataContainerArrayProxy", var);
-        if (!propWasSet)
-        {
-          statusBar()->showMessage(tr("%1: InputFileDataContainerArrayProxy property not set. Aborting.").arg(dataContainerReader->getHumanLabel()));
-          return;
-        }
+		if(!setFilterProperty(dataContainerReader, "InputFileDataContainerArrayProxy", var))
+		{
+			return;
+		}
 
         m_pipeline->pushBack(dataContainerReader);
       }
@@ -468,7 +463,6 @@ void IMFViewer_UI::importDREAM3DMontage(ImportMontageWizard* montageWizard)
         generateMontagerFilter->setDataContainerArray(m_dataContainerArray);
 
         QVariant var;
-        bool propWasSet = false;
 
         int numOfRows = montageWizard->field(ImportMontage::FieldNames::NumberOfRows).toInt();
         int numOfCols = montageWizard->field(ImportMontage::FieldNames::NumberOfColumns).toInt();
@@ -476,52 +470,42 @@ void IMFViewer_UI::importDREAM3DMontage(ImportMontageWizard* montageWizard)
         // Set montage size
         IntVec3_t montageSize = { numOfCols, numOfRows, 1 };
         var.setValue(montageSize);
-        propWasSet = generateMontagerFilter->setProperty("MontageSize", var);
-        if (!propWasSet)
-        {
-          statusBar()->showMessage(tr("%1: MontageSize property not set. Aborting.").arg(generateMontagerFilter->getHumanLabel()));
-          return;
-        }
+		if(!setFilterProperty(generateMontagerFilter, "MontageSize", var))
+		{
+			return;
+		}
 
         // Set tile overlap
         double tileOverlap = montageWizard->field(ImportMontage::FieldNames::DREAM3DTileOverlap).toDouble();
         var.setValue(tileOverlap);
-        propWasSet = generateMontagerFilter->setProperty("TileOverlap", var);
-        if (!propWasSet)
-        {
-          statusBar()->showMessage(tr("%1: TileOverlap property not set. Aborting.").arg(generateMontagerFilter->getHumanLabel()));
-          return;
-        }
+		if(!setFilterProperty(generateMontagerFilter, "TileOverlap", var))
+		{
+			return;
+		}
 
         // Set the list of image data containers
         QStringList dcNames = m_dataContainerArray->getDataContainerNames();
         var.setValue(dcNames);
-        propWasSet = generateMontagerFilter->setProperty("ImageDataContainers", var);
-        if (!propWasSet)
-        {
-          statusBar()->showMessage(tr("%1: ImageDataContainers property not set. Aborting.").arg(generateMontagerFilter->getHumanLabel()));
-          return;
-        }
+		if(!setFilterProperty(generateMontagerFilter, "ImageDataContainers", var))
+		{
+			return;
+		}
 
         // Set Common Attribute Matrix Name
         QString cellAttrMatrixName = montageWizard->field(ImportMontage::FieldNames::CellAttributeMatrixName).toString();
         var.setValue(cellAttrMatrixName);
-        propWasSet = generateMontagerFilter->setProperty("CommonAttributeMatrixName", var);
-        if (!propWasSet)
-        {
-          statusBar()->showMessage(tr("%1: CommonAttributeMatrixName property not set. Aborting.").arg(generateMontagerFilter->getHumanLabel()));
-          return;
-        }
+		if(!setFilterProperty(generateMontagerFilter, "CommonAttributeMatrixName", var))
+		{
+			return;
+		}
 
         // Set Common Data Array Name
         QString commonDataArrayName = montageWizard->field(ImportMontage::FieldNames::ImageArrayName).toString();
         var.setValue(commonDataArrayName);
-        propWasSet = generateMontagerFilter->setProperty("CommonDataArrayName", var);
-        if (!propWasSet)
-        {
-          statusBar()->showMessage(tr("%1: CommonDataArrayName property not set. Aborting.").arg(generateMontagerFilter->getHumanLabel()));
-          return;
-        }
+		if(!setFilterProperty(generateMontagerFilter, "CommonDataArrayName", var))
+		{
+			return;
+		}
 
         m_pipeline->pushBack(generateMontagerFilter);
       }
@@ -565,7 +549,7 @@ void IMFViewer_UI::importFijiMontage(ImportMontageWizard* montageWizard)
   m_pipeline = FilterPipeline::New();
   m_workerThread = new QThread;
 
-  bool displayMontage = montageWizard->field(ImportMontage::FieldNames::DisplayMontage).toBool();
+  m_displayMontage = montageWizard->field(ImportMontage::FieldNames::DisplayMontage).toBool();
   bool displayOutline = montageWizard->field(ImportMontage::FieldNames::DisplayOutlineOnly).toBool();
 
   // Instantiate Import Fiji Montage filter
@@ -584,47 +568,38 @@ void IMFViewer_UI::importFijiMontage(ImportMontageWizard* montageWizard)
       importFijiMontageFilter->setDataContainerArray(m_dataContainerArray);
 
       QVariant var;
-      bool propWasSet = false;
 
       // Set the path for the Fiji Configuration File
       QString fijiConfigFilePath = montageWizard->field(ImportMontage::FieldNames::DataFilePath).toString();
       var.setValue(fijiConfigFilePath);
-      propWasSet = importFijiMontageFilter->setProperty("FijiConfigFilePath", var);
-      if (!propWasSet)
-      {
-        statusBar()->showMessage(tr("%1: FijiConfigFilePath property not set. Aborting.").arg(importFijiMontageFilter->getHumanLabel()));
-        return;
-      }
+	  if(!setFilterProperty(importFijiMontageFilter, "FijiConfigFilePath", var))
+	  {
+		  return;
+	  }
 
       // Set the Data Container Prefix
       QString dataContainerPrefix = "ImageDataContainer_";
       var.setValue(dataContainerPrefix);
-      propWasSet = importFijiMontageFilter->setProperty("DataContainerPrefix", var);
-      if (!propWasSet)
-      {
-        statusBar()->showMessage(tr("%1: DataContainerPrefix property not set. Aborting.").arg(importFijiMontageFilter->getHumanLabel()));
-        return;
-      }
+	  if(!setFilterProperty(importFijiMontageFilter, "DataContainerPrefix", var))
+	  {
+		  return;
+	  }
 
       // Set the Cell Attribute Matrix Name
       QString cellAttrMatrixName = "CellData";
       var.setValue(cellAttrMatrixName);
-      propWasSet = importFijiMontageFilter->setProperty("CellAttributeMatrixName", var);
-      if (!propWasSet)
-      {
-        statusBar()->showMessage(tr("%1: CellAttributeMatrixName property not set. Aborting.").arg(importFijiMontageFilter->getHumanLabel()));
-        return;
-      }
+	  if(!setFilterProperty(importFijiMontageFilter, "CellAttributeMatrixName", var))
+	  {
+		  return;
+	  }
 
       // Set the Image Array Name
       QString attributeArrayName = "ImageTile";
       var.setValue(attributeArrayName);
-      propWasSet = importFijiMontageFilter->setProperty("AttributeArrayName", var);
-      if (!propWasSet)
-      {
-        statusBar()->showMessage(tr("%1: AttributeArrayName property not set. Aborting.").arg(importFijiMontageFilter->getHumanLabel()));
-        return;
-      }
+	  if(!setFilterProperty(importFijiMontageFilter, "AttributeArrayName", var))
+	  {
+		  return;
+	  }
 
       m_pipeline->pushBack(importFijiMontageFilter);
     }
@@ -640,23 +615,27 @@ void IMFViewer_UI::importFijiMontage(ImportMontageWizard* montageWizard)
     return;
   }
 
-  if (displayMontage || displayOutline)
+  if (m_displayMontage || displayOutline)
   {
     // Instantiate Generate Montage filter
     filterName = "ITKGenerateMontageConfiguration";
     factory = fm->getFactoryFromClassName(filterName);
-    AbstractFilter::Pointer itkMontageFilter;
+    AbstractFilter::Pointer itkRegistrationFilter;
+	AbstractFilter::Pointer itkStitchingFilter;
 
     // Set up the Generate Montage Configuration filter
     if (factory.get() != nullptr)
     {
-      itkMontageFilter = factory->create();
-      if (itkMontageFilter.get() != nullptr)
+      itkRegistrationFilter = factory->create();
+	  filterName = "ITKStitchMontage";
+	  factory = fm->getFactoryFromClassName(filterName);
+	  itkStitchingFilter = factory->create();
+      if (itkRegistrationFilter.get() != nullptr && itkStitchingFilter.get() != nullptr)
       {
-        itkMontageFilter->setDataContainerArray(m_dataContainerArray);
+		itkRegistrationFilter->setDataContainerArray(m_dataContainerArray);
+		itkStitchingFilter->setDataContainerArray(m_dataContainerArray);
 
         QVariant var;
-        bool propWasSet = false;
 
         int numOfRows = montageWizard->field(ImportMontage::FieldNames::NumberOfRows).toInt();
         int numOfCols = montageWizard->field(ImportMontage::FieldNames::NumberOfColumns).toInt();
@@ -664,32 +643,30 @@ void IMFViewer_UI::importFijiMontage(ImportMontageWizard* montageWizard)
         // Set montage size
         IntVec3_t montageSize = { numOfCols, numOfRows, 1 };
         var.setValue(montageSize);
-        propWasSet = itkMontageFilter->setProperty("MontageSize", var);
-        if (!propWasSet)
-        {
-          statusBar()->showMessage(tr("%1: MontageSize property not set. Aborting.").arg(itkMontageFilter->getHumanLabel()));
-          return;
-        }
+		if(!setFilterProperty(itkRegistrationFilter, "MontageSize", var) ||
+			!setFilterProperty(itkStitchingFilter, "MontageSize", var))
+		{
+			return;
+		}
+
 
         // Set Common Attribute Matrix Name
         QString cellAttrMatrixName = "CellData";
         var.setValue(cellAttrMatrixName);
-        propWasSet = itkMontageFilter->setProperty("CommonAttributeMatrixName", var);
-        if (!propWasSet)
-        {
-          statusBar()->showMessage(tr("%1: CommonAttributeMatrixName property not set. Aborting.").arg(itkMontageFilter->getHumanLabel()));
-          return;
-        }
+		if(!setFilterProperty(itkRegistrationFilter, "CommonAttributeMatrixName", var) ||
+			!setFilterProperty(itkStitchingFilter, "CommonAttributeMatrixName", var))
+		{
+			return;
+		}
 
         // Set Common Data Array Name
         QString commonDataArrayName = "ImageTile";
         var.setValue(commonDataArrayName);
-        propWasSet = itkMontageFilter->setProperty("CommonDataArrayName", var);
-        if (!propWasSet)
-        {
-          statusBar()->showMessage(tr("%1: CommonDataArrayName property not set. Aborting.").arg(itkMontageFilter->getHumanLabel()));
-          return;
-        }
+		if(!setFilterProperty(itkRegistrationFilter, "CommonDataArrayName", var) ||
+			!setFilterProperty(itkStitchingFilter, "CommonDataArrayName", var))
+		{
+			return;
+		}
 
         // Set Image Data Containers
         importFijiMontageFilter->preflight();
@@ -698,22 +675,47 @@ void IMFViewer_UI::importFijiMontage(ImportMontageWizard* montageWizard)
 
         // Set the list of image data containers
         var.setValue(dcNames);
-        propWasSet = itkMontageFilter->setProperty("ImageDataContainers", var);
-        if (!propWasSet)
-        {
-          statusBar()->showMessage(tr("%1: ImageDataContainers property not set. Aborting.").arg(itkMontageFilter->getHumanLabel()));
-          return;
-        }
+		if(!setFilterProperty(itkRegistrationFilter, "ImageDataContainers", var) ||
+			!setFilterProperty(itkStitchingFilter, "ImageDataContainers", var))
+		{
+			return;
+		}
 
-        m_pipeline->pushBack(itkMontageFilter);
-		if(displayMontage)
+		// Stitching specific properties
+
+		// Tile overlap
+		double tileOverlap = montageWizard->field(ImportMontage::FieldNames::DREAM3DTileOverlap).toDouble();
+		tileOverlap = 20.0; // TESTING VALUE
+		var.setValue(tileOverlap);
+		if(!setFilterProperty(itkStitchingFilter, "TileOverlap", var))
 		{
-			m_Representation = VSFilterViewSettings::Representation::Surface;
+			return;
 		}
-		else if(displayOutline)
+
+		// Montage results data array path components
+		QString montageDataContainer = "MontageDC";
+		var.setValue(montageDataContainer);
+		if(!setFilterProperty(itkStitchingFilter, "MontageDataContainerName", var))
 		{
-			m_Representation = VSFilterViewSettings::Representation::Outline;
+			return;
 		}
+
+		QString montageAttriubeMatrixName = "MontageAM";
+		var.setValue(montageAttriubeMatrixName);
+		if(!setFilterProperty(itkStitchingFilter, "MontageAttributeMatrixName", var))
+		{
+			return;
+		}
+
+		QString montageDataArrayName = "MontageData";
+		var.setValue(montageDataArrayName);
+		if(!setFilterProperty(itkStitchingFilter, "MontageDataArrayName", var))
+		{
+			return;
+		}
+
+        m_pipeline->pushBack(itkRegistrationFilter);
+		m_pipeline->pushBack(itkStitchingFilter);
       }
       else
       {
@@ -726,6 +728,15 @@ void IMFViewer_UI::importFijiMontage(ImportMontageWizard* montageWizard)
       statusBar()->showMessage(tr("Could not create %1 factory. Aborting.").arg(filterName));
       return;
     }
+  }
+
+  if(!displayOutline)
+  {
+	  m_Representation = VSFilterViewSettings::Representation::Surface;
+  }
+  else
+  {
+	  m_Representation = VSFilterViewSettings::Representation::Outline;
   }
 
   // Run the pipeline
@@ -750,7 +761,7 @@ void IMFViewer_UI::importRobometMontage(ImportMontageWizard* montageWizard)
 	m_workerThread = new QThread;
 	m_pipeline = FilterPipeline::New();
 
-	bool displayMontage = montageWizard->field(ImportMontage::FieldNames::DisplayMontage).toBool();
+	m_displayMontage = montageWizard->field(ImportMontage::FieldNames::DisplayMontage).toBool();
 	bool displayOutline = montageWizard->field(ImportMontage::FieldNames::DisplayOutlineOnly).toBool();
 
 	// Instantiate Import RoboMet Montage filter
@@ -769,89 +780,72 @@ void IMFViewer_UI::importRobometMontage(ImportMontageWizard* montageWizard)
 			importRoboMetMontageFilter->setDataContainerArray(dca);
 
 			QVariant var;
-			bool propWasSet = false;
 
-			// Set the path for the Fiji Configuration File
-      QString configFilePath = montageWizard->field(ImportMontage::FieldNames::DataFilePath).toString();
+			// Set the path for the Robomet Configuration File
+			QString configFilePath = montageWizard->field(ImportMontage::FieldNames::DataFilePath).toString();
 			var.setValue(configFilePath);
-			propWasSet = importRoboMetMontageFilter->setProperty("RegistrationFile", var);
-      if (!propWasSet)
-      {
-        statusBar()->showMessage(tr("%1: RegistrationFile property not set. Aborting.").arg(importRoboMetMontageFilter->getHumanLabel()));
-        return;
-      }
+			if(!setFilterProperty(importRoboMetMontageFilter, "RegistrationFile", var))
+			{
+				return;
+			}
 
 			// Set the Data Container Prefix
 			QString dataContainerPrefix = "ImageDataContainer_";
 			var.setValue(dataContainerPrefix);
-			propWasSet = importRoboMetMontageFilter->setProperty("DataContainerPrefix", var);
-      if (!propWasSet)
-      {
-        statusBar()->showMessage(tr("%1: DataContainerPrefix property not set. Aborting.").arg(importRoboMetMontageFilter->getHumanLabel()));
-        return;
-      }
+			if(!setFilterProperty(importRoboMetMontageFilter, "DataContainerPrefix", var))
+			{
+				return;
+			}
 
 			// Set the Cell Attribute Matrix Name
 			QString cellAttrMatrixName = "CellData";
 			var.setValue(cellAttrMatrixName);
-			propWasSet = importRoboMetMontageFilter->setProperty("CellAttributeMatrixName", var);
-      if (!propWasSet)
-      {
-        statusBar()->showMessage(tr("%1: CellAttributeMatrixName property not set. Aborting.").arg(importRoboMetMontageFilter->getHumanLabel()));
-        return;
-      }
+			if(!setFilterProperty(importRoboMetMontageFilter, "CellAttributeMatrixName", var))
+			{
+				return;
+			}
 
 			// Set the Image Array Name
 			QString attributeArrayName = "ImageTile";
 			var.setValue(attributeArrayName);
-			propWasSet = importRoboMetMontageFilter->setProperty("AttributeArrayName", var);
-      if (!propWasSet)
-      {
-        statusBar()->showMessage(tr("%1: AttributeArrayName property not set. Aborting.").arg(importRoboMetMontageFilter->getHumanLabel()));
-        return;
-      }
+			if(!setFilterProperty(importRoboMetMontageFilter, "AttributeArrayName", var))
+			{
+				return;
+			}
 
 			// Slice number
-      int sliceNumber = montageWizard->field(ImportMontage::FieldNames::SliceNumber).toInt();
+			int sliceNumber = montageWizard->field(ImportMontage::FieldNames::SliceNumber).toInt();
 			var.setValue(sliceNumber);
-			propWasSet = importRoboMetMontageFilter->setProperty("SliceNumber", var);
-      if (!propWasSet)
-      {
-        statusBar()->showMessage(tr("%1: SliceNumber property not set. Aborting.").arg(importRoboMetMontageFilter->getHumanLabel()));
-        return;
-      }
+			if(!setFilterProperty(importRoboMetMontageFilter, "SliceNumber", var))
+			{
+				return;
+			}
 
 			// Image file prefix
-      QString imageFilePrefix = montageWizard->field(ImportMontage::FieldNames::ImageFilePrefix).toString();
+			QString imageFilePrefix = montageWizard->field(ImportMontage::FieldNames::ImageFilePrefix).toString();
 			var.setValue(imageFilePrefix);
-			propWasSet = importRoboMetMontageFilter->setProperty("ImageFilePrefix", var);
-      if (!propWasSet)
-      {
-        statusBar()->showMessage(tr("%1: ImageFilePrefix property not set. Aborting.").arg(importRoboMetMontageFilter->getHumanLabel()));
-        return;
-      }
+			if(!setFilterProperty(importRoboMetMontageFilter, "ImageFilePrefix", var))
+			{
+				return;
+			}
 
 			// Image file suffix
-      QString imageFileSuffix = montageWizard->field(ImportMontage::FieldNames::ImageFileSuffix).toString();
+			QString imageFileSuffix = montageWizard->field(ImportMontage::FieldNames::ImageFileSuffix).toString();
 			var.setValue(imageFileSuffix);
-			propWasSet = importRoboMetMontageFilter->setProperty("ImageFileSuffix", var);
-      if (!propWasSet)
-      {
-        statusBar()->showMessage(tr("%1: ImageFileSuffix property not set. Aborting.").arg(importRoboMetMontageFilter->getHumanLabel()));
-        return;
-      }
+			if(!setFilterProperty(importRoboMetMontageFilter, "ImageFileSuffix", var))
+			{
+				return;
+			}
 
 			// Image file extension
-      QString imageFileExtension = montageWizard->field(ImportMontage::FieldNames::ImageFileExtension).toString();
+			QString imageFileExtension = montageWizard->field(ImportMontage::FieldNames::ImageFileExtension).toString();
 			var.setValue(imageFileExtension);
-			propWasSet = importRoboMetMontageFilter->setProperty("ImageFileExtension", var);
-      if (!propWasSet)
-      {
-        statusBar()->showMessage(tr("%1: ImageFileExtension property not set. Aborting.").arg(importRoboMetMontageFilter->getHumanLabel()));
-        return;
-      }
-
-	  m_pipeline->pushBack(importRoboMetMontageFilter);
+			if(!setFilterProperty(importRoboMetMontageFilter, "ImageFileExtension", var))
+			{
+				return;
+			}
+			
+			m_pipeline->pushBack(importRoboMetMontageFilter);
 		}
     else
     {
@@ -865,24 +859,28 @@ void IMFViewer_UI::importRobometMontage(ImportMontageWizard* montageWizard)
     return;
   }
 
-  if(displayMontage || displayOutline)
+  if(m_displayMontage || displayOutline)
   {
 
 	  // Instantiate Generate Montage filter
 	  filterName = "ITKGenerateMontageConfiguration";
 	  factory = fm->getFactoryFromClassName(filterName);
-	  AbstractFilter::Pointer itkMontageFilter;
+	  AbstractFilter::Pointer itkRegistrationFilter;
+	  AbstractFilter::Pointer itkStitchingFilter;
 
 	  // Set up the Generate Montage Configuration filter
 	  if(factory.get() != nullptr)
 	  {
-		  itkMontageFilter = factory->create();
-		  if(itkMontageFilter.get() != nullptr)
+		  itkRegistrationFilter = factory->create();
+		  filterName = "ITKStitchMontage";
+		  factory = fm->getFactoryFromClassName(filterName);
+		  itkStitchingFilter = factory->create();
+
+		  if(itkRegistrationFilter.get() != nullptr && itkStitchingFilter.get() != nullptr)
 		  {
-			  itkMontageFilter->setDataContainerArray(dca);
+			  itkRegistrationFilter->setDataContainerArray(dca);
 
 			  QVariant var;
-			  bool propWasSet = false;
 
 			  int numOfRows = montageWizard->field(ImportMontage::FieldNames::NumberOfRows).toInt();
 			  int numOfCols = montageWizard->field(ImportMontage::FieldNames::NumberOfColumns).toInt();
@@ -890,30 +888,27 @@ void IMFViewer_UI::importRobometMontage(ImportMontageWizard* montageWizard)
 			  // Set montage size
 			  IntVec3_t montageSize = { numOfCols, numOfRows, 1 };
 			  var.setValue(montageSize);
-			  propWasSet = itkMontageFilter->setProperty("MontageSize", var);
-			  if(!propWasSet)
+			  if(!setFilterProperty(itkRegistrationFilter, "MontageSize", var) ||
+				  !setFilterProperty(itkStitchingFilter, "MontageSize", var))
 			  {
-				  statusBar()->showMessage(tr("%1: MontageSize property not set. Aborting.").arg(itkMontageFilter->getHumanLabel()));
 				  return;
 			  }
 
 			  // Set Common Attribute Matrix Name
 			  QString cellAttrMatrixName = "CellData";
 			  var.setValue(cellAttrMatrixName);
-			  propWasSet = itkMontageFilter->setProperty("CommonAttributeMatrixName", var);
-			  if(!propWasSet)
+			  if(!setFilterProperty(itkRegistrationFilter, "CommonAttributeMatrixName", var) ||
+				  !setFilterProperty(itkStitchingFilter, "CommonAttributeMatrixName", var))
 			  {
-				  statusBar()->showMessage(tr("%1: CommonAttributeMatrixName property not set. Aborting.").arg(itkMontageFilter->getHumanLabel()));
 				  return;
 			  }
 
 			  // Set Common Data Array Name
 			  QString commonDataArrayName = "ImageTile";
 			  var.setValue(commonDataArrayName);
-			  propWasSet = itkMontageFilter->setProperty("CommonDataArrayName", var);
-			  if(!propWasSet)
+			  if(!setFilterProperty(itkRegistrationFilter, "CommonDataArrayName", var) ||
+				  !setFilterProperty(itkStitchingFilter, "CommonDataArrayName", var))
 			  {
-				  statusBar()->showMessage(tr("%1: CommonDataArrayName property not set. Aborting.").arg(itkMontageFilter->getHumanLabel()));
 				  return;
 			  }
 
@@ -924,21 +919,47 @@ void IMFViewer_UI::importRobometMontage(ImportMontageWizard* montageWizard)
 
 			  // Set the list of image data containers
 			  var.setValue(dcNames);
-			  propWasSet = itkMontageFilter->setProperty("ImageDataContainers", var);
-			  if(!propWasSet)
+			  if(!setFilterProperty(itkRegistrationFilter, "ImageDataContainers", var) ||
+				  !setFilterProperty(itkStitchingFilter, "ImageDataContainers", var))
 			  {
-				  statusBar()->showMessage(tr("%1: ImageDataContainers property not set. Aborting.").arg(itkMontageFilter->getHumanLabel()));
 				  return;
 			  }
-			  m_pipeline->pushBack(itkMontageFilter);
-			  if(displayMontage)
+
+			  // Stitching specific properties
+
+			  // Tile overlap
+			  double tileOverlap = montageWizard->field(ImportMontage::FieldNames::DREAM3DTileOverlap).toDouble();
+			  tileOverlap = 20.0; // TESTING VALUE
+			  var.setValue(tileOverlap);
+			  if(!setFilterProperty(itkStitchingFilter, "TileOverlap", var))
 			  {
-				  m_Representation = VSFilterViewSettings::Representation::Surface;
+				  return;
 			  }
-			  else if(displayOutline)
+
+			  // Montage results data array path components
+			  QString montageDataContainer = "MontageDC";
+			  var.setValue(montageDataContainer);
+			  if(!setFilterProperty(itkStitchingFilter, "MontageDataContainerName", var))
 			  {
-				  m_Representation = VSFilterViewSettings::Representation::Outline;
+				  return;
 			  }
+
+			  QString montageAttriubeMatrixName = "MontageAM";
+			  var.setValue(montageAttriubeMatrixName);
+			  if(!setFilterProperty(itkStitchingFilter, "MontageAttributeMatrixName", var))
+			  {
+				  return;
+			  }
+
+			  QString montageDataArrayName = "MontageData";
+			  var.setValue(montageDataArrayName);
+			  if(!setFilterProperty(itkStitchingFilter, "MontageDataArrayName", var))
+			  {
+				  return;
+			  }
+
+			  m_pipeline->pushBack(itkRegistrationFilter);
+			  m_pipeline->pushBack(itkStitchingFilter);
 		  }
 		  else
 		  {
@@ -951,19 +972,28 @@ void IMFViewer_UI::importRobometMontage(ImportMontageWizard* montageWizard)
 		  statusBar()->showMessage(tr("Could not create %1 factory. Aborting.").arg(filterName));
 		  return;
 	  }
-
-	  // Run Pipeline
-	  MontageWorker* montageWorker = new MontageWorker(m_pipeline);
-	  m_pipeline->addMessageReceiver(this);
-	  montageWorker->moveToThread(m_workerThread);
-	  connect(montageWorker, SIGNAL(error(QString)), this, SLOT(errorString(QString)));
-	  connect(m_workerThread, SIGNAL(started()), montageWorker, SLOT(process()));
-	  connect(montageWorker, SIGNAL(finished()), m_workerThread, SLOT(quit()));
-	  connect(montageWorker, SIGNAL(finished()), montageWorker, SLOT(deleteLater()));
-	  connect(m_workerThread, SIGNAL(finished()), m_workerThread, SLOT(deleteLater()));
-	  connect(montageWorker, &MontageWorker::resultReady, this, &IMFViewer_UI::handleMontageResults);
-	  m_workerThread->start();
   }
+
+  if(!displayOutline)
+  {
+	  m_Representation = VSFilterViewSettings::Representation::Surface;
+  }
+  else
+  {
+	  m_Representation = VSFilterViewSettings::Representation::Outline;
+  }
+
+  // Run Pipeline
+  MontageWorker* montageWorker = new MontageWorker(m_pipeline);
+  m_pipeline->addMessageReceiver(this);
+  montageWorker->moveToThread(m_workerThread);
+  connect(montageWorker, SIGNAL(error(QString)), this, SLOT(errorString(QString)));
+  connect(m_workerThread, SIGNAL(started()), montageWorker, SLOT(process()));
+  connect(montageWorker, SIGNAL(finished()), m_workerThread, SLOT(quit()));
+  connect(montageWorker, SIGNAL(finished()), montageWorker, SLOT(deleteLater()));
+  connect(m_workerThread, SIGNAL(finished()), m_workerThread, SLOT(deleteLater()));
+  connect(montageWorker, &MontageWorker::resultReady, this, &IMFViewer_UI::handleMontageResults);
+  m_workerThread->start();
 }
 
 // -----------------------------------------------------------------------------
@@ -1296,4 +1326,19 @@ QMenu* IMFViewer_UI::createThemeMenu(QActionGroup* actionGroup, QWidget* parent)
   }
 
   return menuThemes;
+}
+
+// -----------------------------------------------------------------------------
+//
+// -----------------------------------------------------------------------------
+bool IMFViewer_UI::setFilterProperty(AbstractFilter::Pointer filter, const char* propertyName,
+	QVariant value)
+{
+	if(!filter->setProperty(propertyName, value))
+	{
+		statusBar()->showMessage(tr("%1: %2 property not set. Aborting.")
+			.arg(filter->getHumanLabel()).arg(propertyName));
+		return false;
+	}
+	return true;
 }

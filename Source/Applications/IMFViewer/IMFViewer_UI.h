@@ -156,6 +156,7 @@ private:
   FilterPipeline::Pointer m_pipeline;
   DataContainerArray::Pointer m_dataContainerArray;
   VSFilterViewSettings::Representation m_Representation = VSFilterViewSettings::Representation::Invalid;
+  bool m_displayMontage = false;
 
   /**
    * @brief createThemeMenu
@@ -195,6 +196,15 @@ private:
    * @return
    */
   void loadSessionFromFile(const QString& filePath);
+
+  /**
+   * @brief printPropertyError
+   * @param filter
+   * @param propertyName
+   * @param value
+   */
+  bool setFilterProperty(AbstractFilter::Pointer filter, const char* propertyName,
+	  QVariant value);
 
   IMFViewer_UI(const IMFViewer_UI&);   // Copy Constructor Not Implemented
   void operator=(const IMFViewer_UI&); // Operator '=' Not Implemented
