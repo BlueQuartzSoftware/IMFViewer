@@ -157,6 +157,7 @@ private:
   DataContainerArray::Pointer m_dataContainerArray;
   VSFilterViewSettings::Representation m_Representation = VSFilterViewSettings::Representation::Invalid;
   bool m_displayMontage = false;
+  bool m_displayOutline = false;
 
   /**
    * @brief createThemeMenu
@@ -196,6 +197,22 @@ private:
    * @return
    */
   void loadSessionFromFile(const QString& filePath);
+  
+  /**
+   * @brief Run the pipeline execution thread
+   * @return
+   */
+  void runPipelineThread();
+
+  /**
+   * @brief Perform the montaging workflow
+   * @param montageWizard
+   * @param dataContainerNames
+   * @param dream3dFile
+   * @return
+   */
+  void performMontaging(ImportMontageWizard* montageWizard, QStringList dataContainerNames,
+	  bool dream3dFile);
 
   /**
    * @brief printPropertyError
