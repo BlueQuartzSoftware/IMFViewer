@@ -116,6 +116,18 @@ if("${SIMPLVtkLibProj_SOURCE_DIR}" STREQUAL "")
 endif()
 
 #------------------------------------------------------------------------------
+# If the developer has set another Zeiss Import directory then use that, otherwise look
+# for the Zeiss Import directory in the ExternalProjects directory
+if("${ZeissImport_SOURCE_DIR}" STREQUAL "")
+  if(EXISTS "${IMFViewer_ExternalProject_DIR}/ZeissImport")
+    set(ZeissImport_SOURCE_DIR "${IMFViewer_ExternalProject_DIR}/ZeissImport")
+  else()
+    message(FATAL_ERROR "ZeissImport_SOURCE_DIR was not set. Please set the ZeissImport_SOURCE_DIR variable to the Zeiss Import directory.")
+  endif()
+  message(STATUS "ZeissImport_SOURCE_DIR: ${ZeissImport_SOURCE_DIR}")
+endif()
+
+#------------------------------------------------------------------------------
 # If the developer has set another MultiscaleFusion directory then use that, otherwise look
 # for the MultiscaleFusion directory in the Source or ExternalProjects directory
 if("${MultiscaleFusionProj_SOURCE_DIR}" STREQUAL "")

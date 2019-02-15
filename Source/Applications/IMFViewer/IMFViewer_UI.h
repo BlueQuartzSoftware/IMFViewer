@@ -42,6 +42,7 @@
 #include "SIMPLib/Filtering/FilterPipeline.h"
 
 #include "SIMPLVtkLib/Visualization/Controllers/VSFilterViewSettings.h"
+#include "SIMPLVtkLib/Wizards/ImportMontage/ImportMontageWizard.h"
 
 class QtSSettings;
 class ImportMontageWizard;
@@ -192,6 +193,12 @@ private:
   void importRobometMontage(ImportMontageWizard* montageWizard);
 
   /**
+   * @brief importZeissMontage
+   * @param montageWizard
+   */
+  void importZeissMontage(ImportMontageWizard* montageWizard);
+
+  /**
    * @brief loadSession
    * @param filePath
    * @return
@@ -212,7 +219,7 @@ private:
    * @return
    */
   void performMontaging(ImportMontageWizard* montageWizard, QStringList dataContainerNames,
-	  bool dream3dFile);
+	  ImportMontageWizard::InputType inputType);
 
   /**
    * @brief printPropertyError
