@@ -203,13 +203,17 @@ void IMFViewer_UI::importMontage()
   m_displayMontage = montageWizard->field(ImportMontage::FieldNames::DisplayMontage).toBool();
   m_displayOutline = montageWizard->field(ImportMontage::FieldNames::DisplayOutlineOnly).toBool();
 
-  if(!m_displayOutline)
+  if(m_displayMontage)
   {
-	  m_Representation = VSFilterViewSettings::Representation::Surface;
+	  m_DisplayType = ImportMontageWizard::DisplayType::Montage;
+  }
+  else if(m_displayOutline)
+  {
+	  m_DisplayType = ImportMontageWizard::DisplayType::Outline;
   }
   else
   {
-	  m_Representation = VSFilterViewSettings::Representation::Outline;
+	  m_DisplayType = ImportMontageWizard::DisplayType::SideBySide;
   }
 
   if (result == QDialog::Accepted)
@@ -321,7 +325,7 @@ void IMFViewer_UI::handleMontageResults(int err)
 		}
 		VSMainWidgetBase* baseWidget = dynamic_cast<VSMainWidgetBase*>(m_Internals->vsWidget);
 		baseWidget->importPipelineOutput(m_pipeline, dca);
-		baseWidget->getActiveViewWidget()->getFilterViewModel()->setRepresentation(m_Representation);
+		baseWidget->getActiveViewWidget()->getFilterViewModel()->setDisplayType(m_DisplayType);
 	}
 }
 

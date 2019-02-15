@@ -41,7 +41,6 @@
 #include "SIMPLib/DataContainers/DataContainerArray.h"
 #include "SIMPLib/Filtering/FilterPipeline.h"
 
-#include "SIMPLVtkLib/Visualization/Controllers/VSFilterViewSettings.h"
 #include "SIMPLVtkLib/Wizards/ImportMontage/ImportMontageWizard.h"
 
 class QtSSettings;
@@ -156,7 +155,7 @@ private:
   QThread *m_workerThread;
   FilterPipeline::Pointer m_pipeline;
   DataContainerArray::Pointer m_dataContainerArray;
-  VSFilterViewSettings::Representation m_Representation = VSFilterViewSettings::Representation::Invalid;
+  ImportMontageWizard::DisplayType m_DisplayType = ImportMontageWizard::DisplayType::NotSpecified;
   bool m_displayMontage = false;
   bool m_displayOutline = false;
 
