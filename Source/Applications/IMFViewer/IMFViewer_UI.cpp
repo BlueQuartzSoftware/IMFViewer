@@ -47,8 +47,8 @@
 #include "SIMPLib/Filtering/FilterFactory.hpp"
 #include "SIMPLib/Filtering/FilterManager.h"
 #include "SIMPLib/Filtering/FilterPipeline.h"
-#include "SIMPLib/Plugin/PluginManager.h"
 #include "SIMPLib/Filtering/QMetaObjectUtilities.h"
+#include "SIMPLib/Plugin/PluginManager.h"
 #include "SIMPLib/Utilities/SIMPLH5DataReader.h"
 #include "SIMPLib/Utilities/SIMPLH5DataReaderRequirements.h"
 
@@ -57,8 +57,8 @@
 #include "SVWidgetsLib/Widgets/SVStyle.h"
 
 #include "SIMPLVtkLib/Wizards/ImportMontage/ImportMontageWizard.h"
-#include "SIMPLVtkLib/Wizards/ImportMontage/TileConfigFileGenerator.h"
 #include "SIMPLVtkLib/Wizards/ImportMontage/MontageWorker.h"
+#include "SIMPLVtkLib/Wizards/ImportMontage/TileConfigFileGenerator.h"
 
 #include "ImportMontage/ImportMontageConstants.h"
 
@@ -124,10 +124,9 @@ void IMFViewer_UI::importData()
 {
   QString filter = tr("DREAM3D File (*.dream3d);;VTK File (*.vtk *.vti *.vtp *.vtr *.vts *.vtu);;"
                       "STL File (*.stl);;Image File (*.png *.tiff *.jpeg *.bmp);;All Files (*.*)");
-  QString filePath = QFileDialog::getOpenFileName(this, tr("Select a data file"),
-    m_OpenDialogLastDirectory, filter);
+  QString filePath = QFileDialog::getOpenFileName(this, tr("Select a data file"), m_OpenDialogLastDirectory, filter);
 
-  if (filePath.isEmpty())
+  if(filePath.isEmpty())
   {
     return;
   }
@@ -141,13 +140,13 @@ void IMFViewer_UI::importData()
 
   VSMainWidgetBase* baseWidget = dynamic_cast<VSMainWidgetBase*>(m_Internals->vsWidget);
 
-  if (ext == "dream3d")
+  if(ext == "dream3d")
   {
     baseWidget->launchHDF5SelectionDialog(filePath);
   }
-  else if (ext == "vtk" || ext == "vti" || ext == "vtp" || ext == "vtr" || ext == "vts" || ext == "vtu")
+  else if(ext == "vtk" || ext == "vti" || ext == "vtp" || ext == "vtr" || ext == "vts" || ext == "vtu")
   {
-    if (baseWidget->importVTKData(filePath) == false)
+    if(baseWidget->importVTKData(filePath) == false)
     {
       QMessageBox::critical(this, "Unable to Load VTK File",
                             tr("IMF Viewer could not load VTK input file '%1'.  Only files "
@@ -157,9 +156,9 @@ void IMFViewer_UI::importData()
       return;
     }
   }
-  else if (ext == "stl")
+  else if(ext == "stl")
   {
-    if (baseWidget->importSTLData(filePath) == false)
+    if(baseWidget->importSTLData(filePath) == false)
     {
       QMessageBox::critical(this, "Unable to Load STL File",
                             tr("IMF Viewer could not load STL input file '%1'.  Only files "
@@ -169,9 +168,9 @@ void IMFViewer_UI::importData()
       return;
     }
   }
-  else if (mimeType.inherits("image/png") || mimeType.inherits("image/tiff") || mimeType.inherits("image/jpeg") || mimeType.inherits("image/bmp"))
+  else if(mimeType.inherits("image/png") || mimeType.inherits("image/tiff") || mimeType.inherits("image/jpeg") || mimeType.inherits("image/bmp"))
   {
-    if (baseWidget->importImageData(filePath) == false)
+    if(baseWidget->importImageData(filePath) == false)
     {
       QMessageBox::critical(this, "Unable to Load Image File",
                             tr("IMF Viewer could not load image file '%1'.  The file is not "
@@ -205,18 +204,18 @@ void IMFViewer_UI::importMontage()
 
   if(m_displayMontage)
   {
-	  m_DisplayType = ImportMontageWizard::DisplayType::Montage;
+    m_DisplayType = ImportMontageWizard::DisplayType::Montage;
   }
   else if(m_displayOutline)
   {
-	  m_DisplayType = ImportMontageWizard::DisplayType::Outline;
+    m_DisplayType = ImportMontageWizard::DisplayType::Outline;
   }
   else
   {
-	  m_DisplayType = ImportMontageWizard::DisplayType::SideBySide;
+    m_DisplayType = ImportMontageWizard::DisplayType::SideBySide;
   }
 
-  if (result == QDialog::Accepted)
+  if(result == QDialog::Accepted)
   {
     ImportMontageWizard::InputType inputType = montageWizard->field(ImportMontage::FieldNames::InputType).value<ImportMontageWizard::InputType>();
     VSMainWidgetBase* baseWidget = dynamic_cast<VSMainWidgetBase*>(m_Internals->vsWidget);
@@ -238,10 +237,10 @@ void IMFViewer_UI::importMontage()
     {
       importRobometMontage(montageWizard);
     }
-	else if(inputType == ImportMontageWizard::InputType::Zeiss)
-	{
-	  importZeissMontage(montageWizard);
-	}
+    else if(inputType == ImportMontageWizard::InputType::Zeiss)
+    {
+      importZeissMontage(montageWizard);
+    }
     else
     {
       QString dataFilePath = montageWizard->field(ImportMontage::FieldNames::DataFilePath).toString();
@@ -263,41 +262,39 @@ void IMFViewer_UI::importMontage()
 // -----------------------------------------------------------------------------
 void IMFViewer_UI::importGenericMontage(ImportMontageWizard* montageWizard)
 {
-	QString tileConfigFile = "TileConfiguration.txt";
-	int numOfRows = montageWizard->field(ImportMontage::FieldNames::GenericNumberOfRows).toInt();
-	int numOfCols = montageWizard->field(ImportMontage::FieldNames::GenericNumberOfColumns).toInt();
+  QString tileConfigFile = "TileConfiguration.txt";
+  int numOfRows = montageWizard->field(ImportMontage::FieldNames::GenericNumberOfRows).toInt();
+  int numOfCols = montageWizard->field(ImportMontage::FieldNames::GenericNumberOfColumns).toInt();
 
-	// Get input file names
-	FileListInfo_t inputFileInfo = montageWizard->field(ImportMontage::FieldNames::GenericFileListInfo).value<FileListInfo_t>();
+  // Get input file names
+  FileListInfo_t inputFileInfo = montageWizard->field(ImportMontage::FieldNames::GenericFileListInfo).value<FileListInfo_t>();
 
-	// Generate tile configuration file.
-	TileConfigFileGenerator tileConfigFileGenerator(inputFileInfo,
-		montageWizard->field(ImportMontage::FieldNames::MontageType).value<MontageSettings::MontageType>(),
-		montageWizard->field(ImportMontage::FieldNames::MontageOrder).value<MontageSettings::MontageOrder>(),
-		numOfCols, numOfRows, montageWizard->field(ImportMontage::FieldNames::GenericTileOverlap).toDouble(),
-		tileConfigFile);
-	tileConfigFileGenerator.buildTileConfigFile();
+  // Generate tile configuration file.
+  TileConfigFileGenerator tileConfigFileGenerator(inputFileInfo, montageWizard->field(ImportMontage::FieldNames::MontageType).value<MontageSettings::MontageType>(),
+                                                  montageWizard->field(ImportMontage::FieldNames::MontageOrder).value<MontageSettings::MontageOrder>(), numOfCols, numOfRows,
+                                                  montageWizard->field(ImportMontage::FieldNames::GenericTileOverlap).toDouble(), tileConfigFile);
+  tileConfigFileGenerator.buildTileConfigFile();
 
-	QString fijiFilePath(inputFileInfo.InputPath);
-	fijiFilePath.append(QDir::separator());
-	fijiFilePath.append(tileConfigFile);
+  QString fijiFilePath(inputFileInfo.InputPath);
+  fijiFilePath.append(QDir::separator());
+  fijiFilePath.append(tileConfigFile);
 
-	// Change wizard data for Fiji use case
-	double tileOverlap = montageWizard->field(ImportMontage::FieldNames::GenericTileOverlap).toDouble();
-	montageWizard->setField(ImportMontage::FieldNames::DREAM3DTileOverlap, tileOverlap);
-	montageWizard->setField(ImportMontage::FieldNames::DataFilePath, fijiFilePath);
-	montageWizard->setField(ImportMontage::FieldNames::NumberOfRows, numOfRows);
-	montageWizard->setField(ImportMontage::FieldNames::NumberOfColumns, numOfCols);
+  // Change wizard data for Fiji use case
+  double tileOverlap = montageWizard->field(ImportMontage::FieldNames::GenericTileOverlap).toDouble();
+  montageWizard->setField(ImportMontage::FieldNames::DREAM3DTileOverlap, tileOverlap);
+  montageWizard->setField(ImportMontage::FieldNames::DataFilePath, fijiFilePath);
+  montageWizard->setField(ImportMontage::FieldNames::NumberOfRows, numOfRows);
+  montageWizard->setField(ImportMontage::FieldNames::NumberOfColumns, numOfCols);
 
-	importFijiMontage(montageWizard);
+  importFijiMontage(montageWizard);
 }
 
 // -----------------------------------------------------------------------------
 //
 // -----------------------------------------------------------------------------
-void IMFViewer_UI::processPipelineMessage(const PipelineMessage &pipelineMsg)
+void IMFViewer_UI::processPipelineMessage(const PipelineMessage& pipelineMsg)
 {
-  if (pipelineMsg.getType() == PipelineMessage::MessageType::StatusMessage)
+  if(pipelineMsg.getType() == PipelineMessage::MessageType::StatusMessage)
   {
     QString str = pipelineMsg.generateStatusString();
     statusBar()->showMessage(str);
@@ -309,24 +306,24 @@ void IMFViewer_UI::processPipelineMessage(const PipelineMessage &pipelineMsg)
 // -----------------------------------------------------------------------------
 void IMFViewer_UI::handleMontageResults(int err)
 {
-	if (err >= 0)
-	{
-		DataContainerArray::Pointer dca = m_pipeline->getDataContainerArray();
-		// If Display Montage was selected, remove non-stitched image data containers
-		if(m_displayMontage)
-		{
-			for(DataContainer::Pointer dc : dca->getDataContainers())
-			{
-				if(dc->getName() != "MontageDC")
-				{
-					dca->removeDataContainer(dc->getName());
-				}
-			}
-		}
-		VSMainWidgetBase* baseWidget = dynamic_cast<VSMainWidgetBase*>(m_Internals->vsWidget);
-		baseWidget->importPipelineOutput(m_pipeline, dca);
-		baseWidget->getActiveViewWidget()->getFilterViewModel()->setDisplayType(m_DisplayType);
-	}
+  if(err >= 0)
+  {
+    DataContainerArray::Pointer dca = m_pipeline->getDataContainerArray();
+    // If Display Montage was selected, remove non-stitched image data containers
+    if(m_displayMontage)
+    {
+      for(DataContainer::Pointer dc : dca->getDataContainers())
+      {
+        if(dc->getName() != "MontageDC")
+        {
+          dca->removeDataContainer(dc->getName());
+        }
+      }
+    }
+    VSMainWidgetBase* baseWidget = dynamic_cast<VSMainWidgetBase*>(m_Internals->vsWidget);
+    baseWidget->importPipelineOutput(m_pipeline, dca);
+    baseWidget->getActiveViewWidget()->getFilterViewModel()->setDisplayType(m_DisplayType);
+  }
 }
 
 // -----------------------------------------------------------------------------
@@ -342,8 +339,7 @@ void IMFViewer_UI::importDREAM3DMontage(ImportMontageWizard* montageWizard)
   bool success = reader.openFile(dataFilePath);
   if(success)
   {
-    connect(&reader, &SIMPLH5DataReader::errorGenerated,
-            [=](const QString& title, const QString& msg, const int& code) { QMessageBox::critical(this, title, msg, QMessageBox::StandardButton::Ok); });
+    connect(&reader, &SIMPLH5DataReader::errorGenerated, [=](const QString& title, const QString& msg, const int& code) { QMessageBox::critical(this, title, msg, QMessageBox::StandardButton::Ok); });
 
     DataContainerArrayProxy dream3dProxy = montageWizard->field(ImportMontage::FieldNames::DREAM3DProxy).value<DataContainerArrayProxy>();
 
@@ -362,10 +358,10 @@ void IMFViewer_UI::importDREAM3DMontage(ImportMontageWizard* montageWizard)
     IFilterFactory::Pointer factory = fm->getFactoryFromClassName(filterName);
     AbstractFilter::Pointer dataContainerReader;
 
-    if (factory.get() != nullptr)
+    if(factory.get() != nullptr)
     {
       dataContainerReader = factory->create();
-      if (dataContainerReader.get() != nullptr)
+      if(dataContainerReader.get() != nullptr)
       {
         dataContainerReader->setDataContainerArray(m_dataContainerArray);
 
@@ -373,17 +369,17 @@ void IMFViewer_UI::importDREAM3DMontage(ImportMontageWizard* montageWizard)
 
         // Set input file
         var.setValue(dataFilePath);
-		if(!setFilterProperty(dataContainerReader, "InputFile", var))
-		{
-			return;
-		}
+        if(!setFilterProperty(dataContainerReader, "InputFile", var))
+        {
+          return;
+        }
 
         // Set data container array proxy
         var.setValue(dream3dProxy);
-		if(!setFilterProperty(dataContainerReader, "InputFileDataContainerArrayProxy", var))
-		{
-			return;
-		}
+        if(!setFilterProperty(dataContainerReader, "InputFileDataContainerArrayProxy", var))
+        {
+          return;
+        }
 
         m_pipeline->pushBack(dataContainerReader);
       }
@@ -399,13 +395,12 @@ void IMFViewer_UI::importDREAM3DMontage(ImportMontageWizard* montageWizard)
       return;
     }
 
-	if(m_displayMontage || m_displayOutline)
-	{
-		QStringList dcNames = m_dataContainerArray->getDataContainerNames();
-		performMontaging(montageWizard, dcNames, ImportMontageWizard::InputType::DREAM3D);
-
-	}
-	runPipelineThread();
+    if(m_displayMontage || m_displayOutline)
+    {
+      QStringList dcNames = m_dataContainerArray->getDataContainerNames();
+      performMontaging(montageWizard, dcNames, ImportMontageWizard::InputType::DREAM3D);
+    }
+    runPipelineThread();
   }
   else
   {
@@ -418,7 +413,7 @@ void IMFViewer_UI::importDREAM3DMontage(ImportMontageWizard* montageWizard)
 //
 // -----------------------------------------------------------------------------
 void IMFViewer_UI::importFijiMontage(ImportMontageWizard* montageWizard)
-{ 
+{
   m_pipeline = FilterPipeline::New();
 
   // Instantiate Import Fiji Montage filter
@@ -429,10 +424,10 @@ void IMFViewer_UI::importFijiMontage(ImportMontageWizard* montageWizard)
   AbstractFilter::Pointer importFijiMontageFilter;
 
   // Set up the Import Fiji Montage filter
-  if (factory.get() != nullptr)
+  if(factory.get() != nullptr)
   {
     importFijiMontageFilter = factory->create();
-    if (importFijiMontageFilter.get() != nullptr)
+    if(importFijiMontageFilter.get() != nullptr)
     {
       importFijiMontageFilter->setDataContainerArray(m_dataContainerArray);
 
@@ -441,34 +436,34 @@ void IMFViewer_UI::importFijiMontage(ImportMontageWizard* montageWizard)
       // Set the path for the Fiji Configuration File
       QString fijiConfigFilePath = montageWizard->field(ImportMontage::FieldNames::DataFilePath).toString();
       var.setValue(fijiConfigFilePath);
-	  if(!setFilterProperty(importFijiMontageFilter, "FijiConfigFilePath", var))
-	  {
-		  return;
-	  }
+      if(!setFilterProperty(importFijiMontageFilter, "FijiConfigFilePath", var))
+      {
+        return;
+      }
 
       // Set the Data Container Prefix
       QString dataContainerPrefix = "ImageDataContainer_";
       var.setValue(dataContainerPrefix);
-	  if(!setFilterProperty(importFijiMontageFilter, "DataContainerPrefix", var))
-	  {
-		  return;
-	  }
+      if(!setFilterProperty(importFijiMontageFilter, "DataContainerPrefix", var))
+      {
+        return;
+      }
 
       // Set the Cell Attribute Matrix Name
       QString cellAttrMatrixName = "CellData";
       var.setValue(cellAttrMatrixName);
-	  if(!setFilterProperty(importFijiMontageFilter, "CellAttributeMatrixName", var))
-	  {
-		  return;
-	  }
+      if(!setFilterProperty(importFijiMontageFilter, "CellAttributeMatrixName", var))
+      {
+        return;
+      }
 
       // Set the Image Array Name
       QString attributeArrayName = "ImageTile";
       var.setValue(attributeArrayName);
-	  if(!setFilterProperty(importFijiMontageFilter, "AttributeArrayName", var))
-	  {
-		  return;
-	  }
+      if(!setFilterProperty(importFijiMontageFilter, "AttributeArrayName", var))
+      {
+        return;
+      }
 
       m_pipeline->pushBack(importFijiMontageFilter);
     }
@@ -484,14 +479,14 @@ void IMFViewer_UI::importFijiMontage(ImportMontageWizard* montageWizard)
     return;
   }
 
-  if (m_displayMontage || m_displayOutline)
+  if(m_displayMontage || m_displayOutline)
   {
-	  // Set Image Data Containers
-	  importFijiMontageFilter->preflight();
-	  DataContainerArray::Pointer dca = importFijiMontageFilter->getDataContainerArray();
-	  QStringList dcNames = dca->getDataContainerNames();
+    // Set Image Data Containers
+    importFijiMontageFilter->preflight();
+    DataContainerArray::Pointer dca = importFijiMontageFilter->getDataContainerArray();
+    QStringList dcNames = dca->getDataContainerNames();
 
-	  performMontaging(montageWizard, dcNames, ImportMontageWizard::InputType::Fiji);
+    performMontaging(montageWizard, dcNames, ImportMontageWizard::InputType::Fiji);
   }
 
   // Run the pipeline
@@ -503,97 +498,97 @@ void IMFViewer_UI::importFijiMontage(ImportMontageWizard* montageWizard)
 // -----------------------------------------------------------------------------
 void IMFViewer_UI::importRobometMontage(ImportMontageWizard* montageWizard)
 {
-	m_pipeline = FilterPipeline::New();
+  m_pipeline = FilterPipeline::New();
 
-	// Instantiate Import RoboMet Montage filter
-	QString filterName = "ITKImportRoboMetMontage";
-	FilterManager* fm = FilterManager::Instance();
-	IFilterFactory::Pointer factory = fm->getFactoryFromClassName(filterName);
-	DataContainerArray::Pointer dca = DataContainerArray::New();
-	AbstractFilter::Pointer importRoboMetMontageFilter;
+  // Instantiate Import RoboMet Montage filter
+  QString filterName = "ITKImportRoboMetMontage";
+  FilterManager* fm = FilterManager::Instance();
+  IFilterFactory::Pointer factory = fm->getFactoryFromClassName(filterName);
+  DataContainerArray::Pointer dca = DataContainerArray::New();
+  AbstractFilter::Pointer importRoboMetMontageFilter;
 
-	// Set up the Generate Montage Configuration filter
-	if (factory.get() != nullptr)
-	{
-		importRoboMetMontageFilter = factory->create();
-		if (importRoboMetMontageFilter.get() != nullptr)
-		{
-			importRoboMetMontageFilter->setDataContainerArray(dca);
+  // Set up the Generate Montage Configuration filter
+  if(factory.get() != nullptr)
+  {
+    importRoboMetMontageFilter = factory->create();
+    if(importRoboMetMontageFilter.get() != nullptr)
+    {
+      importRoboMetMontageFilter->setDataContainerArray(dca);
 
-			QVariant var;
+      QVariant var;
 
-			// Set the path for the Robomet Configuration File
-			QString configFilePath = montageWizard->field(ImportMontage::FieldNames::DataFilePath).toString();
-			var.setValue(configFilePath);
-			if(!setFilterProperty(importRoboMetMontageFilter, "RegistrationFile", var))
-			{
-				return;
-			}
+      // Set the path for the Robomet Configuration File
+      QString configFilePath = montageWizard->field(ImportMontage::FieldNames::DataFilePath).toString();
+      var.setValue(configFilePath);
+      if(!setFilterProperty(importRoboMetMontageFilter, "RegistrationFile", var))
+      {
+        return;
+      }
 
-			// Set the Data Container Prefix
-			QString dataContainerPrefix = "ImageDataContainer_";
-			var.setValue(dataContainerPrefix);
-			if(!setFilterProperty(importRoboMetMontageFilter, "DataContainerPrefix", var))
-			{
-				return;
-			}
+      // Set the Data Container Prefix
+      QString dataContainerPrefix = "ImageDataContainer_";
+      var.setValue(dataContainerPrefix);
+      if(!setFilterProperty(importRoboMetMontageFilter, "DataContainerPrefix", var))
+      {
+        return;
+      }
 
-			// Set the Cell Attribute Matrix Name
-			QString cellAttrMatrixName = "CellData";
-			var.setValue(cellAttrMatrixName);
-			if(!setFilterProperty(importRoboMetMontageFilter, "CellAttributeMatrixName", var))
-			{
-				return;
-			}
+      // Set the Cell Attribute Matrix Name
+      QString cellAttrMatrixName = "CellData";
+      var.setValue(cellAttrMatrixName);
+      if(!setFilterProperty(importRoboMetMontageFilter, "CellAttributeMatrixName", var))
+      {
+        return;
+      }
 
-			// Set the Image Array Name
-			QString attributeArrayName = "ImageTile";
-			var.setValue(attributeArrayName);
-			if(!setFilterProperty(importRoboMetMontageFilter, "AttributeArrayName", var))
-			{
-				return;
-			}
+      // Set the Image Array Name
+      QString attributeArrayName = "ImageTile";
+      var.setValue(attributeArrayName);
+      if(!setFilterProperty(importRoboMetMontageFilter, "AttributeArrayName", var))
+      {
+        return;
+      }
 
-			// Slice number
-			int sliceNumber = montageWizard->field(ImportMontage::FieldNames::SliceNumber).toInt();
-			var.setValue(sliceNumber);
-			if(!setFilterProperty(importRoboMetMontageFilter, "SliceNumber", var))
-			{
-				return;
-			}
+      // Slice number
+      int sliceNumber = montageWizard->field(ImportMontage::FieldNames::SliceNumber).toInt();
+      var.setValue(sliceNumber);
+      if(!setFilterProperty(importRoboMetMontageFilter, "SliceNumber", var))
+      {
+        return;
+      }
 
-			// Image file prefix
-			QString imageFilePrefix = montageWizard->field(ImportMontage::FieldNames::ImageFilePrefix).toString();
-			var.setValue(imageFilePrefix);
-			if(!setFilterProperty(importRoboMetMontageFilter, "ImageFilePrefix", var))
-			{
-				return;
-			}
+      // Image file prefix
+      QString imageFilePrefix = montageWizard->field(ImportMontage::FieldNames::ImageFilePrefix).toString();
+      var.setValue(imageFilePrefix);
+      if(!setFilterProperty(importRoboMetMontageFilter, "ImageFilePrefix", var))
+      {
+        return;
+      }
 
-			// Image file suffix
-			QString imageFileSuffix = montageWizard->field(ImportMontage::FieldNames::ImageFileSuffix).toString();
-			var.setValue(imageFileSuffix);
-			if(!setFilterProperty(importRoboMetMontageFilter, "ImageFileSuffix", var))
-			{
-				return;
-			}
+      // Image file suffix
+      QString imageFileSuffix = montageWizard->field(ImportMontage::FieldNames::ImageFileSuffix).toString();
+      var.setValue(imageFileSuffix);
+      if(!setFilterProperty(importRoboMetMontageFilter, "ImageFileSuffix", var))
+      {
+        return;
+      }
 
-			// Image file extension
-			QString imageFileExtension = montageWizard->field(ImportMontage::FieldNames::ImageFileExtension).toString();
-			var.setValue(imageFileExtension);
-			if(!setFilterProperty(importRoboMetMontageFilter, "ImageFileExtension", var))
-			{
-				return;
-			}
-			
-			m_pipeline->pushBack(importRoboMetMontageFilter);
-		}
+      // Image file extension
+      QString imageFileExtension = montageWizard->field(ImportMontage::FieldNames::ImageFileExtension).toString();
+      var.setValue(imageFileExtension);
+      if(!setFilterProperty(importRoboMetMontageFilter, "ImageFileExtension", var))
+      {
+        return;
+      }
+
+      m_pipeline->pushBack(importRoboMetMontageFilter);
+    }
     else
     {
       statusBar()->showMessage(tr("Could not create filter from %1 factory. Aborting.").arg(filterName));
       return;
     }
-	}
+  }
   else
   {
     statusBar()->showMessage(tr("Could not create %1 factory. Aborting.").arg(filterName));
@@ -602,11 +597,11 @@ void IMFViewer_UI::importRobometMontage(ImportMontageWizard* montageWizard)
 
   if(m_displayMontage || m_displayOutline)
   {
-	  importRoboMetMontageFilter->preflight();
-	  DataContainerArray::Pointer dca = importRoboMetMontageFilter->getDataContainerArray();
-	  QStringList dcNames = dca->getDataContainerNames();
+    importRoboMetMontageFilter->preflight();
+    DataContainerArray::Pointer dca = importRoboMetMontageFilter->getDataContainerArray();
+    QStringList dcNames = dca->getDataContainerNames();
 
-	  performMontaging(montageWizard, dcNames, ImportMontageWizard::InputType::Robomet);
+    performMontaging(montageWizard, dcNames, ImportMontageWizard::InputType::Robomet);
   }
 
   runPipelineThread();
@@ -617,244 +612,229 @@ void IMFViewer_UI::importRobometMontage(ImportMontageWizard* montageWizard)
 // -----------------------------------------------------------------------------
 void IMFViewer_UI::importZeissMontage(ImportMontageWizard* montageWizard)
 {
-	m_pipeline = FilterPipeline::New();
+  m_pipeline = FilterPipeline::New();
 
-	// Instantiate Import AxioVision V4 Montage filter
-	QString filterName = "ImportAxioVisionV4Montage";
-	FilterManager* fm = FilterManager::Instance();
-	IFilterFactory::Pointer factory = fm->getFactoryFromClassName(filterName);
-	DataContainerArray::Pointer dca = DataContainerArray::New();
-	AbstractFilter::Pointer importZeissMontageFilter;
+  // Instantiate Import AxioVision V4 Montage filter
+  QString filterName = "ImportAxioVisionV4Montage";
+  FilterManager* fm = FilterManager::Instance();
+  IFilterFactory::Pointer factory = fm->getFactoryFromClassName(filterName);
+  DataContainerArray::Pointer dca = DataContainerArray::New();
+  AbstractFilter::Pointer importZeissMontageFilter;
 
-	// Set up the Generate Montage Configuration filter
-	if(factory.get() != nullptr)
-	{
-		importZeissMontageFilter = factory->create();
-		if(importZeissMontageFilter.get() != nullptr)
-		{
-			importZeissMontageFilter->setDataContainerArray(dca);
+  // Set up the Generate Montage Configuration filter
+  if(factory.get() != nullptr)
+  {
+    importZeissMontageFilter = factory->create();
+    if(importZeissMontageFilter.get() != nullptr)
+    {
+      importZeissMontageFilter->setDataContainerArray(dca);
 
-			QVariant var;
+      QVariant var;
 
-			// Set the path for the Robomet Configuration File
-			QString configFilePath = montageWizard->field(ImportMontage::FieldNames::DataFilePath).toString();
-			var.setValue(configFilePath);
-			if(!setFilterProperty(importZeissMontageFilter, "InputFile", var))
-			{
-				return;
-			}
+      // Set the path for the Robomet Configuration File
+      QString configFilePath = montageWizard->field(ImportMontage::FieldNames::DataFilePath).toString();
+      var.setValue(configFilePath);
+      if(!setFilterProperty(importZeissMontageFilter, "InputFile", var))
+      {
+        return;
+      }
 
-			// Set the Data Container Prefix
-			QString dataContainerPrefix = montageWizard
-				->field(ImportMontage::FieldNames::ZeissDataContainerPrefix).toString();
-			var.setValue(dataContainerPrefix);
-			if(!setFilterProperty(importZeissMontageFilter, "DataContainerName", var))
-			{
-				return;
-			}
+      // Set the Data Container Prefix
+      QString dataContainerPrefix = montageWizard->field(ImportMontage::FieldNames::ZeissDataContainerPrefix).toString();
+      var.setValue(dataContainerPrefix);
+      if(!setFilterProperty(importZeissMontageFilter, "DataContainerName", var))
+      {
+        return;
+      }
 
-			// Set the Cell Attribute Matrix Name
-			QString cellAttrMatrixName = montageWizard
-				->field(ImportMontage::FieldNames::ZeissCellAttributeMatrixName).toString();
-			var.setValue(cellAttrMatrixName);
-			if(!setFilterProperty(importZeissMontageFilter, "CellAttributeMatrixName", var))
-			{
-				return;
-			}
+      // Set the Cell Attribute Matrix Name
+      QString cellAttrMatrixName = montageWizard->field(ImportMontage::FieldNames::ZeissCellAttributeMatrixName).toString();
+      var.setValue(cellAttrMatrixName);
+      if(!setFilterProperty(importZeissMontageFilter, "CellAttributeMatrixName", var))
+      {
+        return;
+      }
 
-			// Set the Image Array Name
-			QString attributeArrayName = montageWizard
-				->field(ImportMontage::FieldNames::ZeissImageDataArrayName).toString();
-			var.setValue(attributeArrayName);
-			if(!setFilterProperty(importZeissMontageFilter, "ImageDataArrayName", var))
-			{
-				return;
-			}
+      // Set the Image Array Name
+      QString attributeArrayName = montageWizard->field(ImportMontage::FieldNames::ZeissImageDataArrayName).toString();
+      var.setValue(attributeArrayName);
+      if(!setFilterProperty(importZeissMontageFilter, "ImageDataArrayName", var))
+      {
+        return;
+      }
 
-			// Set the Metadata Attribute MatrixName
-			QString metadataAttrMatrixName = montageWizard
-				->field(ImportMontage::FieldNames::ZeissMetadataAttrMatrixName).toString();
-			var.setValue(metadataAttrMatrixName);
-			if(!setFilterProperty(importZeissMontageFilter, "MetaDataAttributeMatrixName", var))
-			{
-				return;
-			}
+      // Set the Metadata Attribute MatrixName
+      QString metadataAttrMatrixName = montageWizard->field(ImportMontage::FieldNames::ZeissMetadataAttrMatrixName).toString();
+      var.setValue(metadataAttrMatrixName);
+      if(!setFilterProperty(importZeissMontageFilter, "MetaDataAttributeMatrixName", var))
+      {
+        return;
+      }
 
-			// Set Import All Metadata
-			bool importMetadata = montageWizard
-				->field(ImportMontage::FieldNames::ZeissImportAllMetadata).toBool();
-			var.setValue(importMetadata);
-			if(!setFilterProperty(importZeissMontageFilter, "ImportAllMetaData", var))
-			{
-				return;
-			}
+      // Set Import All Metadata
+      bool importMetadata = montageWizard->field(ImportMontage::FieldNames::ZeissImportAllMetadata).toBool();
+      var.setValue(importMetadata);
+      if(!setFilterProperty(importZeissMontageFilter, "ImportAllMetaData", var))
+      {
+        return;
+      }
 
-			// Set Convert to Grayscale
-			bool convertToGrayscale = montageWizard
-				->field(ImportMontage::FieldNames::ZeissConvertToGrayscale).toBool();
-			var.setValue(convertToGrayscale);
-			if(!setFilterProperty(importZeissMontageFilter, "ConvertToGrayScale", var))
-			{
-				return;
-			}
+      // Set Convert to Grayscale
+      bool convertToGrayscale = montageWizard->field(ImportMontage::FieldNames::ZeissConvertToGrayscale).toBool();
+      var.setValue(convertToGrayscale);
+      if(!setFilterProperty(importZeissMontageFilter, "ConvertToGrayScale", var))
+      {
+        return;
+      }
 
-			m_pipeline->pushBack(importZeissMontageFilter);
-		}
-		else
-		{
-			statusBar()->showMessage(tr("Could not create filter from %1 factory. Aborting.").arg(filterName));
-			return;
-		}
-	}
-	else
-	{
-		statusBar()->showMessage(tr("Could not create %1 factory. Aborting.").arg(filterName));
-		return;
-	}
+      m_pipeline->pushBack(importZeissMontageFilter);
+    }
+    else
+    {
+      statusBar()->showMessage(tr("Could not create filter from %1 factory. Aborting.").arg(filterName));
+      return;
+    }
+  }
+  else
+  {
+    statusBar()->showMessage(tr("Could not create %1 factory. Aborting.").arg(filterName));
+    return;
+  }
 
-	if(m_displayMontage || m_displayOutline)
-	{
-		importZeissMontageFilter->preflight();
-		DataContainerArray::Pointer dca = importZeissMontageFilter->getDataContainerArray();
-		QStringList dcNames = dca->getDataContainerNames();
+  if(m_displayMontage || m_displayOutline)
+  {
+    importZeissMontageFilter->preflight();
+    DataContainerArray::Pointer dca = importZeissMontageFilter->getDataContainerArray();
+    QStringList dcNames = dca->getDataContainerNames();
 
-		performMontaging(montageWizard, dcNames, ImportMontageWizard::InputType::Zeiss);
-	}
+    performMontaging(montageWizard, dcNames, ImportMontageWizard::InputType::Zeiss);
+  }
 
-	runPipelineThread();
+  runPipelineThread();
 }
 
 // -----------------------------------------------------------------------------
 //
 // -----------------------------------------------------------------------------
-void IMFViewer_UI::performMontaging(ImportMontageWizard* montageWizard, QStringList dataContainerNames,
-	ImportMontageWizard::InputType inputType)
+void IMFViewer_UI::performMontaging(ImportMontageWizard* montageWizard, QStringList dataContainerNames, ImportMontageWizard::InputType inputType)
 {
-	// Instantiate Generate Montage filter
-	QString filterName = "ITKGenerateMontageConfiguration";
-	FilterManager* fm = FilterManager::Instance();
-	IFilterFactory::Pointer factory = fm->getFactoryFromClassName(filterName);
-	AbstractFilter::Pointer itkRegistrationFilter;
-	AbstractFilter::Pointer itkStitchingFilter;
+  // Instantiate Generate Montage filter
+  QString filterName = "ITKGenerateMontageConfiguration";
+  FilterManager* fm = FilterManager::Instance();
+  IFilterFactory::Pointer factory = fm->getFactoryFromClassName(filterName);
+  AbstractFilter::Pointer itkRegistrationFilter;
+  AbstractFilter::Pointer itkStitchingFilter;
 
-	// Set up the Generate Montage Configuration filter
-	if(factory.get() != nullptr)
-	{
-		itkRegistrationFilter = factory->create();
-		filterName = "ITKStitchMontage";
-		factory = fm->getFactoryFromClassName(filterName);
-		itkStitchingFilter = factory->create();
-		if(itkRegistrationFilter.get() != nullptr && itkStitchingFilter.get() != nullptr)
-		{
-			itkRegistrationFilter->setDataContainerArray(m_dataContainerArray);
-			itkStitchingFilter->setDataContainerArray(m_dataContainerArray);
+  // Set up the Generate Montage Configuration filter
+  if(factory.get() != nullptr)
+  {
+    itkRegistrationFilter = factory->create();
+    filterName = "ITKStitchMontage";
+    factory = fm->getFactoryFromClassName(filterName);
+    itkStitchingFilter = factory->create();
+    if(itkRegistrationFilter.get() != nullptr && itkStitchingFilter.get() != nullptr)
+    {
+      itkRegistrationFilter->setDataContainerArray(m_dataContainerArray);
+      itkStitchingFilter->setDataContainerArray(m_dataContainerArray);
 
-			QVariant var;
+      QVariant var;
 
-			int numOfRows = montageWizard->field(ImportMontage::FieldNames::NumberOfRows).toInt();
-			int numOfCols = montageWizard->field(ImportMontage::FieldNames::NumberOfColumns).toInt();
+      int numOfRows = montageWizard->field(ImportMontage::FieldNames::NumberOfRows).toInt();
+      int numOfCols = montageWizard->field(ImportMontage::FieldNames::NumberOfColumns).toInt();
 
-			// Set montage size
-			IntVec3_t montageSize = { numOfCols, numOfRows, 1 };
-			var.setValue(montageSize);
-			if(!setFilterProperty(itkRegistrationFilter, "MontageSize", var) ||
-				!setFilterProperty(itkStitchingFilter, "MontageSize", var))
-			{
-				return;
-			}
+      // Set montage size
+      IntVec3_t montageSize = {numOfCols, numOfRows, 1};
+      var.setValue(montageSize);
+      if(!setFilterProperty(itkRegistrationFilter, "MontageSize", var) || !setFilterProperty(itkStitchingFilter, "MontageSize", var))
+      {
+        return;
+      }
 
-			// Set Common Attribute Matrix Name
-			QString cellAttrMatrixName = "CellData";
-			if(inputType == ImportMontageWizard::InputType::DREAM3D)
-			{
-				cellAttrMatrixName = montageWizard
-					->field(ImportMontage::FieldNames::CellAttributeMatrixName).toString();
-			}
-			else if(inputType == ImportMontageWizard::InputType::Zeiss)
-			{
-				cellAttrMatrixName = montageWizard
-					->field(ImportMontage::FieldNames::ZeissCellAttributeMatrixName).toString();
-			}
-			var.setValue(cellAttrMatrixName);
-			if(!setFilterProperty(itkRegistrationFilter, "CommonAttributeMatrixName", var) ||
-				!setFilterProperty(itkStitchingFilter, "CommonAttributeMatrixName", var))
-			{
-				return;
-			}
+      // Set Common Attribute Matrix Name
+      QString cellAttrMatrixName = "CellData";
+      if(inputType == ImportMontageWizard::InputType::DREAM3D)
+      {
+        cellAttrMatrixName = montageWizard->field(ImportMontage::FieldNames::CellAttributeMatrixName).toString();
+      }
+      else if(inputType == ImportMontageWizard::InputType::Zeiss)
+      {
+        cellAttrMatrixName = montageWizard->field(ImportMontage::FieldNames::ZeissCellAttributeMatrixName).toString();
+      }
+      var.setValue(cellAttrMatrixName);
+      if(!setFilterProperty(itkRegistrationFilter, "CommonAttributeMatrixName", var) || !setFilterProperty(itkStitchingFilter, "CommonAttributeMatrixName", var))
+      {
+        return;
+      }
 
-			// Set Common Data Array Name
-			QString commonDataArrayName = "ImageTile";
-			if(inputType == ImportMontageWizard::InputType::DREAM3D)
-			{
-				commonDataArrayName = montageWizard
-					->field(ImportMontage::FieldNames::ImageArrayName).toString();
-			}
-			else if(inputType == ImportMontageWizard::InputType::Zeiss)
-			{
-				commonDataArrayName = montageWizard
-					->field(ImportMontage::FieldNames::ZeissImageDataArrayName).toString();
-			}
-			var.setValue(commonDataArrayName);
-			if(!setFilterProperty(itkRegistrationFilter, "CommonDataArrayName", var) ||
-				!setFilterProperty(itkStitchingFilter, "CommonDataArrayName", var))
-			{
-				return;
-			}
+      // Set Common Data Array Name
+      QString commonDataArrayName = "ImageTile";
+      if(inputType == ImportMontageWizard::InputType::DREAM3D)
+      {
+        commonDataArrayName = montageWizard->field(ImportMontage::FieldNames::ImageArrayName).toString();
+      }
+      else if(inputType == ImportMontageWizard::InputType::Zeiss)
+      {
+        commonDataArrayName = montageWizard->field(ImportMontage::FieldNames::ZeissImageDataArrayName).toString();
+      }
+      var.setValue(commonDataArrayName);
+      if(!setFilterProperty(itkRegistrationFilter, "CommonDataArrayName", var) || !setFilterProperty(itkStitchingFilter, "CommonDataArrayName", var))
+      {
+        return;
+      }
 
-			// Set the list of image data containers
-			var.setValue(dataContainerNames);
-			if(!setFilterProperty(itkRegistrationFilter, "ImageDataContainers", var) ||
-				!setFilterProperty(itkStitchingFilter, "ImageDataContainers", var))
-			{
-				return;
-			}
+      // Set the list of image data containers
+      var.setValue(dataContainerNames);
+      if(!setFilterProperty(itkRegistrationFilter, "ImageDataContainers", var) || !setFilterProperty(itkStitchingFilter, "ImageDataContainers", var))
+      {
+        return;
+      }
 
-			// Stitching specific properties
+      // Stitching specific properties
 
-			// Tile overlap
-			double tileOverlap = montageWizard->field(ImportMontage::FieldNames::DREAM3DTileOverlap).toDouble();
-			var.setValue(tileOverlap);
-			if(!setFilterProperty(itkStitchingFilter, "TileOverlap", var))
-			{
-				return;
-			}
+      // Tile overlap
+      double tileOverlap = montageWizard->field(ImportMontage::FieldNames::DREAM3DTileOverlap).toDouble();
+      var.setValue(tileOverlap);
+      if(!setFilterProperty(itkStitchingFilter, "TileOverlap", var))
+      {
+        return;
+      }
 
-			// Montage results data array path components
-			QString montageDataContainer = "MontageDC";
-			var.setValue(montageDataContainer);
-			if(!setFilterProperty(itkStitchingFilter, "MontageDataContainerName", var))
-			{
-				return;
-			}
+      // Montage results data array path components
+      QString montageDataContainer = "MontageDC";
+      var.setValue(montageDataContainer);
+      if(!setFilterProperty(itkStitchingFilter, "MontageDataContainerName", var))
+      {
+        return;
+      }
 
-			QString montageAttriubeMatrixName = "MontageAM";
-			var.setValue(montageAttriubeMatrixName);
-			if(!setFilterProperty(itkStitchingFilter, "MontageAttributeMatrixName", var))
-			{
-				return;
-			}
+      QString montageAttriubeMatrixName = "MontageAM";
+      var.setValue(montageAttriubeMatrixName);
+      if(!setFilterProperty(itkStitchingFilter, "MontageAttributeMatrixName", var))
+      {
+        return;
+      }
 
-			QString montageDataArrayName = "MontageData";
-			var.setValue(montageDataArrayName);
-			if(!setFilterProperty(itkStitchingFilter, "MontageDataArrayName", var))
-			{
-				return;
-			}
+      QString montageDataArrayName = "MontageData";
+      var.setValue(montageDataArrayName);
+      if(!setFilterProperty(itkStitchingFilter, "MontageDataArrayName", var))
+      {
+        return;
+      }
 
-			m_pipeline->pushBack(itkRegistrationFilter);
-			m_pipeline->pushBack(itkStitchingFilter);
-		}
-		else
-		{
-			statusBar()->showMessage(tr("Could not create filter from %1 factory. Aborting.").arg(filterName));
-			return;
-		}
-	}
-	else
-	{
-		statusBar()->showMessage(tr("Could not create %1 factory. Aborting.").arg(filterName));
-		return;
-	}
+      m_pipeline->pushBack(itkRegistrationFilter);
+      m_pipeline->pushBack(itkStitchingFilter);
+    }
+    else
+    {
+      statusBar()->showMessage(tr("Could not create filter from %1 factory. Aborting.").arg(filterName));
+      return;
+    }
+  }
+  else
+  {
+    statusBar()->showMessage(tr("Could not create %1 factory. Aborting.").arg(filterName));
+    return;
+  }
 }
 
 // -----------------------------------------------------------------------------
@@ -1074,17 +1054,17 @@ void IMFViewer_UI::createMenu()
   ISIMPLibPlugin* multiscaleFusionPlugin = pluginManager->findPlugin("MultiscaleFusion");
   ISIMPLibPlugin* itkImageProcessingPlugin = pluginManager->findPlugin("ITKImageProcessing");
 
-  if (!itkImageProcessingPlugin)
+  if(!itkImageProcessingPlugin)
   {
     qDebug() << "Unable to initialize montage importing APIs because ITKImageProcessing plugin is not loaded.";
   }
 
-  if (!multiscaleFusionPlugin)
+  if(!multiscaleFusionPlugin)
   {
     qDebug() << "Unable to initialize montage importing APIs because MultiscaleFusion plugin is not loaded.";
   }
 
-  if (multiscaleFusionPlugin && itkImageProcessingPlugin)
+  if(multiscaleFusionPlugin && itkImageProcessingPlugin)
   {
     QAction* importMontageAction = new QAction("Import Montage");
     importMontageAction->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_M));
@@ -1161,9 +1141,7 @@ QMenu* IMFViewer_UI::createThemeMenu(QActionGroup* actionGroup, QWidget* parent)
   QMenu* menuThemes = new QMenu("Themes", parent);
 
   QString themePath = ":/SIMPL/StyleSheets/Default.json";
-  QAction* action = menuThemes->addAction("Default", [=] {
-    style->loadStyleSheet(themePath);
-  });
+  QAction* action = menuThemes->addAction("Default", [=] { style->loadStyleSheet(themePath); });
   action->setCheckable(true);
   if(themePath == style->getCurrentThemeFilePath())
   {
@@ -1172,12 +1150,10 @@ QMenu* IMFViewer_UI::createThemeMenu(QActionGroup* actionGroup, QWidget* parent)
   actionGroup->addAction(action);
 
   QStringList themeNames = BrandedStrings::LoadedThemeNames;
-  for (int i = 0; i < themeNames.size(); i++)
+  for(int i = 0; i < themeNames.size(); i++)
   {
     QString themePath = BrandedStrings::DefaultStyleDirectory + QDir::separator() + themeNames[i] + ".json";
-    QAction* action = menuThemes->addAction(themeNames[i], [=] {
-      style->loadStyleSheet(themePath);
-    });
+    QAction* action = menuThemes->addAction(themeNames[i], [=] { style->loadStyleSheet(themePath); });
     action->setCheckable(true);
     if(themePath == style->getCurrentThemeFilePath())
     {
@@ -1194,31 +1170,29 @@ QMenu* IMFViewer_UI::createThemeMenu(QActionGroup* actionGroup, QWidget* parent)
 // -----------------------------------------------------------------------------
 void IMFViewer_UI::runPipelineThread()
 {
-	// Run Pipeline
-	m_workerThread = new QThread;
-	MontageWorker* montageWorker = new MontageWorker(m_pipeline);
-	montageWorker->moveToThread(m_workerThread);
-	m_pipeline->addMessageReceiver(this);
-	connect(montageWorker, SIGNAL(error(QString)), this, SLOT(errorString(QString)));
-	connect(m_workerThread, SIGNAL(started()), montageWorker, SLOT(process()));
-	connect(montageWorker, SIGNAL(finished()), m_workerThread, SLOT(quit()));
-	connect(montageWorker, SIGNAL(finished()), montageWorker, SLOT(deleteLater()));
-	connect(m_workerThread, SIGNAL(finished()), m_workerThread, SLOT(deleteLater()));
-	connect(montageWorker, &MontageWorker::resultReady, this, &IMFViewer_UI::handleMontageResults);
-	m_workerThread->start();
+  // Run Pipeline
+  m_workerThread = new QThread;
+  MontageWorker* montageWorker = new MontageWorker(m_pipeline);
+  montageWorker->moveToThread(m_workerThread);
+  m_pipeline->addMessageReceiver(this);
+  connect(montageWorker, SIGNAL(error(QString)), this, SLOT(errorString(QString)));
+  connect(m_workerThread, SIGNAL(started()), montageWorker, SLOT(process()));
+  connect(montageWorker, SIGNAL(finished()), m_workerThread, SLOT(quit()));
+  connect(montageWorker, SIGNAL(finished()), montageWorker, SLOT(deleteLater()));
+  connect(m_workerThread, SIGNAL(finished()), m_workerThread, SLOT(deleteLater()));
+  connect(montageWorker, &MontageWorker::resultReady, this, &IMFViewer_UI::handleMontageResults);
+  m_workerThread->start();
 }
 
 // -----------------------------------------------------------------------------
 //
 // -----------------------------------------------------------------------------
-bool IMFViewer_UI::setFilterProperty(AbstractFilter::Pointer filter, const char* propertyName,
-	QVariant value)
+bool IMFViewer_UI::setFilterProperty(AbstractFilter::Pointer filter, const char* propertyName, QVariant value)
 {
-	if(!filter->setProperty(propertyName, value))
-	{
-		statusBar()->showMessage(tr("%1: %2 property not set. Aborting.")
-			.arg(filter->getHumanLabel()).arg(propertyName));
-		return false;
-	}
-	return true;
+  if(!filter->setProperty(propertyName, value))
+  {
+    statusBar()->showMessage(tr("%1: %2 property not set. Aborting.").arg(filter->getHumanLabel()).arg(propertyName));
+    return false;
+  }
+  return true;
 }

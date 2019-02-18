@@ -137,7 +137,7 @@ protected slots:
    * @brief processPipelineMessage
    * @param pipelineMsg
    */
-  void processPipelineMessage(const PipelineMessage &pipelineMsg);
+  void processPipelineMessage(const PipelineMessage& pipelineMsg);
 
 private:
   class vsInternals;
@@ -148,11 +148,11 @@ private:
   QMenu* m_MenuThemes = nullptr;
   QAction* m_ClearRecentsAction = nullptr;
 
-  QActionGroup*  m_ThemeActionGroup = nullptr;
+  QActionGroup* m_ThemeActionGroup = nullptr;
 
   QString m_OpenDialogLastDirectory = "";
 
-  QThread *m_workerThread;
+  QThread* m_workerThread;
   FilterPipeline::Pointer m_pipeline;
   DataContainerArray::Pointer m_dataContainerArray;
   ImportMontageWizard::DisplayType m_DisplayType = ImportMontageWizard::DisplayType::NotSpecified;
@@ -165,7 +165,7 @@ private:
    * @param parent
    * @return
    */
-  QMenu* createThemeMenu(QActionGroup *actionGroup, QWidget* parent = nullptr);
+  QMenu* createThemeMenu(QActionGroup* actionGroup, QWidget* parent = nullptr);
 
   /**
    * @brief importGenericMontage
@@ -203,7 +203,7 @@ private:
    * @return
    */
   void loadSessionFromFile(const QString& filePath);
-  
+
   /**
    * @brief Run the pipeline execution thread
    * @return
@@ -217,8 +217,7 @@ private:
    * @param dream3dFile
    * @return
    */
-  void performMontaging(ImportMontageWizard* montageWizard, QStringList dataContainerNames,
-	  ImportMontageWizard::InputType inputType);
+  void performMontaging(ImportMontageWizard* montageWizard, QStringList dataContainerNames, ImportMontageWizard::InputType inputType);
 
   /**
    * @brief printPropertyError
@@ -226,8 +225,7 @@ private:
    * @param propertyName
    * @param value
    */
-  bool setFilterProperty(AbstractFilter::Pointer filter, const char* propertyName,
-	  QVariant value);
+  bool setFilterProperty(AbstractFilter::Pointer filter, const char* propertyName, QVariant value);
 
   IMFViewer_UI(const IMFViewer_UI&);   // Copy Constructor Not Implemented
   void operator=(const IMFViewer_UI&); // Operator '=' Not Implemented
