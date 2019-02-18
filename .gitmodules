@@ -19,5 +19,5 @@
 	url = https://www.github.com/bluequartzsoftware/MultiscaleFusion.git
 	branch = feature/OSD_GUI
 [submodule "Source/External_Projects/ZeissImport"]
-	path = Source/External_Projects/ZeissImport
+	path = Source/Plugins/ZeissImport
 	url = https://www.github.com/bluequartzsoftware/ZeissImport.git
