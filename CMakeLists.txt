@@ -117,10 +117,10 @@ endif()
 
 #------------------------------------------------------------------------------
 # If the developer has set another Zeiss Import directory then use that, otherwise look
-# for the Zeiss Import directory in the ExternalProjects directory
+# for the Zeiss Import directory in the Plugins directory
 if("${ZeissImport_SOURCE_DIR}" STREQUAL "")
-  if(EXISTS "${IMFViewer_ExternalProject_DIR}/ZeissImport")
-    set(ZeissImport_SOURCE_DIR "${IMFViewer_ExternalProject_DIR}/ZeissImport")
+  if(EXISTS "${PROJECT_SOURCE_DIR}/Source/Plugins/ZeissImport")
+    set(ZeissImport_SOURCE_DIR "${PROJECT_SOURCE_DIR}/Source/Plugins/ZeissImport")
   else()
     message(FATAL_ERROR "ZeissImport_SOURCE_DIR was not set. Please set the ZeissImport_SOURCE_DIR variable to the Zeiss Import directory.")
   endif()
@@ -129,12 +129,10 @@ endif()
 
 #------------------------------------------------------------------------------
 # If the developer has set another MultiscaleFusion directory then use that, otherwise look
-# for the MultiscaleFusion directory in the Source or ExternalProjects directory
+# for the MultiscaleFusion directory in the Plugins directory
 if("${MultiscaleFusionProj_SOURCE_DIR}" STREQUAL "")
   if(EXISTS "${PROJECT_SOURCE_DIR}/Source/Plugins/MultiscaleFusion")
-    set(MultiscaleFusionProj_SOURCE_DIR ${PROJECT_SOURCE_DIR}/Source/Plugins/MultiscaleFusion)
-  elseif(EXISTS "${IMFViewer_ExternalProject_DIR}/MultiscaleFusion")
-    set(MultiscaleFusionProj_SOURCE_DIR ${IMFViewer_ExternalProject_DIR}/MultiscaleFusion)
+    set(MultiscaleFusionProj_SOURCE_DIR "${PROJECT_SOURCE_DIR}/Source/Plugins/MultiscaleFusion")
   else()
     message(FATAL_ERROR "MultiscaleFusionProj_SOURCE_DIR was not set. Please set the MultiscaleFusionProj_SOURCE_DIR variable to the MultiscaleFusion directory.")
   endif()
@@ -143,12 +141,10 @@ endif()
 
 #------------------------------------------------------------------------------
 # If the developer has set another ITKImageProcessing directory then use that, otherwise look
-# for the ITKImageProcessing directory in the Source or ExternalProjects directory
+# for the ITKImageProcessing directory in the Plugins directory
 if("${ITKImageProcessingProj_SOURCE_DIR}" STREQUAL "")
   if(EXISTS "${PROJECT_SOURCE_DIR}/Source/Plugins/ITKImageProcessing")
-    set(ITKImageProcessingProj_SOURCE_DIR ${PROJECT_SOURCE_DIR}/Source/Plugins/ITKImageProcessing)
-  elseif(EXISTS "${IMFViewer_ExternalProject_DIR}/ITKImageProcessing")
-    set(ITKImageProcessingProj_SOURCE_DIR ${IMFViewer_ExternalProject_DIR}/ITKImageProcessing)
+    set(ITKImageProcessingProj_SOURCE_DIR "${PROJECT_SOURCE_DIR}/Source/Plugins/ITKImageProcessing")
   else()
     message(FATAL_ERROR "ITKImageProcessingProj_SOURCE_DIR was not set. Please set the ITKImageProcessingProj_SOURCE_DIR variable to the ITKImageProcessing directory.")
   endif()

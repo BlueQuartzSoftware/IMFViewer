@@ -129,6 +129,7 @@ set_property(GLOBAL PROPERTY PluginNumFilters ${PluginNumFilters})
 set(IMFViewer_BASE_PLUGINS
   ITKImageProcessing
   MultiscaleFusion
+  ZeissImport
 )
 
 get_filename_component(IMFViewer_PARENT_DIR  ${PROJECT_SOURCE_DIR}/Source DIRECTORY)
