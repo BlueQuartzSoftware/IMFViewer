@@ -1,22 +1,11 @@
-#--////////////////////////////////////////////////////////////////////////////
-#--
-#--  Copyright (c) 2009, Michael A. Jackson. BlueQuartz Software
-#--  Copyright (c) 2009, Michael Groeber, US Air Force Research Laboratory
-#--  All rights reserved.
-#--  BSD License: http://www.opensource.org/licenses/bsd-license.html
-#--
-#-- This code was partly written under US Air Force Contract FA8650-07-D-5800
-#--
-#--////////////////////////////////////////////////////////////////////////////
 
-
-if(NOT "${DREAM3D_SDK}" STREQUAL "")
-  include("${DREAM3D_SDK}/DREAM3D_SDK.cmake")
-  message(STATUS "IMFViewer_SDK Location: ${DREAM3D_SDK}")
+if(NOT "${IMFViewer_SDK}" STREQUAL "")
+  include("${IMFViewer_SDK}/IMFViewer_SDK.cmake")
+  message(STATUS "IMFViewer_SDK Location: ${IMFViewer_SDK}")
 endif()
 
 # Request C++11 standard, using new CMake variables.
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(CMAKE_CXX_EXTENSIONS False)
 
@@ -29,7 +18,7 @@ if(${CMAKE_MAJOR_VERSION} STREQUAL "3")
   cmake_policy(SET CMP0054 NEW)
 endif()
 
-cmake_minimum_required(VERSION 3.10.0)
+cmake_minimum_required(VERSION 3.13.0)
 
 #------------------------------------------------------------------------------
 # Create the Top level Project
@@ -115,41 +104,70 @@ if("${SIMPLVtkLibProj_SOURCE_DIR}" STREQUAL "")
   message(STATUS "SIMPLVtkLibProj_SOURCE_DIR: ${SIMPLVtkLibProj_SOURCE_DIR}")
 endif()
 
-#------------------------------------------------------------------------------
-# If the developer has set another Zeiss Import directory then use that, otherwise look
-# for the Zeiss Import directory in the Plugins directory
-if("${ZeissImport_SOURCE_DIR}" STREQUAL "")
-  if(EXISTS "${PROJECT_SOURCE_DIR}/Source/Plugins/ZeissImport")
-    set(ZeissImport_SOURCE_DIR "${PROJECT_SOURCE_DIR}/Source/Plugins/ZeissImport")
-  else()
-    message(FATAL_ERROR "ZeissImport_SOURCE_DIR was not set. Please set the ZeissImport_SOURCE_DIR variable to the Zeiss Import directory.")
-  endif()
-  message(STATUS "ZeissImport_SOURCE_DIR: ${ZeissImport_SOURCE_DIR}")
+
+# -----------------------------------------------------------------------
+# Setup a Global property that is used to gather Documentation Information
+# into a single known location
+get_property(IMFViewerDocRoot GLOBAL PROPERTY IMFViewerDocRoot)
+if("${IMFViewerDocRoot}" STREQUAL "")
+  set_property(GLOBAL PROPERTY IMFViewerDocRoot "${IMFViewerProj_BINARY_DIR}/Documentation")
+  get_property(IMFViewerDocRoot GLOBAL PROPERTY IMFViewerDocRoot)
 endif()
 
-#------------------------------------------------------------------------------
-# If the developer has set another MultiscaleFusion directory then use that, otherwise look
-# for the MultiscaleFusion directory in the Plugins directory
-if("${MultiscaleFusionProj_SOURCE_DIR}" STREQUAL "")
-  if(EXISTS "${PROJECT_SOURCE_DIR}/Source/Plugins/MultiscaleFusion")
-    set(MultiscaleFusionProj_SOURCE_DIR "${PROJECT_SOURCE_DIR}/Source/Plugins/MultiscaleFusion")
-  else()
-    message(FATAL_ERROR "MultiscaleFusionProj_SOURCE_DIR was not set. Please set the MultiscaleFusionProj_SOURCE_DIR variable to the MultiscaleFusion directory.")
-  endif()
-  message(STATUS "MultiscaleFusionProj_SOURCE_DIR: ${MultiscaleFusionProj_SOURCE_DIR}")
+
+get_property(SIMPLPluginList GLOBAL PROPERTY SIMPLPluginList)
+if("${SIMPLPluginList}" STREQUAL "")
+  set_property(GLOBAL PROPERTY SIMPLPluginList "${IMFViewerProj_BINARY_DIR}/SIMPLPluginList.txt")
+  get_property(SIMPLPluginList GLOBAL PROPERTY SIMPLPluginList)
+  file(WRITE "${SIMPLPluginList}" "")
 endif()
 
-#------------------------------------------------------------------------------
-# If the developer has set another ITKImageProcessing directory then use that, otherwise look
-# for the ITKImageProcessing directory in the Plugins directory
-if("${ITKImageProcessingProj_SOURCE_DIR}" STREQUAL "")
-  if(EXISTS "${PROJECT_SOURCE_DIR}/Source/Plugins/ITKImageProcessing")
-    set(ITKImageProcessingProj_SOURCE_DIR "${PROJECT_SOURCE_DIR}/Source/Plugins/ITKImageProcessing")
-  else()
-    message(FATAL_ERROR "ITKImageProcessingProj_SOURCE_DIR was not set. Please set the ITKImageProcessingProj_SOURCE_DIR variable to the ITKImageProcessing directory.")
-  endif()
-  message(STATUS "ITKImageProcessingProj_SOURCE_DIR: ${ITKImageProcessingProj_SOURCE_DIR}")
+
+get_property(SIMPLibSearchDirs GLOBAL PROPERTY SIMPLibSearchDirs)
+if("${SIMPLibSearchDirs}" STREQUAL "")
+  set_property(GLOBAL PROPERTY SIMPLibSearchDirs "${IMFViewerProj_BINARY_DIR}/LibSearchDirs.txt")
+  get_property(SIMPLibSearchDirs GLOBAL PROPERTY SIMPLibSearchDirs)
+  file(WRITE "${SIMPLibSearchDirs}" "${CMAKE_LIBRARY_OUTPUT_DIRECTORY};")
 endif()
+
+
+# -----------------------------------------------------------------------
+# Set a global value to NOT install headers
+# -----------------------------------------------------------------------
+set_property(GLOBAL PROPERTY CMP_PROJECT_INSTALL_HEADERS "0")
+
+# -----------------------------------------------------------------------
+# Set a Global Prefix where everthing is going to get intalled. For OS X we are
+# going to try to install everything into the .app package
+# -----------------------------------------------------------------------
+set_property(GLOBAL PROPERTY DREAM3D_PACKAGE_DEST_PREFIX ".")
+if(APPLE)
+  if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    set_property(GLOBAL PROPERTY DREAM3D_PACKAGE_DEST_PREFIX "${SIMPLView_APPLICATION_NAME}${EXE_DEBUG_EXTENSION}.app/Contents/")
+  else()
+    set_property(GLOBAL PROPERTY DREAM3D_PACKAGE_DEST_PREFIX "${SIMPLView_APPLICATION_NAME}.app/Contents/")
+  endif()
+endif()
+get_property(DREAM3D_PACKAGE_DEST_PREFIX GLOBAL PROPERTY DREAM3D_PACKAGE_DEST_PREFIX)
+
+
+# ------- Enable the CTest testing. ---------------
+OPTION(SIMPL_BUILD_TESTING "Compile the test programs" ON)
+# -------------------------------------------------------------------- 
+# If Testing is enabled, turn on the Unit Tests 
+if(SIMPL_BUILD_TESTING)
+    #ENABLE_TESTING()
+    include( CTest )
+endif()
+
+
+
+# --------------------------------------------------------------------
+# This is set to "1" so that our test files are deleted at the end of the tests
+set(DREAM3D_REMOVE_TEST_FILES "1")
+
+
+
 
 #Enable use of Solution Folders
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
@@ -163,12 +181,13 @@ set(IMFViewerProj_DOCUMENTATION_DIR ${PROJECT_SOURCE_DIR}/Documentation)
 set(IMFViewerProj_SUPPORT_DIR ${PROJECT_SOURCE_DIR}/Support)
 
 set(CMP_CONFIGURED_FILES_SOURCE_DIR ${CMP_SOURCE_DIR}/ConfiguredFiles)
+
 INCLUDE (${CMP_SOURCE_DIR}/cmpCMakeMacros.cmake )
+
 set(CMP_ENABLE_PLUGINS "1")
-set(CMP_PLUGIN_LIST_FILE ${PROJECT_BINARY_DIR}/IMFViewerProj_PluginList.txt)
-file(WRITE ${CMP_PLUGIN_LIST_FILE} "")
-set(CMP_PLUGIN_SEARCHDIR_FILE ${PROJECT_BINARY_DIR}/libsearchdirs.txt)
-file(WRITE ${CMP_PLUGIN_SEARCHDIR_FILE} "${PROJECT_BINARY_DIR}/Bin/plugins;")
+set(CMP_PLUGIN_LIST_FILE "${SIMPLPluginList}")
+set(CMP_PLUGIN_SEARCHDIR_FILE "${SIMPLibSearchDirs}")
+file(APPEND ${CMP_PLUGIN_SEARCHDIR_FILE} "${PROJECT_BINARY_DIR}/Bin/plugins;")
 file(APPEND ${CMP_PLUGIN_SEARCHDIR_FILE} "${PROJECT_BINARY_DIR}/Bin;")
 set(CMP_LIB_SEARCH_DIRS "")
 set(CMP_MODULES_SOURCE_DIR ${CMP_SOURCE_DIR}/Modules CACHE INTERNAL "")
@@ -212,8 +231,10 @@ if(BUILD_SHARED_LIBS)
     endif()
 
 else()
-  message(FATAL_ERROR "BUILD_SHARED_LIBS Must be set to ON in order to build properly.")
+  message(FATAL_ERROR "BUILD_SHARED_LIBS Must be set to OFF in order to build properly.")
 endif(BUILD_SHARED_LIBS)
+
+
 
 
 # Find and Use the Qt5 Libraries
@@ -257,14 +278,6 @@ include("${CMP_SOURCE_DIR}/ExtLib/VtkSupport.cmake")
 CMP_FindVtkComponents(QT5_REQUIRED TRUE
                       COMPONENTS ${VtkComponents}
                       )
-# --------------------------------------------------------------------
-# Now that we have found all of our required libraries and packages we can start the all
-# the tests
-
-#-------------------------------------------------------------------------------
-# Compile the Core Plugins that come with DREAM3D and any other Plugins that the
-# developer has added.
-include(${PROJECT_SOURCE_DIR}/Source/Plugins/Plugins.cmake)
 
 # We do NOT want to install any of the headers
 set(IMFViewerProj_INSTALL_FILES "${PROJECT_INSTALL_HEADERS}")
@@ -316,7 +329,6 @@ if(MSVC)
 endif()
 
 
-
 include_directories(${IMFViewerProj_SOURCE_DIR}/Source)
 include_directories(${PROJECT_BINARY_DIR})
 
@@ -330,20 +342,15 @@ add_subdirectory( ${SIMPLProj_SOURCE_DIR} ${PROJECT_BINARY_DIR}/SIMPL)
 # -----------------------------------------------------------------------
 add_subdirectory( ${SIMPLVtkLibProj_SOURCE_DIR} ${PROJECT_BINARY_DIR}/SIMPLVtkLib)
 
-# # -----------------------------------------------------------------------
-# # Add in the MultiscaleFusion Sources
-# # -----------------------------------------------------------------------
-# add_subdirectory( ${MultiscaleFusionProj_SOURCE_DIR} ${PROJECT_BINARY_DIR}/MultiscaleFusion)
-
-# # -----------------------------------------------------------------------
-# # Add in the ITKImageProcessing Sources
-# # -----------------------------------------------------------------------
-# add_subdirectory( ${ITKImageProcessingProj_SOURCE_DIR} ${PROJECT_BINARY_DIR}/ITKImageProcessing)
-
 # -----------------------------------------------------------------------
 # Add in the Necessary IMFViewer Sources
 # -----------------------------------------------------------------------
 add_subdirectory( ${IMFViewerProj_SOURCE_DIR}/Source/Applications/IMFViewer ${PROJECT_BINARY_DIR}/Applications/IMFViewer)
+
+#-------------------------------------------------------------------------------
+# Compile the Core Plugins that come with IMFViewer and any other Plugins that the
+# developer has added.
+include(${PROJECT_SOURCE_DIR}/Source/Plugins/Plugins.cmake)
 
 # This should be the last line in this file:
 include(${PROJECT_RESOURCES_DIR}/CPack/PackageProject.cmake)

@@ -1,8 +1,15 @@
 <!DOCTYPE RCC>
 <RCC version="1.0">
 <qresource>
-<file>ThirdParty/VTK.txt</file>
+
 <file>ThirdParty/Qt.txt</file>
 <file>ThirdParty/HDF5.txt</file>
+<file>ThirdParty/VTK.txt</file>
+<file>ThirdParty/Discount.txt</file>
+<file>ThirdParty/Eigen.txt</file>
+<file>ThirdParty/Haru.txt</file>
+<file>ThirdParty/ITK.txt</file>
+<file>ThirdParty/Pybind11.txt</file>
+<file>ThirdParty/TBB.txt</file>
 </qresource>
 </RCC>

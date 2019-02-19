@@ -1,12 +1,3 @@
-#--////////////////////////////////////////////////////////////////////////////
-#--
-#--  Copyright (c) 2015 BlueQuartz Software, LLC
-#--  All rights reserved.
-#--  BSD License: http://www.opensource.org/licenses/bsd-license.html
-#--
-#-- This code was partly written under US Air Force Contract FA8650-07-D-5800
-#--
-#--////////////////////////////////////////////////////////////////////////////
 PROJECT( IMFViewer VERSION ${IMFViewerProj_VERSION_MAJOR}.${IMFViewerProj_VERSION_MINOR}.${IMFViewerProj_VERSION_PATCH})
 
 # --------------------------------------------------------------------
@@ -51,7 +42,6 @@ cmp_IDE_GENERATED_PROPERTIES("IMFViewer/UI_Files" "${IMFViewer_UIS}" "")
 # and finally any resource files
 # SET(IMFViewer_RCS ${IMFViewer_SOURCE_DIR}/Templates.qrc)
 SET(IMFViewer_RCS
-    ${PROJECT_RESOURCES_DIR}/icons/images/Icons.qrc
     ${BrandedIMFViewer_DIR}/branded_files.qrc
 )
 
@@ -96,11 +86,11 @@ include_directories(${BrandedIMFViewer_DIR} )
 
 
 if(APPLE)
-    set(APPLICATION_ICON ${PROJECT_RESOURCES_DIR}/icons/icns/${PROJECT_NAME}.icns)
+    set(APPLICATION_ICON ${BrandedIMFViewer_DIR}/icons/icns/${PROJECT_NAME}.icns)
 endif(APPLE)
 
 if(WIN32)
-    set(APPLICATION_ICON ${PROJECT_RESOURCES_DIR}/icons/ico/${PROJECT_NAME}.ico)
+    set(APPLICATION_ICON ${BrandedIMFViewer_DIR}/icons/ico/${PROJECT_NAME}.ico)
 ENDif(WIN32)
 
 set(DEST_DIR ".")
@@ -124,10 +114,3 @@ BuildQtAppBundle(
     INSTALL_DEST  ${DEST_DIR}
 )
 
-
-#- This installs all the help files. Note that we assume a flat directory structure
-#- in the "Help" folder, ie, all html files, images, etc are all in the "Help"
-#- folder and NOT in any subfolders beyond that.
-install(DIRECTORY ${IMFViewer_SOURCE_DIR}/Template
-        DESTINATION .
-        COMPONENT Applications )

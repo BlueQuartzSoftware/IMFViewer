@@ -33,7 +33,8 @@
  *
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
-#include <QApplication>
+#include <QtCore/QCoreApplication>
+#include <QtGui/QSurfaceFormat>
 
 #include <QVTKOpenGLWidget.h>
 
@@ -49,10 +50,13 @@
 int main(int argc, char* argv[])
 {
   QSurfaceFormat::setDefaultFormat(QVTKOpenGLWidget::defaultFormat());
+  
   QCoreApplication::setApplicationName("IMFViewer");
   QCoreApplication::setOrganizationDomain("bluequartz.net");
   QCoreApplication::setOrganizationName("BlueQuartz Software");
   QCoreApplication::setAttribute(Qt::AA_UseHighDpiPixmaps);
+  
+  
   QMetaObjectUtilities::RegisterMetaTypes();
 
   IMFViewerApplication app(argc, argv);

@@ -1,12 +1,3 @@
-#///////////////////////////////////////////////////////////////////////////////
-#//
-#//  Copyright (c) 2009, Michael A. Jackson. BlueQuartz Software
-#//  All rights reserved.
-#//  BSD License: http://www.opensource.org/licenses/bsd-license.html
-#//
-#///////////////////////////////////////////////////////////////////////////////
-
-
 # ------------------------------------------------------------------------------
 # This CMake code sets up for CPack to be used to generate native installers
 # ------------------------------------------------------------------------------
@@ -39,11 +30,6 @@ if(UNIX AND NOT APPLE)
     endif(CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS)
 endif()
 
-# Add a short ReadMe file for OS X that warns of moving the applications
-if(APPLE)
-    install(FILES ${PROJECT_RESOURCES_DIR}/CPack/OS_X_ReadMe.txt DESTINATION .)
-endif()
-
 message(STATUS "IMFViewerProj_RELEASE_TYPE: ${IMFViewerProj_RELEASE_TYPE}")
 if("${IMFViewerProj_RELEASE_TYPE}" STREQUAL "Official")
   set(IMFViewer_VERSION_SHORT "${IMFViewerProj_VERSION_MAJOR}.${IMFViewerProj_VERSION_MINOR}.${IMFViewerProj_VERSION_PATCH}")
@@ -59,7 +45,7 @@ endif()
 message(STATUS "IMFViewer_VERSION_SHORT: ${IMFViewer_VERSION_SHORT}")
 
 
-SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "CSDF Tools")
+SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "3D Data Viewer and Data Analysis Tools")
 SET(CPACK_PACKAGE_VENDOR "BlueQuartz Software, LLC")
 SET(CPACK_PACKAGE_DESCRIPTION_FILE "${PROJECT_BINARY_DIR}/ReadMe.md")
 #SET(CPACK_RESOURCE_FILE_LICENSE "${PROJECT_RESOURCES_DIR}/")
@@ -106,12 +92,12 @@ endif()
 if(WIN32 AND NOT UNIX)
   # There is a bug in NSIS that does not handle full unix paths properly. Make
   # sure there is at least one set of four (4) backlasshes.
-  SET(CPACK_NSIS_DISPLAY_NAME "CSDF Software Tools")
+  SET(CPACK_NSIS_DISPLAY_NAME "IMFViewer")
   SET(CPACK_NSIS_HELP_LINK "http:\\\\\\\\www.bluequartz.net")
   SET(CPACK_NSIS_URL_INFO_ABOUT "http:\\\\\\\\www.bluequartz.net")
-  SET(CPACK_NSIS_CONTACT "csdf@bluequartz.net")
+  SET(CPACK_NSIS_CONTACT "info@bluequartz.net")
   SET(CPACK_NSIS_MODIFY_PATH ON)
-  SET(CPACK_PACKAGE_INSTALL_REGISTRY_KEY "CSDF Software Tools")
+  SET(CPACK_PACKAGE_INSTALL_REGISTRY_KEY "IMFViewer")
 ENDif(WIN32 AND NOT UNIX)
 
 if(NOT CPACK_GENERATOR)
