@@ -44,6 +44,7 @@
 #include <QtWidgets/QMessageBox>
 
 #include "SIMPLib/FilterParameters/IntVec3FilterParameter.h"
+#include "SIMPLib/FilterParameters/FloatVec3.h"
 #include "SIMPLib/Filtering/FilterFactory.hpp"
 #include "SIMPLib/Filtering/FilterManager.h"
 #include "SIMPLib/Filtering/FilterPipeline.h"
@@ -632,7 +633,7 @@ void IMFViewer_UI::importZeissMontage(ImportMontageWizard* montageWizard)
       QVariant var;
 
       // Set the path for the Robomet Configuration File
-      QString configFilePath = montageWizard->field(ImportMontage::FieldNames::DataFilePath).toString();
+      QString configFilePath = montageWizard->field(ImportMontage::FieldNames::ZeissDataFilePath).toString();
       var.setValue(configFilePath);
       if(!setFilterProperty(importZeissMontageFilter, "InputFile", var))
       {
@@ -687,6 +688,61 @@ void IMFViewer_UI::importZeissMontage(ImportMontageWizard* montageWizard)
         return;
       }
 
+	  if(convertToGrayscale)
+	  {
+		  float colorWeightR = montageWizard->field(ImportMontage::FieldNames::ZeissColorWeightingR).toFloat();
+		  float colorWeightG = montageWizard->field(ImportMontage::FieldNames::ZeissColorWeightingG).toFloat();
+		  float colorWeightB = montageWizard->field(ImportMontage::FieldNames::ZeissColorWeightingB).toFloat();
+		  FloatVec3_t colorWeights = { colorWeightR, colorWeightG, colorWeightB };
+		  var.setValue(colorWeights);
+		  if(!setFilterProperty(importZeissMontageFilter, "ColorWeights", var))
+		  {
+			  return;
+		  }
+	  }
+
+	  // Set Origin
+	  bool changeOrigin = montageWizard->field(ImportMontage::FieldNames::ZeissChangeOrigin).toBool();
+	  var.setValue(changeOrigin);
+	  if(!setFilterProperty(importZeissMontageFilter, "ChangeOrigin", var))
+	  {
+		  return;
+	  }
+
+	  if(changeOrigin)
+	  {
+		  float originX = montageWizard->field(ImportMontage::FieldNames::ZeissOriginX).toFloat();
+		  float originY = montageWizard->field(ImportMontage::FieldNames::ZeissOriginY).toFloat();
+		  float originZ = montageWizard->field(ImportMontage::FieldNames::ZeissOriginZ).toFloat();
+		  FloatVec3_t newOrigin = { originX, originY, originZ };
+		  var.setValue(newOrigin);
+		  if(!setFilterProperty(importZeissMontageFilter, "Origin", var))
+		  {
+			  return;
+		  }
+	  }
+
+	  // Set Spacing
+	  bool changeSpacing = montageWizard->field(ImportMontage::FieldNames::ZeissChangeSpacing).toBool();
+	  var.setValue(changeSpacing);
+	  if(!setFilterProperty(importZeissMontageFilter, "ChangeSpacing", var))
+	  {
+		  return;
+	  }
+
+	  if(changeSpacing)
+	  {
+		  float spacingX = montageWizard->field(ImportMontage::FieldNames::ZeissSpacingX).toFloat();
+		  float spacingY = montageWizard->field(ImportMontage::FieldNames::ZeissSpacingY).toFloat();
+		  float spacingZ = montageWizard->field(ImportMontage::FieldNames::ZeissSpacingZ).toFloat();
+		  FloatVec3_t newSpacing = { spacingX, spacingY, spacingZ };
+		  var.setValue(newSpacing);
+		  if(!setFilterProperty(importZeissMontageFilter, "Spacing", var))
+		  {
+			  return;
+		  }
+	  }
+
       m_pipeline->pushBack(importZeissMontageFilter);
     }
     else
@@ -739,9 +795,24 @@ void IMFViewer_UI::performMontaging(ImportMontageWizard* montageWizard, QStringL
 
       QVariant var;
 
-      int numOfRows = montageWizard->field(ImportMontage::FieldNames::NumberOfRows).toInt();
-      int numOfCols = montageWizard->field(ImportMontage::FieldNames::NumberOfColumns).toInt();
-
+	  int numOfRows = 1;
+	  int numOfCols = 1;
+	  
+	  if(inputType == ImportMontageWizard::InputType::GenericMontage)
+	  {
+		  numOfRows = montageWizard->field(ImportMontage::FieldNames::GenericNumberOfRows).toInt();
+		  numOfCols = montageWizard->field(ImportMontage::FieldNames::GenericNumberOfColumns).toInt();
+	  }
+	  else if(inputType == ImportMontageWizard::InputType::Zeiss)
+	  {
+		  numOfRows = montageWizard->field(ImportMontage::FieldNames::ZeissNumberOfRows).toInt();
+		  numOfCols = montageWizard->field(ImportMontage::FieldNames::ZeissNumberOfColumns).toInt();
+	  }
+	  else
+	  {
+		  numOfRows = montageWizard->field(ImportMontage::FieldNames::NumberOfRows).toInt();
+		  numOfCols = montageWizard->field(ImportMontage::FieldNames::NumberOfColumns).toInt();
+	  }
       // Set montage size
       IntVec3_t montageSize = {numOfCols, numOfRows, 1};
       var.setValue(montageSize);
