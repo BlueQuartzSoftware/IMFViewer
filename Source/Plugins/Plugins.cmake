@@ -128,7 +128,6 @@ set_property(GLOBAL PROPERTY PluginNumFilters ${PluginNumFilters})
 # These are the core plugins that need to be built
 set(IMFViewer_BASE_PLUGINS
   ITKImageProcessing
-  MultiscaleFusion
   ZeissImport
 )
 

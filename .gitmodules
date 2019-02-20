@@ -14,10 +14,6 @@
 	path = Source/Plugins/ITKImageProcessing
 	url = https://www.github.com/bluequartzsoftware/ITKImageProcessing.git
 	branch = feature/OSD_GUI
-[submodule "Source/Plugins/MultiscaleFusion"]
-	path = Source/Plugins/MultiscaleFusion
-	url = https://www.github.com/bluequartzsoftware/MultiscaleFusion.git
-	branch = feature/OSD_GUI
 [submodule "Source/External_Projects/ZeissImport"]
 	path = Source/Plugins/ZeissImport
 	url = https://www.github.com/bluequartzsoftware/ZeissImport.git
