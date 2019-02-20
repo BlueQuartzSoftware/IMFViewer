@@ -399,7 +399,11 @@ void IMFViewer_UI::importDREAM3DMontage(ImportMontageWizard* montageWizard)
     if(m_displayMontage || m_displayOutline)
     {
       QStringList dcNames = m_dataContainerArray->getDataContainerNames();
-      performMontaging(montageWizard, dcNames, ImportMontageWizard::InputType::DREAM3D);
+
+      int rowCount = montageWizard->field(ImportMontage::FieldNames::NumberOfRows).toInt();
+      int colCount = montageWizard->field(ImportMontage::FieldNames::NumberOfColumns).toInt();
+
+      performMontaging(montageWizard, dcNames, ImportMontageWizard::InputType::DREAM3D, rowCount, colCount);
     }
     runPipelineThread();
   }
@@ -487,7 +491,21 @@ void IMFViewer_UI::importFijiMontage(ImportMontageWizard* montageWizard)
     DataContainerArray::Pointer dca = importFijiMontageFilter->getDataContainerArray();
     QStringList dcNames = dca->getDataContainerNames();
 
-    performMontaging(montageWizard, dcNames, ImportMontageWizard::InputType::Fiji);
+    ImportMontageWizard::InputType inputType = montageWizard->field(ImportMontage::FieldNames::InputType).value<ImportMontageWizard::InputType>();
+
+    int rowCount, colCount;
+    if(inputType == ImportMontageWizard::InputType::GenericMontage)
+    {
+      rowCount = montageWizard->field(ImportMontage::FieldNames::GenericNumberOfRows).toInt();
+      colCount = montageWizard->field(ImportMontage::FieldNames::GenericNumberOfColumns).toInt();
+    }
+    else
+    {
+      rowCount = montageWizard->field(ImportMontage::FieldNames::NumberOfRows).toInt();
+      colCount = montageWizard->field(ImportMontage::FieldNames::NumberOfColumns).toInt();
+    }
+
+    performMontaging(montageWizard, dcNames, ImportMontageWizard::InputType::Fiji, rowCount, colCount);
   }
 
   // Run the pipeline
@@ -602,7 +620,12 @@ void IMFViewer_UI::importRobometMontage(ImportMontageWizard* montageWizard)
     DataContainerArray::Pointer dca = importRoboMetMontageFilter->getDataContainerArray();
     QStringList dcNames = dca->getDataContainerNames();
 
-    performMontaging(montageWizard, dcNames, ImportMontageWizard::InputType::Robomet);
+    ImportMontageWizard::InputType inputType = montageWizard->field(ImportMontage::FieldNames::InputType).value<ImportMontageWizard::InputType>();
+
+    int rowCount = montageWizard->field(ImportMontage::FieldNames::NumberOfRows).toInt();
+    int colCount = montageWizard->field(ImportMontage::FieldNames::NumberOfColumns).toInt();
+
+    performMontaging(montageWizard, dcNames, ImportMontageWizard::InputType::Robomet, rowCount, colCount);
   }
 
   runPipelineThread();
@@ -673,8 +696,7 @@ void IMFViewer_UI::importZeissMontage(ImportMontageWizard* montageWizard)
       }
 
       // Set Import All Metadata
-      bool importMetadata = montageWizard->field(ImportMontage::FieldNames::ZeissImportAllMetadata).toBool();
-      var.setValue(importMetadata);
+      var.setValue(true);
       if(!setFilterProperty(importZeissMontageFilter, "ImportAllMetaData", var))
       {
         return;
@@ -762,8 +784,10 @@ void IMFViewer_UI::importZeissMontage(ImportMontageWizard* montageWizard)
     importZeissMontageFilter->preflight();
     DataContainerArray::Pointer dca = importZeissMontageFilter->getDataContainerArray();
     QStringList dcNames = dca->getDataContainerNames();
+    int rowCount = importZeissMontageFilter->property("RowCount").toInt();
+    int colCount = importZeissMontageFilter->property("ColumnCount").toInt();
 
-    performMontaging(montageWizard, dcNames, ImportMontageWizard::InputType::Zeiss);
+    performMontaging(montageWizard, dcNames, ImportMontageWizard::InputType::Zeiss, rowCount, colCount);
   }
 
   runPipelineThread();
@@ -772,7 +796,7 @@ void IMFViewer_UI::importZeissMontage(ImportMontageWizard* montageWizard)
 // -----------------------------------------------------------------------------
 //
 // -----------------------------------------------------------------------------
-void IMFViewer_UI::performMontaging(ImportMontageWizard* montageWizard, QStringList dataContainerNames, ImportMontageWizard::InputType inputType)
+void IMFViewer_UI::performMontaging(ImportMontageWizard* montageWizard, QStringList dataContainerNames, ImportMontageWizard::InputType inputType, int rowCount, int colCount)
 {
   // Instantiate Generate Montage filter
   QString filterName = "ITKGenerateMontageConfiguration";
@@ -795,26 +819,8 @@ void IMFViewer_UI::performMontaging(ImportMontageWizard* montageWizard, QStringL
 
       QVariant var;
 
-	  int numOfRows = 1;
-	  int numOfCols = 1;
-	  
-	  if(inputType == ImportMontageWizard::InputType::GenericMontage)
-	  {
-		  numOfRows = montageWizard->field(ImportMontage::FieldNames::GenericNumberOfRows).toInt();
-		  numOfCols = montageWizard->field(ImportMontage::FieldNames::GenericNumberOfColumns).toInt();
-	  }
-	  else if(inputType == ImportMontageWizard::InputType::Zeiss)
-	  {
-		  numOfRows = montageWizard->field(ImportMontage::FieldNames::ZeissNumberOfRows).toInt();
-		  numOfCols = montageWizard->field(ImportMontage::FieldNames::ZeissNumberOfColumns).toInt();
-	  }
-	  else
-	  {
-		  numOfRows = montageWizard->field(ImportMontage::FieldNames::NumberOfRows).toInt();
-		  numOfCols = montageWizard->field(ImportMontage::FieldNames::NumberOfColumns).toInt();
-	  }
       // Set montage size
-      IntVec3_t montageSize = {numOfCols, numOfRows, 1};
+      IntVec3_t montageSize = {colCount, rowCount, 1};
       var.setValue(montageSize);
       if(!setFilterProperty(itkRegistrationFilter, "MontageSize", var) || !setFilterProperty(itkStitchingFilter, "MontageSize", var))
       {

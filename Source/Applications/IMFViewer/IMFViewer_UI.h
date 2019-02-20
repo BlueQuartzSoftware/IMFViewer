@@ -217,7 +217,7 @@ private:
    * @param dream3dFile
    * @return
    */
-  void performMontaging(ImportMontageWizard* montageWizard, QStringList dataContainerNames, ImportMontageWizard::InputType inputType);
+  void performMontaging(ImportMontageWizard* montageWizard, QStringList dataContainerNames, ImportMontageWizard::InputType inputType, int rowCount, int colCount);
 
   /**
    * @brief printPropertyError
