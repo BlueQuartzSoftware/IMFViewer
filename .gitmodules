@@ -1,10 +1,10 @@
 [submodule "Source/External_Projects/SIMPL"]
 	path = Source/External_Projects/SIMPL
-	url = https://www.github.com/tplatt77/SIMPL.git
+url=ssh://git@github.com/tplatt77/SIMPL.git
 	branch = feature/OSD_GUI
 [submodule "Source/External_Projects/SIMPLVtkLib"]
 	path = Source/External_Projects/SIMPLVtkLib
-	url = https://www.github.com/tplatt77/SIMPLVtkLib.git
+url=ssh://git@github.com/tplatt77/SIMPLVtkLib.git
 	branch = feature/OSD_GUI
 [submodule "Source/External_Projects/CMP"]
 	path = Source/External_Projects/CMP
