@@ -222,7 +222,7 @@ void IMFViewer_UI::importMontage()
     VSMainWidgetBase* baseWidget = dynamic_cast<VSMainWidgetBase*>(m_Internals->vsWidget);
 
     // Based on the type of file imported, perform next action
-    if(inputType == ImportMontageWizard::InputType::GenericMontage)
+    if(inputType == ImportMontageWizard::InputType::Generic)
     {
       importGenericMontage(montageWizard);
     }
@@ -244,13 +244,9 @@ void IMFViewer_UI::importMontage()
     }
     else
     {
-      QString dataFilePath = montageWizard->field(ImportMontage::FieldNames::DataFilePath).toString();
-      QFileInfo fi(dataFilePath);
-      QString ext = fi.completeSuffix();
       QMessageBox::critical(this, "Invalid File Type",
-                            tr("IMF Viewer failed to detect the proper data file type from the given input file with extension '%1'.  "
-                               "Supported file types are DREAM3D, VTK, STL and Image files, as well as Fiji and Robomet configuration files.")
-                                .arg(ext),
+                            tr("IMF Viewer failed to detect the proper data file type from the given input file.  "
+                               "Supported file types are DREAM3D, VTK, STL and Image files, as well as Fiji and Robomet configuration files."),
                             QMessageBox::StandardButton::Ok);
     }
   }
@@ -264,16 +260,16 @@ void IMFViewer_UI::importMontage()
 void IMFViewer_UI::importGenericMontage(ImportMontageWizard* montageWizard)
 {
   QString tileConfigFile = "TileConfiguration.txt";
-  int numOfRows = montageWizard->field(ImportMontage::FieldNames::GenericNumberOfRows).toInt();
-  int numOfCols = montageWizard->field(ImportMontage::FieldNames::GenericNumberOfColumns).toInt();
+  int numOfRows = montageWizard->field(ImportMontage::Generic::FieldNames::NumberOfRows).toInt();
+  int numOfCols = montageWizard->field(ImportMontage::Generic::FieldNames::NumberOfColumns).toInt();
 
   // Get input file names
-  FileListInfo_t inputFileInfo = montageWizard->field(ImportMontage::FieldNames::GenericFileListInfo).value<FileListInfo_t>();
+  FileListInfo_t inputFileInfo = montageWizard->field(ImportMontage::Generic::FieldNames::FileListInfo).value<FileListInfo_t>();
 
   // Generate tile configuration file.
-  TileConfigFileGenerator tileConfigFileGenerator(inputFileInfo, montageWizard->field(ImportMontage::FieldNames::MontageType).value<MontageSettings::MontageType>(),
-                                                  montageWizard->field(ImportMontage::FieldNames::MontageOrder).value<MontageSettings::MontageOrder>(), numOfCols, numOfRows,
-                                                  montageWizard->field(ImportMontage::FieldNames::GenericTileOverlap).toDouble(), tileConfigFile);
+  TileConfigFileGenerator tileConfigFileGenerator(inputFileInfo, montageWizard->field(ImportMontage::Generic::FieldNames::MontageType).value<MontageSettings::MontageType>(),
+                                                  montageWizard->field(ImportMontage::Generic::FieldNames::MontageOrder).value<MontageSettings::MontageOrder>(), numOfCols, numOfRows,
+                                                  montageWizard->field(ImportMontage::Generic::FieldNames::TileOverlap).toDouble(), tileConfigFile);
   tileConfigFileGenerator.buildTileConfigFile();
 
   QString fijiFilePath(inputFileInfo.InputPath);
@@ -281,11 +277,11 @@ void IMFViewer_UI::importGenericMontage(ImportMontageWizard* montageWizard)
   fijiFilePath.append(tileConfigFile);
 
   // Change wizard data for Fiji use case
-  double tileOverlap = montageWizard->field(ImportMontage::FieldNames::GenericTileOverlap).toDouble();
-  montageWizard->setField(ImportMontage::FieldNames::DREAM3DTileOverlap, tileOverlap);
-  montageWizard->setField(ImportMontage::FieldNames::DataFilePath, fijiFilePath);
-  montageWizard->setField(ImportMontage::FieldNames::NumberOfRows, numOfRows);
-  montageWizard->setField(ImportMontage::FieldNames::NumberOfColumns, numOfCols);
+  double tileOverlap = montageWizard->field(ImportMontage::Generic::FieldNames::TileOverlap).toDouble();
+  montageWizard->setField(ImportMontage::Fiji::FieldNames::TileOverlap, tileOverlap);
+  montageWizard->setField(ImportMontage::Fiji::FieldNames::DataFilePath, fijiFilePath);
+  montageWizard->setField(ImportMontage::Fiji::FieldNames::NumberOfRows, numOfRows);
+  montageWizard->setField(ImportMontage::Fiji::FieldNames::NumberOfColumns, numOfCols);
 
   importFijiMontage(montageWizard);
 }
@@ -334,7 +330,7 @@ void IMFViewer_UI::importDREAM3DMontage(ImportMontageWizard* montageWizard)
 {
   m_pipeline = FilterPipeline::New();
 
-  QString dataFilePath = montageWizard->field(ImportMontage::FieldNames::DataFilePath).toString();
+  QString dataFilePath = montageWizard->field(ImportMontage::DREAM3D::FieldNames::DataFilePath).toString();
 
   SIMPLH5DataReader reader;
   bool success = reader.openFile(dataFilePath);
@@ -342,7 +338,7 @@ void IMFViewer_UI::importDREAM3DMontage(ImportMontageWizard* montageWizard)
   {
     connect(&reader, &SIMPLH5DataReader::errorGenerated, [=](const QString& title, const QString& msg, const int& code) { QMessageBox::critical(this, title, msg, QMessageBox::StandardButton::Ok); });
 
-    DataContainerArrayProxy dream3dProxy = montageWizard->field(ImportMontage::FieldNames::DREAM3DProxy).value<DataContainerArrayProxy>();
+    DataContainerArrayProxy dream3dProxy = montageWizard->field(ImportMontage::DREAM3D::FieldNames::Proxy).value<DataContainerArrayProxy>();
 
     m_dataContainerArray = reader.readSIMPLDataUsingProxy(dream3dProxy, false);
     if(m_dataContainerArray.get() == nullptr)
@@ -400,8 +396,8 @@ void IMFViewer_UI::importDREAM3DMontage(ImportMontageWizard* montageWizard)
     {
       QStringList dcNames = m_dataContainerArray->getDataContainerNames();
 
-      int rowCount = montageWizard->field(ImportMontage::FieldNames::NumberOfRows).toInt();
-      int colCount = montageWizard->field(ImportMontage::FieldNames::NumberOfColumns).toInt();
+      int rowCount = montageWizard->field(ImportMontage::DREAM3D::FieldNames::NumberOfRows).toInt();
+      int colCount = montageWizard->field(ImportMontage::DREAM3D::FieldNames::NumberOfColumns).toInt();
 
       performMontaging(montageWizard, dcNames, ImportMontageWizard::InputType::DREAM3D, rowCount, colCount);
     }
@@ -439,7 +435,7 @@ void IMFViewer_UI::importFijiMontage(ImportMontageWizard* montageWizard)
       QVariant var;
 
       // Set the path for the Fiji Configuration File
-      QString fijiConfigFilePath = montageWizard->field(ImportMontage::FieldNames::DataFilePath).toString();
+      QString fijiConfigFilePath = montageWizard->field(ImportMontage::Fiji::FieldNames::DataFilePath).toString();
       var.setValue(fijiConfigFilePath);
       if(!setFilterProperty(importFijiMontageFilter, "FijiConfigFilePath", var))
       {
@@ -447,24 +443,21 @@ void IMFViewer_UI::importFijiMontage(ImportMontageWizard* montageWizard)
       }
 
       // Set the Data Container Prefix
-      QString dataContainerPrefix = "ImageDataContainer_";
-      var.setValue(dataContainerPrefix);
+      var.setValue(ImportMontage::Fiji::FieldNames::DataContainerPrefix);
       if(!setFilterProperty(importFijiMontageFilter, "DataContainerPrefix", var))
       {
         return;
       }
 
       // Set the Cell Attribute Matrix Name
-      QString cellAttrMatrixName = "CellData";
-      var.setValue(cellAttrMatrixName);
+      var.setValue(ImportMontage::Fiji::FieldNames::CellAttributeMatrixName);
       if(!setFilterProperty(importFijiMontageFilter, "CellAttributeMatrixName", var))
       {
         return;
       }
 
       // Set the Image Array Name
-      QString attributeArrayName = "ImageTile";
-      var.setValue(attributeArrayName);
+      var.setValue(ImportMontage::Fiji::FieldNames::ImageArrayName);
       if(!setFilterProperty(importFijiMontageFilter, "AttributeArrayName", var))
       {
         return;
@@ -491,19 +484,8 @@ void IMFViewer_UI::importFijiMontage(ImportMontageWizard* montageWizard)
     DataContainerArray::Pointer dca = importFijiMontageFilter->getDataContainerArray();
     QStringList dcNames = dca->getDataContainerNames();
 
-    ImportMontageWizard::InputType inputType = montageWizard->field(ImportMontage::FieldNames::InputType).value<ImportMontageWizard::InputType>();
-
-    int rowCount, colCount;
-    if(inputType == ImportMontageWizard::InputType::GenericMontage)
-    {
-      rowCount = montageWizard->field(ImportMontage::FieldNames::GenericNumberOfRows).toInt();
-      colCount = montageWizard->field(ImportMontage::FieldNames::GenericNumberOfColumns).toInt();
-    }
-    else
-    {
-      rowCount = montageWizard->field(ImportMontage::FieldNames::NumberOfRows).toInt();
-      colCount = montageWizard->field(ImportMontage::FieldNames::NumberOfColumns).toInt();
-    }
+    int rowCount = montageWizard->field(ImportMontage::Fiji::FieldNames::NumberOfRows).toInt();
+    int colCount = montageWizard->field(ImportMontage::Fiji::FieldNames::NumberOfColumns).toInt();
 
     performMontaging(montageWizard, dcNames, ImportMontageWizard::InputType::Fiji, rowCount, colCount);
   }
@@ -537,7 +519,7 @@ void IMFViewer_UI::importRobometMontage(ImportMontageWizard* montageWizard)
       QVariant var;
 
       // Set the path for the Robomet Configuration File
-      QString configFilePath = montageWizard->field(ImportMontage::FieldNames::DataFilePath).toString();
+      QString configFilePath = montageWizard->field(ImportMontage::Robomet::FieldNames::DataFilePath).toString();
       var.setValue(configFilePath);
       if(!setFilterProperty(importRoboMetMontageFilter, "RegistrationFile", var))
       {
@@ -545,31 +527,28 @@ void IMFViewer_UI::importRobometMontage(ImportMontageWizard* montageWizard)
       }
 
       // Set the Data Container Prefix
-      QString dataContainerPrefix = "ImageDataContainer_";
-      var.setValue(dataContainerPrefix);
+      var.setValue(ImportMontage::Robomet::FieldNames::DataContainerPrefix);
       if(!setFilterProperty(importRoboMetMontageFilter, "DataContainerPrefix", var))
       {
         return;
       }
 
       // Set the Cell Attribute Matrix Name
-      QString cellAttrMatrixName = "CellData";
-      var.setValue(cellAttrMatrixName);
+      var.setValue(ImportMontage::Robomet::FieldNames::CellAttributeMatrixName);
       if(!setFilterProperty(importRoboMetMontageFilter, "CellAttributeMatrixName", var))
       {
         return;
       }
 
       // Set the Image Array Name
-      QString attributeArrayName = "ImageTile";
-      var.setValue(attributeArrayName);
+      var.setValue(ImportMontage::Robomet::FieldNames::ImageArrayName);
       if(!setFilterProperty(importRoboMetMontageFilter, "AttributeArrayName", var))
       {
         return;
       }
 
       // Slice number
-      int sliceNumber = montageWizard->field(ImportMontage::FieldNames::SliceNumber).toInt();
+      int sliceNumber = montageWizard->field(ImportMontage::Robomet::FieldNames::SliceNumber).toInt();
       var.setValue(sliceNumber);
       if(!setFilterProperty(importRoboMetMontageFilter, "SliceNumber", var))
       {
@@ -577,7 +556,7 @@ void IMFViewer_UI::importRobometMontage(ImportMontageWizard* montageWizard)
       }
 
       // Image file prefix
-      QString imageFilePrefix = montageWizard->field(ImportMontage::FieldNames::ImageFilePrefix).toString();
+      QString imageFilePrefix = montageWizard->field(ImportMontage::Robomet::FieldNames::ImageFilePrefix).toString();
       var.setValue(imageFilePrefix);
       if(!setFilterProperty(importRoboMetMontageFilter, "ImageFilePrefix", var))
       {
@@ -585,7 +564,7 @@ void IMFViewer_UI::importRobometMontage(ImportMontageWizard* montageWizard)
       }
 
       // Image file suffix
-      QString imageFileSuffix = montageWizard->field(ImportMontage::FieldNames::ImageFileSuffix).toString();
+      QString imageFileSuffix = montageWizard->field(ImportMontage::Robomet::FieldNames::ImageFileSuffix).toString();
       var.setValue(imageFileSuffix);
       if(!setFilterProperty(importRoboMetMontageFilter, "ImageFileSuffix", var))
       {
@@ -593,7 +572,7 @@ void IMFViewer_UI::importRobometMontage(ImportMontageWizard* montageWizard)
       }
 
       // Image file extension
-      QString imageFileExtension = montageWizard->field(ImportMontage::FieldNames::ImageFileExtension).toString();
+      QString imageFileExtension = montageWizard->field(ImportMontage::Robomet::FieldNames::ImageFileExtension).toString();
       var.setValue(imageFileExtension);
       if(!setFilterProperty(importRoboMetMontageFilter, "ImageFileExtension", var))
       {
@@ -622,8 +601,8 @@ void IMFViewer_UI::importRobometMontage(ImportMontageWizard* montageWizard)
 
     ImportMontageWizard::InputType inputType = montageWizard->field(ImportMontage::FieldNames::InputType).value<ImportMontageWizard::InputType>();
 
-    int rowCount = montageWizard->field(ImportMontage::FieldNames::NumberOfRows).toInt();
-    int colCount = montageWizard->field(ImportMontage::FieldNames::NumberOfColumns).toInt();
+    int rowCount = montageWizard->field(ImportMontage::Robomet::FieldNames::NumberOfRows).toInt();
+    int colCount = montageWizard->field(ImportMontage::Robomet::FieldNames::NumberOfColumns).toInt();
 
     performMontaging(montageWizard, dcNames, ImportMontageWizard::InputType::Robomet, rowCount, colCount);
   }
@@ -656,7 +635,7 @@ void IMFViewer_UI::importZeissMontage(ImportMontageWizard* montageWizard)
       QVariant var;
 
       // Set the path for the Robomet Configuration File
-      QString configFilePath = montageWizard->field(ImportMontage::FieldNames::ZeissDataFilePath).toString();
+      QString configFilePath = montageWizard->field(ImportMontage::Zeiss::FieldNames::DataFilePath).toString();
       var.setValue(configFilePath);
       if(!setFilterProperty(importZeissMontageFilter, "InputFile", var))
       {
@@ -664,7 +643,7 @@ void IMFViewer_UI::importZeissMontage(ImportMontageWizard* montageWizard)
       }
 
       // Set the Data Container Prefix
-      QString dataContainerPrefix = montageWizard->field(ImportMontage::FieldNames::ZeissDataContainerPrefix).toString();
+      QString dataContainerPrefix = montageWizard->field(ImportMontage::Zeiss::FieldNames::DataContainerPrefix).toString();
       var.setValue(dataContainerPrefix);
       if(!setFilterProperty(importZeissMontageFilter, "DataContainerName", var))
       {
@@ -672,7 +651,7 @@ void IMFViewer_UI::importZeissMontage(ImportMontageWizard* montageWizard)
       }
 
       // Set the Cell Attribute Matrix Name
-      QString cellAttrMatrixName = montageWizard->field(ImportMontage::FieldNames::ZeissCellAttributeMatrixName).toString();
+      QString cellAttrMatrixName = montageWizard->field(ImportMontage::Zeiss::FieldNames::CellAttributeMatrixName).toString();
       var.setValue(cellAttrMatrixName);
       if(!setFilterProperty(importZeissMontageFilter, "CellAttributeMatrixName", var))
       {
@@ -680,7 +659,7 @@ void IMFViewer_UI::importZeissMontage(ImportMontageWizard* montageWizard)
       }
 
       // Set the Image Array Name
-      QString attributeArrayName = montageWizard->field(ImportMontage::FieldNames::ZeissImageDataArrayName).toString();
+      QString attributeArrayName = montageWizard->field(ImportMontage::Zeiss::FieldNames::ImageDataArrayName).toString();
       var.setValue(attributeArrayName);
       if(!setFilterProperty(importZeissMontageFilter, "ImageDataArrayName", var))
       {
@@ -688,7 +667,7 @@ void IMFViewer_UI::importZeissMontage(ImportMontageWizard* montageWizard)
       }
 
       // Set the Metadata Attribute MatrixName
-      QString metadataAttrMatrixName = montageWizard->field(ImportMontage::FieldNames::ZeissMetadataAttrMatrixName).toString();
+      QString metadataAttrMatrixName = montageWizard->field(ImportMontage::Zeiss::FieldNames::MetadataAttrMatrixName).toString();
       var.setValue(metadataAttrMatrixName);
       if(!setFilterProperty(importZeissMontageFilter, "MetaDataAttributeMatrixName", var))
       {
@@ -703,7 +682,7 @@ void IMFViewer_UI::importZeissMontage(ImportMontageWizard* montageWizard)
       }
 
       // Set Convert to Grayscale
-      bool convertToGrayscale = montageWizard->field(ImportMontage::FieldNames::ZeissConvertToGrayscale).toBool();
+      bool convertToGrayscale = montageWizard->field(ImportMontage::Zeiss::FieldNames::ConvertToGrayscale).toBool();
       var.setValue(convertToGrayscale);
       if(!setFilterProperty(importZeissMontageFilter, "ConvertToGrayScale", var))
       {
@@ -712,9 +691,9 @@ void IMFViewer_UI::importZeissMontage(ImportMontageWizard* montageWizard)
 
 	  if(convertToGrayscale)
 	  {
-		  float colorWeightR = montageWizard->field(ImportMontage::FieldNames::ZeissColorWeightingR).toFloat();
-		  float colorWeightG = montageWizard->field(ImportMontage::FieldNames::ZeissColorWeightingG).toFloat();
-		  float colorWeightB = montageWizard->field(ImportMontage::FieldNames::ZeissColorWeightingB).toFloat();
+      float colorWeightR = montageWizard->field(ImportMontage::Zeiss::FieldNames::ColorWeightingR).toFloat();
+      float colorWeightG = montageWizard->field(ImportMontage::Zeiss::FieldNames::ColorWeightingG).toFloat();
+      float colorWeightB = montageWizard->field(ImportMontage::Zeiss::FieldNames::ColorWeightingB).toFloat();
 		  FloatVec3_t colorWeights = { colorWeightR, colorWeightG, colorWeightB };
 		  var.setValue(colorWeights);
 		  if(!setFilterProperty(importZeissMontageFilter, "ColorWeights", var))
@@ -724,7 +703,7 @@ void IMFViewer_UI::importZeissMontage(ImportMontageWizard* montageWizard)
 	  }
 
 	  // Set Origin
-	  bool changeOrigin = montageWizard->field(ImportMontage::FieldNames::ZeissChangeOrigin).toBool();
+    bool changeOrigin = montageWizard->field(ImportMontage::Zeiss::FieldNames::ChangeOrigin).toBool();
 	  var.setValue(changeOrigin);
 	  if(!setFilterProperty(importZeissMontageFilter, "ChangeOrigin", var))
 	  {
@@ -733,9 +712,9 @@ void IMFViewer_UI::importZeissMontage(ImportMontageWizard* montageWizard)
 
 	  if(changeOrigin)
 	  {
-		  float originX = montageWizard->field(ImportMontage::FieldNames::ZeissOriginX).toFloat();
-		  float originY = montageWizard->field(ImportMontage::FieldNames::ZeissOriginY).toFloat();
-		  float originZ = montageWizard->field(ImportMontage::FieldNames::ZeissOriginZ).toFloat();
+      float originX = montageWizard->field(ImportMontage::Zeiss::FieldNames::OriginX).toFloat();
+      float originY = montageWizard->field(ImportMontage::Zeiss::FieldNames::OriginY).toFloat();
+      float originZ = montageWizard->field(ImportMontage::Zeiss::FieldNames::OriginZ).toFloat();
 		  FloatVec3_t newOrigin = { originX, originY, originZ };
 		  var.setValue(newOrigin);
 		  if(!setFilterProperty(importZeissMontageFilter, "Origin", var))
@@ -745,7 +724,7 @@ void IMFViewer_UI::importZeissMontage(ImportMontageWizard* montageWizard)
 	  }
 
 	  // Set Spacing
-	  bool changeSpacing = montageWizard->field(ImportMontage::FieldNames::ZeissChangeSpacing).toBool();
+    bool changeSpacing = montageWizard->field(ImportMontage::Zeiss::FieldNames::ChangeSpacing).toBool();
 	  var.setValue(changeSpacing);
 	  if(!setFilterProperty(importZeissMontageFilter, "ChangeSpacing", var))
 	  {
@@ -754,9 +733,9 @@ void IMFViewer_UI::importZeissMontage(ImportMontageWizard* montageWizard)
 
 	  if(changeSpacing)
 	  {
-		  float spacingX = montageWizard->field(ImportMontage::FieldNames::ZeissSpacingX).toFloat();
-		  float spacingY = montageWizard->field(ImportMontage::FieldNames::ZeissSpacingY).toFloat();
-		  float spacingZ = montageWizard->field(ImportMontage::FieldNames::ZeissSpacingZ).toFloat();
+      float spacingX = montageWizard->field(ImportMontage::Zeiss::FieldNames::SpacingX).toFloat();
+      float spacingY = montageWizard->field(ImportMontage::Zeiss::FieldNames::SpacingY).toFloat();
+      float spacingZ = montageWizard->field(ImportMontage::Zeiss::FieldNames::SpacingZ).toFloat();
 		  FloatVec3_t newSpacing = { spacingX, spacingY, spacingZ };
 		  var.setValue(newSpacing);
 		  if(!setFilterProperty(importZeissMontageFilter, "Spacing", var))
@@ -805,6 +784,56 @@ void IMFViewer_UI::performMontaging(ImportMontageWizard* montageWizard, QStringL
   AbstractFilter::Pointer itkRegistrationFilter;
   AbstractFilter::Pointer itkStitchingFilter;
 
+  QString cellAttrMatrixName;
+  QString commonDataArrayName;
+  double tileOverlap = 0.0;
+  switch(inputType)
+  {
+    case ImportMontageWizard::InputType::DREAM3D:
+    {
+      cellAttrMatrixName = montageWizard->field(ImportMontage::DREAM3D::FieldNames::CellAttributeMatrixName).toString();
+      commonDataArrayName = montageWizard->field(ImportMontage::DREAM3D::FieldNames::ImageArrayName).toString();
+      tileOverlap = montageWizard->field(ImportMontage::DREAM3D::FieldNames::TileOverlap).toDouble();
+    }
+    case ImportMontageWizard::InputType::Fiji:
+    {
+      cellAttrMatrixName = montageWizard->field(ImportMontage::Fiji::FieldNames::CellAttributeMatrixName).toString();
+      commonDataArrayName = montageWizard->field(ImportMontage::Fiji::FieldNames::ImageArrayName).toString();
+      bool changeOverlap = montageWizard->field(ImportMontage::Fiji::FieldNames::ChangeTileOverlap).toBool();
+      if (changeOverlap)
+      {
+        tileOverlap = montageWizard->field(ImportMontage::Fiji::FieldNames::TileOverlap).toDouble();
+      }
+    }
+    case ImportMontageWizard::InputType::Generic:
+    {
+      // The Generic montage creates a Fiji file and uses it to import images
+      cellAttrMatrixName = montageWizard->field(ImportMontage::Fiji::FieldNames::CellAttributeMatrixName).toString();
+      commonDataArrayName = montageWizard->field(ImportMontage::Fiji::FieldNames::ImageArrayName).toString();
+      tileOverlap = montageWizard->field(ImportMontage::Fiji::FieldNames::TileOverlap).toDouble();
+    }
+    case ImportMontageWizard::InputType::Robomet:
+    {
+      cellAttrMatrixName = montageWizard->field(ImportMontage::Robomet::FieldNames::CellAttributeMatrixName).toString();
+      commonDataArrayName = montageWizard->field(ImportMontage::Robomet::FieldNames::ImageArrayName).toString();
+      bool changeOverlap = montageWizard->field(ImportMontage::Robomet::FieldNames::ChangeTileOverlap).toBool();
+      if (changeOverlap)
+      {
+        tileOverlap = montageWizard->field(ImportMontage::Robomet::FieldNames::TileOverlap).toDouble();
+      }
+    }
+    case ImportMontageWizard::InputType::Zeiss:
+    {
+      cellAttrMatrixName = montageWizard->field(ImportMontage::Zeiss::FieldNames::CellAttributeMatrixName).toString();
+      commonDataArrayName = montageWizard->field(ImportMontage::Zeiss::FieldNames::ImageDataArrayName).toString();
+      bool changeOverlap = montageWizard->field(ImportMontage::Zeiss::FieldNames::ChangeTileOverlap).toBool();
+      if (changeOverlap)
+      {
+        tileOverlap = montageWizard->field(ImportMontage::Zeiss::FieldNames::TileOverlap).toDouble();
+      }
+    }
+  }
+
   // Set up the Generate Montage Configuration filter
   if(factory.get() != nullptr)
   {
@@ -828,15 +857,6 @@ void IMFViewer_UI::performMontaging(ImportMontageWizard* montageWizard, QStringL
       }
 
       // Set Common Attribute Matrix Name
-      QString cellAttrMatrixName = "CellData";
-      if(inputType == ImportMontageWizard::InputType::DREAM3D)
-      {
-        cellAttrMatrixName = montageWizard->field(ImportMontage::FieldNames::CellAttributeMatrixName).toString();
-      }
-      else if(inputType == ImportMontageWizard::InputType::Zeiss)
-      {
-        cellAttrMatrixName = montageWizard->field(ImportMontage::FieldNames::ZeissCellAttributeMatrixName).toString();
-      }
       var.setValue(cellAttrMatrixName);
       if(!setFilterProperty(itkRegistrationFilter, "CommonAttributeMatrixName", var) || !setFilterProperty(itkStitchingFilter, "CommonAttributeMatrixName", var))
       {
@@ -844,15 +864,6 @@ void IMFViewer_UI::performMontaging(ImportMontageWizard* montageWizard, QStringL
       }
 
       // Set Common Data Array Name
-      QString commonDataArrayName = "ImageTile";
-      if(inputType == ImportMontageWizard::InputType::DREAM3D)
-      {
-        commonDataArrayName = montageWizard->field(ImportMontage::FieldNames::ImageArrayName).toString();
-      }
-      else if(inputType == ImportMontageWizard::InputType::Zeiss)
-      {
-        commonDataArrayName = montageWizard->field(ImportMontage::FieldNames::ZeissImageDataArrayName).toString();
-      }
       var.setValue(commonDataArrayName);
       if(!setFilterProperty(itkRegistrationFilter, "CommonDataArrayName", var) || !setFilterProperty(itkStitchingFilter, "CommonDataArrayName", var))
       {
@@ -869,7 +880,6 @@ void IMFViewer_UI::performMontaging(ImportMontageWizard* montageWizard, QStringL
       // Stitching specific properties
 
       // Tile overlap
-      double tileOverlap = montageWizard->field(ImportMontage::FieldNames::DREAM3DTileOverlap).toDouble();
       var.setValue(tileOverlap);
       if(!setFilterProperty(itkStitchingFilter, "TileOverlap", var))
       {
