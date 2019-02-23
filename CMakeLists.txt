@@ -1,24 +1,58 @@
 
-if(NOT "${IMFViewer_SDK}" STREQUAL "")
-  include("${IMFViewer_SDK}/IMFViewer_SDK.cmake")
-  message(STATUS "IMFViewer_SDK Location: ${IMFViewer_SDK}")
-endif()
+cmake_policy(SET CMP0002 NEW)
+cmake_policy(SET CMP0054 NEW)
+cmake_policy(SET CMP0079 NEW)
+cmake_policy(SET CMP0077 NEW)
 
-# Request C++11 standard, using new CMake variables.
+cmake_minimum_required(VERSION 3.13.0)
+
+# Request C++14 standard, using new CMake variables.
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(CMAKE_CXX_EXTENSIONS False)
 
-if(${CMAKE_MAJOR_VERSION} STREQUAL "3")
-  # CMake 3.0 introduces VERSION variables for each Project.
-  cmake_policy(SET CMP0048 NEW)
-  # CMake 3.0 introduces some OS X RPath policies
-  cmake_policy(SET CMP0042 NEW)
-  # CMake 3.1 introduces if() policies on dereferencing variables in quotes
-  cmake_policy(SET CMP0054 NEW)
-endif()
+#--------------------------------------------------------------------------------------------------
+# Always write out the compile_commands.json file to help out things like QtCreator and VS Code
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-cmake_minimum_required(VERSION 3.13.0)
+message(STATUS "********* STARTING CONFIGURATION ***********************")
+if(NOT "${IMFViewer_SDK}" STREQUAL "")
+  include("${IMFViewer_SDK}/IMFViewer_SDK.cmake")
+  get_property(IMFViewer_SDK_STATUS_PRINTED GLOBAL PROPERTY IMFViewer_SDK_STATUS_PRINTED)
+  if(NOT IMFViewer_SDK_STATUS_PRINTED)
+    #message(STATUS "IMFViewer_SDK Location: ${IMFViewer_SDK}")
+    set_property(GLOBAL PROPERTY IMFViewer_SDK_STATUS_PRINTED TRUE)
+  endif()
+else()
+  message(STATUS "You have elected to NOT set a IMFViewer_SDK CMake variable. You will")
+  message(STATUS "need to point to the various dependecies that IMFViewer requires for")
+  message(STATUS "building. Those that are undefined are listed next:")
+
+  if(NOT DEFINED HDF5_DIR)
+      message(STATUS "Set HDF5_DIR variable to the directory where the hdf5-config.cmake is located.")
+  endif()
+
+  if(NOT DEFINED ITK_DIR)
+      message(STATUS "Set ITK_DIR variable to the directory where the ITKConfig.cmake is located.")
+  endif()
+
+  if(NOT DEFINED EIGEN_INSTALL)
+      message(STATUS "Set EIGEN_INSTALL variable to the root directory of the Eigen installation.")
+  endif()
+
+  if(NOT DEFINED Qt5_DIR)
+      message(STATUS "Set Qt5_DIR variable to the directory where the Qt5Config.cmake is located.")
+  endif()
+
+  if(NOT DEFINED TBB_DIR)
+      message(STATUS "Set TBB_DIR variable to the root directory where TBB is located.")
+  endif()
+
+  if(NOT DEFINED VTK_DIR)
+      message(STATUS "Set VTK_DIR variable to the root directory where VTK is located.")
+  endif()
+
+endif()
 
 #------------------------------------------------------------------------------
 # Create the Top level Project
