@@ -1244,7 +1244,6 @@ void IMFViewer_UI::runPipelineThread()
   MontageWorker* montageWorker = new MontageWorker(m_pipeline);
   montageWorker->moveToThread(m_workerThread);
   m_pipeline->addMessageReceiver(this);
-  connect(montageWorker, SIGNAL(error(QString)), this, SLOT(errorString(QString)));
   connect(m_workerThread, SIGNAL(started()), montageWorker, SLOT(process()));
   connect(montageWorker, SIGNAL(finished()), m_workerThread, SLOT(quit()));
   connect(montageWorker, SIGNAL(finished()), montageWorker, SLOT(deleteLater()));
