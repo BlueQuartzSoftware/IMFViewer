@@ -443,21 +443,21 @@ void IMFViewer_UI::importFijiMontage(ImportMontageWizard* montageWizard)
       }
 
       // Set the Data Container Prefix
-      var.setValue(ImportMontage::Fiji::FieldNames::DataContainerPrefix);
+      var.setValue(montageWizard->field(ImportMontage::Fiji::FieldNames::DataContainerPrefix));
       if(!setFilterProperty(importFijiMontageFilter, "DataContainerPrefix", var))
       {
         return;
       }
 
       // Set the Cell Attribute Matrix Name
-      var.setValue(ImportMontage::Fiji::FieldNames::CellAttributeMatrixName);
+      var.setValue(montageWizard->field(ImportMontage::Fiji::FieldNames::CellAttributeMatrixName));
       if(!setFilterProperty(importFijiMontageFilter, "CellAttributeMatrixName", var))
       {
         return;
       }
 
       // Set the Image Array Name
-      var.setValue(ImportMontage::Fiji::FieldNames::ImageArrayName);
+      var.setValue(montageWizard->field(ImportMontage::Fiji::FieldNames::ImageArrayName));
       if(!setFilterProperty(importFijiMontageFilter, "AttributeArrayName", var))
       {
         return;
@@ -794,6 +794,7 @@ void IMFViewer_UI::performMontaging(ImportMontageWizard* montageWizard, QStringL
       cellAttrMatrixName = montageWizard->field(ImportMontage::DREAM3D::FieldNames::CellAttributeMatrixName).toString();
       commonDataArrayName = montageWizard->field(ImportMontage::DREAM3D::FieldNames::ImageArrayName).toString();
       tileOverlap = montageWizard->field(ImportMontage::DREAM3D::FieldNames::TileOverlap).toDouble();
+	  break;
     }
     case ImportMontageWizard::InputType::Fiji:
     {
@@ -804,6 +805,7 @@ void IMFViewer_UI::performMontaging(ImportMontageWizard* montageWizard, QStringL
       {
         tileOverlap = montageWizard->field(ImportMontage::Fiji::FieldNames::TileOverlap).toDouble();
       }
+	  break;
     }
     case ImportMontageWizard::InputType::Generic:
     {
@@ -811,6 +813,7 @@ void IMFViewer_UI::performMontaging(ImportMontageWizard* montageWizard, QStringL
       cellAttrMatrixName = montageWizard->field(ImportMontage::Fiji::FieldNames::CellAttributeMatrixName).toString();
       commonDataArrayName = montageWizard->field(ImportMontage::Fiji::FieldNames::ImageArrayName).toString();
       tileOverlap = montageWizard->field(ImportMontage::Fiji::FieldNames::TileOverlap).toDouble();
+	  break;
     }
     case ImportMontageWizard::InputType::Robomet:
     {
@@ -821,6 +824,7 @@ void IMFViewer_UI::performMontaging(ImportMontageWizard* montageWizard, QStringL
       {
         tileOverlap = montageWizard->field(ImportMontage::Robomet::FieldNames::TileOverlap).toDouble();
       }
+	  break;
     }
     case ImportMontageWizard::InputType::Zeiss:
     {
@@ -831,6 +835,7 @@ void IMFViewer_UI::performMontaging(ImportMontageWizard* montageWizard, QStringL
       {
         tileOverlap = montageWizard->field(ImportMontage::Zeiss::FieldNames::TileOverlap).toDouble();
       }
+	  break;
     }
   }
 
