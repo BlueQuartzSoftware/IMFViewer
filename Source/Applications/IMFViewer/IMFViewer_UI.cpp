@@ -527,21 +527,21 @@ void IMFViewer_UI::importRobometMontage(ImportMontageWizard* montageWizard)
       }
 
       // Set the Data Container Prefix
-      var.setValue(ImportMontage::Robomet::FieldNames::DataContainerPrefix);
+      var.setValue(montageWizard->field(ImportMontage::Robomet::FieldNames::DataContainerPrefix));
       if(!setFilterProperty(importRoboMetMontageFilter, "DataContainerPrefix", var))
       {
         return;
       }
 
       // Set the Cell Attribute Matrix Name
-      var.setValue(ImportMontage::Robomet::FieldNames::CellAttributeMatrixName);
+      var.setValue(montageWizard->field(ImportMontage::Robomet::FieldNames::CellAttributeMatrixName));
       if(!setFilterProperty(importRoboMetMontageFilter, "CellAttributeMatrixName", var))
       {
         return;
       }
 
       // Set the Image Array Name
-      var.setValue(ImportMontage::Robomet::FieldNames::ImageArrayName);
+      var.setValue(montageWizard->field(ImportMontage::Robomet::FieldNames::ImageArrayName));
       if(!setFilterProperty(importRoboMetMontageFilter, "AttributeArrayName", var))
       {
         return;
