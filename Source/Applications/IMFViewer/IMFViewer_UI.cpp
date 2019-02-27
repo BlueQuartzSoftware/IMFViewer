@@ -484,6 +484,73 @@ void IMFViewer_UI::importFijiMontage(ImportMontageWizard* montageWizard)
     DataContainerArray::Pointer dca = importFijiMontageFilter->getDataContainerArray();
     QStringList dcNames = dca->getDataContainerNames();
 
+	// Change spacing and/or origin (if selected)
+	bool changeSpacing = montageWizard->field(ImportMontage::Fiji::FieldNames::ChangeSpacing).toBool();
+	bool changeOrigin = montageWizard->field(ImportMontage::Fiji::FieldNames::ChangeOrigin).toBool();
+	if(changeSpacing || changeOrigin)
+	{
+		factory = fm->getFactoryFromClassName("SetOriginResolutionImageGeom");
+		AbstractFilter::Pointer setOriginResolutionFilter;
+		float spacingX = montageWizard->field(ImportMontage::Fiji::FieldNames::SpacingX).toFloat();
+		float spacingY = montageWizard->field(ImportMontage::Fiji::FieldNames::SpacingY).toFloat();
+		float spacingZ = montageWizard->field(ImportMontage::Fiji::FieldNames::SpacingZ).toFloat();
+		FloatVec3_t newSpacing = { spacingX, spacingY, spacingZ };
+		float originX = montageWizard->field(ImportMontage::Fiji::FieldNames::OriginX).toFloat();
+		float originY = montageWizard->field(ImportMontage::Fiji::FieldNames::OriginY).toFloat();
+		float originZ = montageWizard->field(ImportMontage::Fiji::FieldNames::OriginZ).toFloat();
+		FloatVec3_t newOrigin = { originX, originY, originZ };
+		QVariant var;
+
+		if(factory.get() != nullptr)
+		{
+
+			// For each data container, add a new filter 
+			for(QString dcName : dcNames)
+			{
+				setOriginResolutionFilter = factory->create();
+				if(setOriginResolutionFilter.get() != nullptr)
+				{
+					// Set the data container name
+					var.setValue(dcName);
+					if(!setFilterProperty(setOriginResolutionFilter, "DataContainerName", var))
+					{
+						return;
+					}
+
+					// Set the change spacing boolean flag (change resolution)
+					var.setValue(changeSpacing);
+					if(!setFilterProperty(setOriginResolutionFilter, "ChangeResolution", var))
+					{
+						return;
+					}
+
+					// Set the spacing
+					var.setValue(newSpacing);
+					if(!setFilterProperty(setOriginResolutionFilter, "Resolution", var))
+					{
+						return;
+					}
+
+					// Set the change origin boolean flag (change resolution)
+					var.setValue(changeOrigin);
+					if(!setFilterProperty(setOriginResolutionFilter, "ChangeOrigin", var))
+					{
+						return;
+					}
+
+					// Set the origin
+					var.setValue(newOrigin);
+					if(!setFilterProperty(setOriginResolutionFilter, "Origin", var))
+					{
+						return;
+					}
+
+					m_pipeline->pushBack(setOriginResolutionFilter);
+				}
+			}
+		}
+	}
+
     int rowCount = montageWizard->field(ImportMontage::Fiji::FieldNames::NumberOfRows).toInt();
     int colCount = montageWizard->field(ImportMontage::Fiji::FieldNames::NumberOfColumns).toInt();
 
