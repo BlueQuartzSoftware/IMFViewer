@@ -855,7 +855,7 @@ void IMFViewer_UI::importZeissMontage(ImportMontageWizard* montageWizard)
 void IMFViewer_UI::performMontaging(ImportMontageWizard* montageWizard, QStringList dataContainerNames, ImportMontageWizard::InputType inputType, int rowCount, int colCount)
 {
   // Instantiate Generate Montage filter
-  QString filterName = "ITKGenerateMontageConfiguration";
+  QString filterName = "ITKPCMTileRegistration";
   FilterManager* fm = FilterManager::Instance();
   IFilterFactory::Pointer factory = fm->getFactoryFromClassName(filterName);
   AbstractFilter::Pointer itkRegistrationFilter;
