@@ -305,11 +305,13 @@ void IMFViewer_UI::processPipelineMessage(const PipelineMessage& pipelineMsg)
 // -----------------------------------------------------------------------------
 //
 // -----------------------------------------------------------------------------
-void IMFViewer_UI::handleMontageResults(int err)
+void IMFViewer_UI::handleMontageResults(FilterPipeline::Pointer pipeline, int err)
 {
+	VSMainWidgetBase* baseWidget = dynamic_cast<VSMainWidgetBase*>(m_Internals->vsWidget);
+  baseWidget->getActiveViewWidget()->getFilterViewModel()->setDisplayType(m_DisplayType);
   if(err >= 0)
   {
-    DataContainerArray::Pointer dca = m_pipeline->getDataContainerArray();
+    DataContainerArray::Pointer dca = pipeline->getDataContainerArray();
     // If Display Montage was selected, remove non-stitched image data containers
     if(m_displayMontage)
     {
@@ -321,9 +323,7 @@ void IMFViewer_UI::handleMontageResults(int err)
         }
       }
     }
-    VSMainWidgetBase* baseWidget = dynamic_cast<VSMainWidgetBase*>(m_Internals->vsWidget);
-    baseWidget->importPipelineOutput(m_pipeline, dca);
-    baseWidget->getActiveViewWidget()->getFilterViewModel()->setDisplayType(m_DisplayType);
+    baseWidget->importPipelineOutput(pipeline, dca);
   }
 }
 
@@ -332,9 +332,10 @@ void IMFViewer_UI::handleMontageResults(int err)
 // -----------------------------------------------------------------------------
 void IMFViewer_UI::importDREAM3DMontage(ImportMontageWizard* montageWizard)
 {
-  m_pipeline = FilterPipeline::New();
+  FilterPipeline::Pointer pipeline = FilterPipeline::New();
   QString montageName = montageWizard->field(ImportMontage::DREAM3D::FieldNames::MontageName).toString();
-  m_pipeline->setName(montageName);
+  pipeline->setName(montageName);
+  m_pipelines.push_back(pipeline);
 
   QString dataFilePath = montageWizard->field(ImportMontage::DREAM3D::FieldNames::DataFilePath).toString();
 
@@ -384,7 +385,7 @@ void IMFViewer_UI::importDREAM3DMontage(ImportMontageWizard* montageWizard)
           return;
         }
 
-        m_pipeline->pushBack(dataContainerReader);
+        m_pipelines[0]->pushBack(dataContainerReader);
       }
       else
       {
@@ -405,7 +406,7 @@ void IMFViewer_UI::importDREAM3DMontage(ImportMontageWizard* montageWizard)
       int rowCount = montageWizard->field(ImportMontage::DREAM3D::FieldNames::NumberOfRows).toInt();
       int colCount = montageWizard->field(ImportMontage::DREAM3D::FieldNames::NumberOfColumns).toInt();
 
-      performMontaging(montageWizard, dcNames, ImportMontageWizard::InputType::DREAM3D, rowCount, colCount);
+      performMontaging(montageWizard, dcNames, ImportMontageWizard::InputType::DREAM3D, rowCount, colCount, 0);
     }
     runPipelineThread();
   }
@@ -421,151 +422,183 @@ void IMFViewer_UI::importDREAM3DMontage(ImportMontageWizard* montageWizard)
 // -----------------------------------------------------------------------------
 void IMFViewer_UI::importFijiMontage(ImportMontageWizard* montageWizard)
 {
-  m_pipeline = FilterPipeline::New();
-  QString montageName = montageWizard->field(ImportMontage::Fiji::FieldNames::MontageName).toString();
-  m_pipeline->setName(montageName);
-
-  // Instantiate Import Fiji Montage filter
-  QString filterName = "ITKImportFijiMontage";
-  FilterManager* fm = FilterManager::Instance();
-  IFilterFactory::Pointer factory = fm->getFactoryFromClassName(filterName);
-  m_dataContainerArray = DataContainerArray::New();
-  AbstractFilter::Pointer importFijiMontageFilter;
-
-  qRegisterMetaType<FijiListInfo_t>();
-  FijiListInfo_t fijiListInfo = montageWizard->field(ImportMontage::Fiji::FieldNames::FijiListInfo).value<FijiListInfo_t>();
-
-  // Set up the Import Fiji Montage filter
-  if(factory.get() != nullptr)
-  {
-    importFijiMontageFilter = factory->create();
-    if(importFijiMontageFilter.get() != nullptr)
-    {
-      importFijiMontageFilter->setDataContainerArray(m_dataContainerArray);
-
-      QVariant var;
-
-      // Set the path for the Fiji Configuration File
-      QString fijiConfigFilePath = fijiListInfo.FijiFilePath;
-      var.setValue(fijiConfigFilePath);
-      if(!setFilterProperty(importFijiMontageFilter, "FijiConfigFilePath", var))
-      {
-        return;
-      }
-
-      // Set the Data Container Prefix
-      var.setValue(montageWizard->field(ImportMontage::Fiji::FieldNames::DataContainerPrefix));
-      if(!setFilterProperty(importFijiMontageFilter, "DataContainerPrefix", var))
-      {
-        return;
-      }
-
-      // Set the Cell Attribute Matrix Name
-      var.setValue(montageWizard->field(ImportMontage::Fiji::FieldNames::CellAttributeMatrixName));
-      if(!setFilterProperty(importFijiMontageFilter, "CellAttributeMatrixName", var))
-      {
-        return;
-      }
-
-      // Set the Image Array Name
-      var.setValue(montageWizard->field(ImportMontage::Fiji::FieldNames::ImageArrayName));
-      if(!setFilterProperty(importFijiMontageFilter, "AttributeArrayName", var))
-      {
-        return;
-      }
-
-      m_pipeline->pushBack(importFijiMontageFilter);
-    }
-    else
-    {
-      statusBar()->showMessage(tr("Could not create filter from %1 factory. Aborting.").arg(filterName));
-      return;
-    }
-  }
-  else
-  {
-    statusBar()->showMessage(tr("Could not create %1 factory. Aborting.").arg(filterName));
-    return;
-  }
-
-  if(m_displayMontage || m_displayOutline)
-  {
-    // Set Image Data Containers
-    importFijiMontageFilter->preflight();
-    DataContainerArray::Pointer dca = importFijiMontageFilter->getDataContainerArray();
-    QStringList dcNames = dca->getDataContainerNames();
-
-	// Change spacing and/or origin (if selected)
-	bool changeSpacing = montageWizard->field(ImportMontage::Fiji::FieldNames::ChangeSpacing).toBool();
-	bool changeOrigin = montageWizard->field(ImportMontage::Fiji::FieldNames::ChangeOrigin).toBool();
-	if(changeSpacing || changeOrigin)
+	int numberOfPipelines = 1;
+	int minTileOverlap = 0;
+	int maxTileOverlap = 1;
+	int stepTileOverlap = 1;
+	if(montageWizard->field(ImportMontage::FieldNames::BatchProcessing).toBool())
 	{
-		factory = fm->getFactoryFromClassName("SetOriginResolutionImageGeom");
-		AbstractFilter::Pointer setOriginResolutionFilter;
-		float spacingX = montageWizard->field(ImportMontage::Fiji::FieldNames::SpacingX).toFloat();
-		float spacingY = montageWizard->field(ImportMontage::Fiji::FieldNames::SpacingY).toFloat();
-		float spacingZ = montageWizard->field(ImportMontage::Fiji::FieldNames::SpacingZ).toFloat();
-		FloatVec3_t newSpacing = { spacingX, spacingY, spacingZ };
-		float originX = montageWizard->field(ImportMontage::Fiji::FieldNames::OriginX).toFloat();
-		float originY = montageWizard->field(ImportMontage::Fiji::FieldNames::OriginY).toFloat();
-		float originZ = montageWizard->field(ImportMontage::Fiji::FieldNames::OriginZ).toFloat();
-		FloatVec3_t newOrigin = { originX, originY, originZ };
-		QVariant var;
-
-		if(factory.get() != nullptr)
+		minTileOverlap = montageWizard->field(ImportMontage::Fiji::FieldNames::MinTileOverlap).toInt();
+		maxTileOverlap = montageWizard->field(ImportMontage::Fiji::FieldNames::MaxTileOverlap).toInt();
+		stepTileOverlap = montageWizard->field(ImportMontage::Fiji::FieldNames::StepTileOverlap).toInt();
+		int tileOverlap = minTileOverlap;
+		while(tileOverlap < maxTileOverlap)
 		{
-
-			// For each data container, add a new filter 
-			for(QString dcName : dcNames)
-			{
-				setOriginResolutionFilter = factory->create();
-				if(setOriginResolutionFilter.get() != nullptr)
-				{
-					// Set the data container name
-					var.setValue(dcName);
-					if(!setFilterProperty(setOriginResolutionFilter, "DataContainerName", var))
-					{
-						return;
-					}
-
-					// Set the change spacing boolean flag (change resolution)
-					var.setValue(changeSpacing);
-					if(!setFilterProperty(setOriginResolutionFilter, "ChangeResolution", var))
-					{
-						return;
-					}
-
-					// Set the spacing
-					var.setValue(newSpacing);
-					if(!setFilterProperty(setOriginResolutionFilter, "Resolution", var))
-					{
-						return;
-					}
-
-					// Set the change origin boolean flag (change resolution)
-					var.setValue(changeOrigin);
-					if(!setFilterProperty(setOriginResolutionFilter, "ChangeOrigin", var))
-					{
-						return;
-					}
-
-					// Set the origin
-					var.setValue(newOrigin);
-					if(!setFilterProperty(setOriginResolutionFilter, "Origin", var))
-					{
-						return;
-					}
-
-					m_pipeline->pushBack(setOriginResolutionFilter);
-				}
-			}
+			tileOverlap += stepTileOverlap;
+			numberOfPipelines++;
 		}
 	}
+	for(int i = 0; i < numberOfPipelines; i++)
+	{
+		FilterPipeline::Pointer pipeline = FilterPipeline::New();
+		QString montageName = montageWizard->field(ImportMontage::DREAM3D::FieldNames::MontageName).toString();
+		if(i > 0)
+		{
+      montageName.append(tr("_%1").arg(i));
+		}
+		pipeline->setName(montageName);
+		m_pipelines.push_back(pipeline);
 
-    int rowCount = importFijiMontageFilter->property("RowCount").toInt();
-    int colCount = importFijiMontageFilter->property("ColumnCount").toInt();
+		// Instantiate Import Fiji Montage filter
+		QString filterName = "ITKImportFijiMontage";
+		FilterManager* fm = FilterManager::Instance();
+		IFilterFactory::Pointer factory = fm->getFactoryFromClassName(filterName);
+		m_dataContainerArray = DataContainerArray::New();
+		AbstractFilter::Pointer importFijiMontageFilter;
 
-    performMontaging(montageWizard, dcNames, ImportMontageWizard::InputType::Fiji, rowCount, colCount);
+    qRegisterMetaType<FijiListInfo_t>();
+    FijiListInfo_t fijiListInfo = montageWizard->field(ImportMontage::Fiji::FieldNames::FijiListInfo).value<FijiListInfo_t>();
+
+		// Set up the Import Fiji Montage filter
+		if(factory.get() != nullptr)
+		{
+			importFijiMontageFilter = factory->create();
+			if(importFijiMontageFilter.get() != nullptr)
+			{
+				importFijiMontageFilter->setDataContainerArray(m_dataContainerArray);
+
+				QVariant var;
+
+				// Set the path for the Fiji Configuration File
+        QString fijiConfigFilePath = fijiListInfo.FijiFilePath;
+				var.setValue(fijiConfigFilePath);
+				if(!setFilterProperty(importFijiMontageFilter, "FijiConfigFilePath", var))
+				{
+					return;
+				}
+
+				// Set the Data Container Prefix
+				var.setValue(montageWizard->field(ImportMontage::Fiji::FieldNames::DataContainerPrefix));
+				if(!setFilterProperty(importFijiMontageFilter, "DataContainerPrefix", var))
+				{
+					return;
+				}
+
+				// Set the Cell Attribute Matrix Name
+				var.setValue(montageWizard->field(ImportMontage::Fiji::FieldNames::CellAttributeMatrixName));
+				if(!setFilterProperty(importFijiMontageFilter, "CellAttributeMatrixName", var))
+				{
+					return;
+				}
+
+				// Set the Image Array Name
+				var.setValue(montageWizard->field(ImportMontage::Fiji::FieldNames::ImageArrayName));
+				if(!setFilterProperty(importFijiMontageFilter, "AttributeArrayName", var))
+				{
+					return;
+				}
+
+				m_pipelines[i]->pushBack(importFijiMontageFilter);
+			}
+			else
+			{
+				statusBar()->showMessage(tr("Could not create filter from %1 factory. Aborting.").arg(filterName));
+				return;
+			}
+		}
+		else
+		{
+			statusBar()->showMessage(tr("Could not create %1 factory. Aborting.").arg(filterName));
+			return;
+		}
+
+		if(m_displayMontage || m_displayOutline)
+		{
+			// Set Image Data Containers
+			importFijiMontageFilter->preflight();
+			DataContainerArray::Pointer dca = importFijiMontageFilter->getDataContainerArray();
+			QStringList dcNames = dca->getDataContainerNames();
+
+			// Change spacing and/or origin (if selected)
+			bool changeSpacing = montageWizard->field(ImportMontage::Fiji::FieldNames::ChangeSpacing).toBool();
+			bool changeOrigin = montageWizard->field(ImportMontage::Fiji::FieldNames::ChangeOrigin).toBool();
+			if(changeSpacing || changeOrigin)
+			{
+				factory = fm->getFactoryFromClassName("SetOriginResolutionImageGeom");
+				AbstractFilter::Pointer setOriginResolutionFilter;
+				float spacingX = montageWizard->field(ImportMontage::Fiji::FieldNames::SpacingX).toFloat();
+				float spacingY = montageWizard->field(ImportMontage::Fiji::FieldNames::SpacingY).toFloat();
+				float spacingZ = montageWizard->field(ImportMontage::Fiji::FieldNames::SpacingZ).toFloat();
+				FloatVec3_t newSpacing = { spacingX, spacingY, spacingZ };
+				float originX = montageWizard->field(ImportMontage::Fiji::FieldNames::OriginX).toFloat();
+				float originY = montageWizard->field(ImportMontage::Fiji::FieldNames::OriginY).toFloat();
+				float originZ = montageWizard->field(ImportMontage::Fiji::FieldNames::OriginZ).toFloat();
+				FloatVec3_t newOrigin = { originX, originY, originZ };
+				QVariant var;
+
+				if(factory.get() != nullptr)
+				{
+
+					// For each data container, add a new filter 
+					for(QString dcName : dcNames)
+					{
+						setOriginResolutionFilter = factory->create();
+						if(setOriginResolutionFilter.get() != nullptr)
+						{
+							// Set the data container name
+							var.setValue(dcName);
+							if(!setFilterProperty(setOriginResolutionFilter, "DataContainerName", var))
+							{
+								return;
+							}
+
+							// Set the change spacing boolean flag (change resolution)
+							var.setValue(changeSpacing);
+							if(!setFilterProperty(setOriginResolutionFilter, "ChangeResolution", var))
+							{
+								return;
+							}
+
+							// Set the spacing
+							var.setValue(newSpacing);
+							if(!setFilterProperty(setOriginResolutionFilter, "Resolution", var))
+							{
+								return;
+							}
+
+							// Set the change origin boolean flag (change resolution)
+							var.setValue(changeOrigin);
+							if(!setFilterProperty(setOriginResolutionFilter, "ChangeOrigin", var))
+							{
+								return;
+							}
+
+							// Set the origin
+							var.setValue(newOrigin);
+							if(!setFilterProperty(setOriginResolutionFilter, "Origin", var))
+							{
+								return;
+							}
+
+							m_pipelines[i]->pushBack(setOriginResolutionFilter);
+						}
+					}
+				}
+      }
+
+      if(montageWizard->field(ImportMontage::FieldNames::BatchProcessing).toBool() &&
+         !montageWizard->field(ImportMontage::Fiji::FieldNames::ConstantTileOverlap).toBool())
+      {
+
+        montageWizard->setField(ImportMontage::Fiji::FieldNames::TileOverlap,
+                                minTileOverlap + i * stepTileOverlap);
+      }
+
+      int rowCount = importFijiMontageFilter->property("RowCount").toInt();
+      int colCount = importFijiMontageFilter->property("ColumnCount").toInt();
+
+      performMontaging(montageWizard, dcNames, ImportMontageWizard::InputType::Fiji, rowCount, colCount, i);
+    }
   }
 
   // Run the pipeline
@@ -577,9 +610,10 @@ void IMFViewer_UI::importFijiMontage(ImportMontageWizard* montageWizard)
 // -----------------------------------------------------------------------------
 void IMFViewer_UI::importRobometMontage(ImportMontageWizard* montageWizard)
 {
-  m_pipeline = FilterPipeline::New();
-  QString montageName = montageWizard->field(ImportMontage::Robomet::FieldNames::MontageName).toString();
-  m_pipeline->setName(montageName);
+	FilterPipeline::Pointer pipeline = FilterPipeline::New();
+	QString montageName = montageWizard->field(ImportMontage::DREAM3D::FieldNames::MontageName).toString();
+	pipeline->setName(montageName);
+	m_pipelines.push_back(pipeline);
 
   // Instantiate Import RoboMet Montage filter
   QString filterName = "ITKImportRoboMetMontage";
@@ -653,7 +687,7 @@ void IMFViewer_UI::importRobometMontage(ImportMontageWizard* montageWizard)
         return;
       }
 
-      m_pipeline->pushBack(importRoboMetMontageFilter);
+      m_pipelines[0]->pushBack(importRoboMetMontageFilter);
     }
     else
     {
@@ -678,7 +712,7 @@ void IMFViewer_UI::importRobometMontage(ImportMontageWizard* montageWizard)
     int rowCount = rbmListInfo.NumberOfRows;
     int colCount = rbmListInfo.NumberOfColumns;
 
-    performMontaging(montageWizard, dcNames, ImportMontageWizard::InputType::Robomet, rowCount, colCount);
+    performMontaging(montageWizard, dcNames, ImportMontageWizard::InputType::Robomet, rowCount, colCount, 0);
   }
 
   runPipelineThread();
@@ -689,9 +723,10 @@ void IMFViewer_UI::importRobometMontage(ImportMontageWizard* montageWizard)
 // -----------------------------------------------------------------------------
 void IMFViewer_UI::importZeissMontage(ImportMontageWizard* montageWizard)
 {
-  m_pipeline = FilterPipeline::New();
-  QString montageName = montageWizard->field(ImportMontage::Zeiss::FieldNames::MontageName).toString();
-  m_pipeline->setName(montageName);
+	FilterPipeline::Pointer pipeline = FilterPipeline::New();
+	QString montageName = montageWizard->field(ImportMontage::DREAM3D::FieldNames::MontageName).toString();
+	pipeline->setName(montageName);
+	m_pipelines.push_back(pipeline);
 
   // Instantiate Import AxioVision V4 Montage filter
   QString filterName = "ImportAxioVisionV4Montage";
@@ -820,7 +855,7 @@ void IMFViewer_UI::importZeissMontage(ImportMontageWizard* montageWizard)
 		  }
 	  }
 
-      m_pipeline->pushBack(importZeissMontageFilter);
+      m_pipelines[0]->pushBack(importZeissMontageFilter);
     }
     else
     {
@@ -842,7 +877,7 @@ void IMFViewer_UI::importZeissMontage(ImportMontageWizard* montageWizard)
     int rowCount = importZeissMontageFilter->property("RowCount").toInt();
     int colCount = importZeissMontageFilter->property("ColumnCount").toInt();
 
-    performMontaging(montageWizard, dcNames, ImportMontageWizard::InputType::Zeiss, rowCount, colCount);
+    performMontaging(montageWizard, dcNames, ImportMontageWizard::InputType::Zeiss, rowCount, colCount, 0);
   }
 
   runPipelineThread();
@@ -851,7 +886,8 @@ void IMFViewer_UI::importZeissMontage(ImportMontageWizard* montageWizard)
 // -----------------------------------------------------------------------------
 //
 // -----------------------------------------------------------------------------
-void IMFViewer_UI::performMontaging(ImportMontageWizard* montageWizard, QStringList dataContainerNames, ImportMontageWizard::InputType inputType, int rowCount, int colCount)
+void IMFViewer_UI::performMontaging(ImportMontageWizard* montageWizard, QStringList dataContainerNames,
+	ImportMontageWizard::InputType inputType, int rowCount, int colCount, int index)
 {
   // Instantiate Generate Montage filter
   QString filterName = "ITKPCMTileRegistration";
@@ -877,7 +913,9 @@ void IMFViewer_UI::performMontaging(ImportMontageWizard* montageWizard, QStringL
       cellAttrMatrixName = montageWizard->field(ImportMontage::Fiji::FieldNames::CellAttributeMatrixName).toString();
       commonDataArrayName = montageWizard->field(ImportMontage::Fiji::FieldNames::ImageArrayName).toString();
       bool changeOverlap = montageWizard->field(ImportMontage::Fiji::FieldNames::ChangeTileOverlap).toBool();
-      if (changeOverlap)
+	  bool batchProcessing = montageWizard->field(ImportMontage::FieldNames::BatchProcessing).toBool();
+	  bool constantOverlap = montageWizard->field(ImportMontage::Fiji::FieldNames::ConstantTileOverlap).toBool();
+      if (changeOverlap || (batchProcessing && !constantOverlap))
       {
         tileOverlap = montageWizard->field(ImportMontage::Fiji::FieldNames::TileOverlap).toDouble();
       }
@@ -989,8 +1027,8 @@ void IMFViewer_UI::performMontaging(ImportMontageWizard* montageWizard, QStringL
         return;
       }
 
-      m_pipeline->pushBack(itkRegistrationFilter);
-      m_pipeline->pushBack(itkStitchingFilter);
+      m_pipelines[index]->pushBack(itkRegistrationFilter);
+      m_pipelines[index]->pushBack(itkStitchingFilter);
     }
     else
     {
@@ -1322,9 +1360,12 @@ void IMFViewer_UI::runPipelineThread()
 {
   // Run Pipeline
   m_workerThread = new QThread;
-  MontageWorker* montageWorker = new MontageWorker(m_pipeline);
+  MontageWorker* montageWorker = new MontageWorker(m_pipelines);
   montageWorker->moveToThread(m_workerThread);
-  m_pipeline->addMessageReceiver(this);
+  for(FilterPipeline::Pointer pipeline : m_pipelines)
+  {
+	  pipeline->addMessageReceiver(this);
+  }
   connect(m_workerThread, SIGNAL(started()), montageWorker, SLOT(process()));
   connect(montageWorker, SIGNAL(finished()), m_workerThread, SLOT(quit()));
   connect(montageWorker, SIGNAL(finished()), montageWorker, SLOT(deleteLater()));

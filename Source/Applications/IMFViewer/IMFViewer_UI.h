@@ -129,9 +129,10 @@ protected slots:
 
   /**
    * @brief handleMontageResults
+   * @param pipeline
    * @param err
    */
-  void handleMontageResults(int err);
+  void handleMontageResults(FilterPipeline::Pointer pipeline, int err);
 
   /**
    * @brief processPipelineMessage
@@ -153,7 +154,7 @@ private:
   QString m_OpenDialogLastDirectory = "";
 
   QThread* m_workerThread;
-  FilterPipeline::Pointer m_pipeline;
+  std::vector<FilterPipeline::Pointer> m_pipelines;
   DataContainerArray::Pointer m_dataContainerArray;
   ImportMontageWizard::DisplayType m_DisplayType = ImportMontageWizard::DisplayType::NotSpecified;
   bool m_displayMontage = false;
@@ -217,7 +218,8 @@ private:
    * @param dream3dFile
    * @return
    */
-  void performMontaging(ImportMontageWizard* montageWizard, QStringList dataContainerNames, ImportMontageWizard::InputType inputType, int rowCount, int colCount);
+  void performMontaging(ImportMontageWizard* montageWizard, QStringList dataContainerNames,
+	  ImportMontageWizard::InputType inputType, int rowCount, int colCount, int index);
 
   /**
    * @brief printPropertyError
