@@ -278,6 +278,8 @@ void IMFViewer_UI::importGenericMontage(ImportMontageWizard* montageWizard)
 
   // Change wizard data for Fiji use case
   double tileOverlap = montageWizard->field(ImportMontage::Generic::FieldNames::TileOverlap).toDouble();
+  QString montageName = montageWizard->field(ImportMontage::Generic::FieldNames::MontageName).toString();
+  montageWizard->setField(ImportMontage::Fiji::FieldNames::MontageName, montageName);
   montageWizard->setField(ImportMontage::Fiji::FieldNames::TileOverlap, tileOverlap);
   montageWizard->setField(ImportMontage::Fiji::FieldNames::DataFilePath, fijiFilePath);
   montageWizard->setField(ImportMontage::Fiji::FieldNames::NumberOfRows, numOfRows);
@@ -329,6 +331,8 @@ void IMFViewer_UI::handleMontageResults(int err)
 void IMFViewer_UI::importDREAM3DMontage(ImportMontageWizard* montageWizard)
 {
   m_pipeline = FilterPipeline::New();
+  QString montageName = montageWizard->field(ImportMontage::DREAM3D::FieldNames::MontageName).toString();
+  m_pipeline->setName(montageName);
 
   QString dataFilePath = montageWizard->field(ImportMontage::DREAM3D::FieldNames::DataFilePath).toString();
 
@@ -416,6 +420,8 @@ void IMFViewer_UI::importDREAM3DMontage(ImportMontageWizard* montageWizard)
 void IMFViewer_UI::importFijiMontage(ImportMontageWizard* montageWizard)
 {
   m_pipeline = FilterPipeline::New();
+  QString montageName = montageWizard->field(ImportMontage::Fiji::FieldNames::MontageName).toString();
+  m_pipeline->setName(montageName);
 
   // Instantiate Import Fiji Montage filter
   QString filterName = "ITKImportFijiMontage";
@@ -567,6 +573,8 @@ void IMFViewer_UI::importFijiMontage(ImportMontageWizard* montageWizard)
 void IMFViewer_UI::importRobometMontage(ImportMontageWizard* montageWizard)
 {
   m_pipeline = FilterPipeline::New();
+  QString montageName = montageWizard->field(ImportMontage::Robomet::FieldNames::MontageName).toString();
+  m_pipeline->setName(montageName);
 
   // Instantiate Import RoboMet Montage filter
   QString filterName = "ITKImportRoboMetMontage";
@@ -683,6 +691,8 @@ void IMFViewer_UI::importRobometMontage(ImportMontageWizard* montageWizard)
 void IMFViewer_UI::importZeissMontage(ImportMontageWizard* montageWizard)
 {
   m_pipeline = FilterPipeline::New();
+  QString montageName = montageWizard->field(ImportMontage::Zeiss::FieldNames::MontageName).toString();
+  m_pipeline->setName(montageName);
 
   // Instantiate Import AxioVision V4 Montage filter
   QString filterName = "ImportAxioVisionV4Montage";
