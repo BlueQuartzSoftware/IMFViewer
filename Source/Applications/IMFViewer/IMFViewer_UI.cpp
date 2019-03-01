@@ -59,6 +59,7 @@
 
 #include "SIMPLVtkLib/Wizards/ImportMontage/ImportMontageWizard.h"
 #include "SIMPLVtkLib/Wizards/ImportMontage/MontageWorker.h"
+#include "SIMPLVtkLib/Wizards/ImportMontage/RobometListWidget.h"
 #include "SIMPLVtkLib/Wizards/ImportMontage/TileConfigFileGenerator.h"
 
 #include "ImportMontage/ImportMontageConstants.h"
@@ -583,6 +584,8 @@ void IMFViewer_UI::importRobometMontage(ImportMontageWizard* montageWizard)
   DataContainerArray::Pointer dca = DataContainerArray::New();
   AbstractFilter::Pointer importRoboMetMontageFilter;
 
+  RobometListInfo_t rbmListInfo = montageWizard->field(ImportMontage::Robomet::FieldNames::RobometListInfo).value<RobometListInfo_t>();
+
   // Set up the Generate Montage Configuration filter
   if(factory.get() != nullptr)
   {
@@ -594,7 +597,7 @@ void IMFViewer_UI::importRobometMontage(ImportMontageWizard* montageWizard)
       QVariant var;
 
       // Set the path for the Robomet Configuration File
-      QString configFilePath = montageWizard->field(ImportMontage::Robomet::FieldNames::DataFilePath).toString();
+      QString configFilePath = rbmListInfo.RobometFilePath;
       var.setValue(configFilePath);
       if(!setFilterProperty(importRoboMetMontageFilter, "RegistrationFile", var))
       {
@@ -623,7 +626,7 @@ void IMFViewer_UI::importRobometMontage(ImportMontageWizard* montageWizard)
       }
 
       // Slice number
-      int sliceNumber = montageWizard->field(ImportMontage::Robomet::FieldNames::SliceNumber).toInt();
+      int sliceNumber = rbmListInfo.SliceNumber;
       var.setValue(sliceNumber);
       if(!setFilterProperty(importRoboMetMontageFilter, "SliceNumber", var))
       {
@@ -631,23 +634,15 @@ void IMFViewer_UI::importRobometMontage(ImportMontageWizard* montageWizard)
       }
 
       // Image file prefix
-      QString imageFilePrefix = montageWizard->field(ImportMontage::Robomet::FieldNames::ImageFilePrefix).toString();
+      QString imageFilePrefix = rbmListInfo.ImagePrefix;
       var.setValue(imageFilePrefix);
       if(!setFilterProperty(importRoboMetMontageFilter, "ImageFilePrefix", var))
       {
         return;
       }
 
-      // Image file suffix
-      QString imageFileSuffix = montageWizard->field(ImportMontage::Robomet::FieldNames::ImageFileSuffix).toString();
-      var.setValue(imageFileSuffix);
-      if(!setFilterProperty(importRoboMetMontageFilter, "ImageFileSuffix", var))
-      {
-        return;
-      }
-
       // Image file extension
-      QString imageFileExtension = montageWizard->field(ImportMontage::Robomet::FieldNames::ImageFileExtension).toString();
+      QString imageFileExtension = rbmListInfo.ImageExtension;
       var.setValue(imageFileExtension);
       if(!setFilterProperty(importRoboMetMontageFilter, "ImageFileExtension", var))
       {
@@ -676,8 +671,8 @@ void IMFViewer_UI::importRobometMontage(ImportMontageWizard* montageWizard)
 
     ImportMontageWizard::InputType inputType = montageWizard->field(ImportMontage::FieldNames::InputType).value<ImportMontageWizard::InputType>();
 
-    int rowCount = montageWizard->field(ImportMontage::Robomet::FieldNames::NumberOfRows).toInt();
-    int colCount = montageWizard->field(ImportMontage::Robomet::FieldNames::NumberOfColumns).toInt();
+    int rowCount = rbmListInfo.NumberOfRows;
+    int colCount = rbmListInfo.NumberOfColumns;
 
     performMontaging(montageWizard, dcNames, ImportMontageWizard::InputType::Robomet, rowCount, colCount);
   }
