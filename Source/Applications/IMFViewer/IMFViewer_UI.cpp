@@ -57,6 +57,7 @@
 #include "SVWidgetsLib/QtSupport/QtSSettings.h"
 #include "SVWidgetsLib/Widgets/SVStyle.h"
 
+#include "SIMPLVtkLib/Wizards/ImportMontage/FijiListWidget.h"
 #include "SIMPLVtkLib/Wizards/ImportMontage/ImportMontageWizard.h"
 #include "SIMPLVtkLib/Wizards/ImportMontage/MontageWorker.h"
 #include "SIMPLVtkLib/Wizards/ImportMontage/RobometListWidget.h"
@@ -431,6 +432,8 @@ void IMFViewer_UI::importFijiMontage(ImportMontageWizard* montageWizard)
   m_dataContainerArray = DataContainerArray::New();
   AbstractFilter::Pointer importFijiMontageFilter;
 
+  FijiListInfo_t fijiListInfo = montageWizard->field(ImportMontage::Fiji::FieldNames::FijiListInfo).value<FijiListInfo_t>();
+
   // Set up the Import Fiji Montage filter
   if(factory.get() != nullptr)
   {
@@ -442,7 +445,7 @@ void IMFViewer_UI::importFijiMontage(ImportMontageWizard* montageWizard)
       QVariant var;
 
       // Set the path for the Fiji Configuration File
-      QString fijiConfigFilePath = montageWizard->field(ImportMontage::Fiji::FieldNames::DataFilePath).toString();
+      QString fijiConfigFilePath = fijiListInfo.FijiFilePath;
       var.setValue(fijiConfigFilePath);
       if(!setFilterProperty(importFijiMontageFilter, "FijiConfigFilePath", var))
       {
@@ -558,8 +561,8 @@ void IMFViewer_UI::importFijiMontage(ImportMontageWizard* montageWizard)
 		}
 	}
 
-    int rowCount = montageWizard->field(ImportMontage::Fiji::FieldNames::NumberOfRows).toInt();
-    int colCount = montageWizard->field(ImportMontage::Fiji::FieldNames::NumberOfColumns).toInt();
+    int rowCount = fijiListInfo.NumberOfRows;
+    int colCount = fijiListInfo.NumberOfColumns;
 
     performMontaging(montageWizard, dcNames, ImportMontageWizard::InputType::Fiji, rowCount, colCount);
   }
