@@ -279,13 +279,13 @@ void IMFViewer_UI::importGenericMontage(ImportMontageWizard* montageWizard)
   fijiFilePath.append(tileConfigFile);
 
   // Change wizard data for Fiji use case
-  double tileOverlap = montageWizard->field(ImportMontage::Generic::FieldNames::TileOverlap).toDouble();
   QString montageName = montageWizard->field(ImportMontage::Generic::FieldNames::MontageName).toString();
   montageWizard->setField(ImportMontage::Fiji::FieldNames::MontageName, montageName);
-  montageWizard->setField(ImportMontage::Fiji::FieldNames::TileOverlap, tileOverlap);
-  montageWizard->setField(ImportMontage::Fiji::FieldNames::DataFilePath, fijiFilePath);
-  montageWizard->setField(ImportMontage::Fiji::FieldNames::NumberOfRows, numOfRows);
-  montageWizard->setField(ImportMontage::Fiji::FieldNames::NumberOfColumns, numOfCols);
+  FijiListInfo_t fijiListInfo;
+  fijiListInfo.FijiFilePath = fijiFilePath;
+  QVariant var;
+  var.setValue(fijiListInfo);
+  montageWizard->setField(ImportMontage::Fiji::FieldNames::FijiListInfo, var);
 
   importFijiMontage(montageWizard);
 }
@@ -432,6 +432,7 @@ void IMFViewer_UI::importFijiMontage(ImportMontageWizard* montageWizard)
   m_dataContainerArray = DataContainerArray::New();
   AbstractFilter::Pointer importFijiMontageFilter;
 
+  qRegisterMetaType<FijiListInfo_t>();
   FijiListInfo_t fijiListInfo = montageWizard->field(ImportMontage::Fiji::FieldNames::FijiListInfo).value<FijiListInfo_t>();
 
   // Set up the Import Fiji Montage filter
@@ -561,8 +562,8 @@ void IMFViewer_UI::importFijiMontage(ImportMontageWizard* montageWizard)
 		}
 	}
 
-    int rowCount = fijiListInfo.NumberOfRows;
-    int colCount = fijiListInfo.NumberOfColumns;
+    int rowCount = importFijiMontageFilter->property("RowCount").toInt();
+    int colCount = importFijiMontageFilter->property("ColumnCount").toInt();
 
     performMontaging(montageWizard, dcNames, ImportMontageWizard::InputType::Fiji, rowCount, colCount);
   }
