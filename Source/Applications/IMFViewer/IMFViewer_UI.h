@@ -219,7 +219,7 @@ private:
    * @return
    */
   void performMontaging(ImportMontageWizard* montageWizard, QStringList dataContainerNames,
-	  ImportMontageWizard::InputType inputType, int rowCount, int colCount, int index);
+    ImportMontageWizard::InputType inputType, int rowCount, int colCount, FilterPipeline::Pointer pipeline);
 
   /**
    * @brief printPropertyError

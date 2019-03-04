@@ -335,7 +335,6 @@ void IMFViewer_UI::importDREAM3DMontage(ImportMontageWizard* montageWizard)
   FilterPipeline::Pointer pipeline = FilterPipeline::New();
   QString montageName = montageWizard->field(ImportMontage::DREAM3D::FieldNames::MontageName).toString();
   pipeline->setName(montageName);
-  m_pipelines.push_back(pipeline);
 
   QString dataFilePath = montageWizard->field(ImportMontage::DREAM3D::FieldNames::DataFilePath).toString();
 
@@ -406,8 +405,11 @@ void IMFViewer_UI::importDREAM3DMontage(ImportMontageWizard* montageWizard)
       int rowCount = montageWizard->field(ImportMontage::DREAM3D::FieldNames::NumberOfRows).toInt();
       int colCount = montageWizard->field(ImportMontage::DREAM3D::FieldNames::NumberOfColumns).toInt();
 
-      performMontaging(montageWizard, dcNames, ImportMontageWizard::InputType::DREAM3D, rowCount, colCount, 0);
+      performMontaging(montageWizard, dcNames, ImportMontageWizard::InputType::DREAM3D, rowCount, colCount, pipeline);
     }
+
+    m_pipelines.push_back(pipeline);
+
     runPipelineThread();
   }
   else
@@ -447,7 +449,6 @@ void IMFViewer_UI::importFijiMontage(ImportMontageWizard* montageWizard)
       montageName.append(tr("_%1").arg(i));
 		}
 		pipeline->setName(montageName);
-		m_pipelines.push_back(pipeline);
 
 		// Instantiate Import Fiji Montage filter
 		QString filterName = "ITKImportFijiMontage";
@@ -580,7 +581,7 @@ void IMFViewer_UI::importFijiMontage(ImportMontageWizard* montageWizard)
 								return;
 							}
 
-							m_pipelines[i]->pushBack(setOriginResolutionFilter);
+              pipeline->pushBack(setOriginResolutionFilter);
 						}
 					}
 				}
@@ -597,8 +598,10 @@ void IMFViewer_UI::importFijiMontage(ImportMontageWizard* montageWizard)
       int rowCount = importFijiMontageFilter->property("RowCount").toInt();
       int colCount = importFijiMontageFilter->property("ColumnCount").toInt();
 
-      performMontaging(montageWizard, dcNames, ImportMontageWizard::InputType::Fiji, rowCount, colCount, i);
+      performMontaging(montageWizard, dcNames, ImportMontageWizard::InputType::Fiji, rowCount, colCount, pipeline);
     }
+
+    m_pipelines.push_back(pipeline);
   }
 
   // Run the pipeline
@@ -610,109 +613,120 @@ void IMFViewer_UI::importFijiMontage(ImportMontageWizard* montageWizard)
 // -----------------------------------------------------------------------------
 void IMFViewer_UI::importRobometMontage(ImportMontageWizard* montageWizard)
 {
-	FilterPipeline::Pointer pipeline = FilterPipeline::New();
-	QString montageName = montageWizard->field(ImportMontage::DREAM3D::FieldNames::MontageName).toString();
-	pipeline->setName(montageName);
-	m_pipelines.push_back(pipeline);
-
   // Instantiate Import RoboMet Montage filter
   QString filterName = "ITKImportRoboMetMontage";
   FilterManager* fm = FilterManager::Instance();
   IFilterFactory::Pointer factory = fm->getFactoryFromClassName(filterName);
-  DataContainerArray::Pointer dca = DataContainerArray::New();
-  AbstractFilter::Pointer importRoboMetMontageFilter;
 
   RobometListInfo_t rbmListInfo = montageWizard->field(ImportMontage::Robomet::FieldNames::RobometListInfo).value<RobometListInfo_t>();
+  int sliceMin = rbmListInfo.SliceMin;
+  int sliceMax = rbmListInfo.SliceMax;
 
-  // Set up the Generate Montage Configuration filter
-  if(factory.get() != nullptr)
+  for (int slice = sliceMin; slice <= sliceMax; slice++)
   {
-    importRoboMetMontageFilter = factory->create();
-    if(importRoboMetMontageFilter.get() != nullptr)
+    FilterPipeline::Pointer pipeline = FilterPipeline::New();
+    QString montageName = montageWizard->field(ImportMontage::DREAM3D::FieldNames::MontageName).toString();
+    QString pipelineName = montageName;
+    if (sliceMax - sliceMin + 1 > 1)
     {
-      importRoboMetMontageFilter->setDataContainerArray(dca);
+      pipelineName.append(tr("_%1").arg(slice));
+    }
+    pipeline->setName(pipelineName);
 
-      QVariant var;
+    DataContainerArray::Pointer dca = DataContainerArray::New();
+    AbstractFilter::Pointer importRoboMetMontageFilter;
 
-      // Set the path for the Robomet Configuration File
-      QString configFilePath = rbmListInfo.RobometFilePath;
-      var.setValue(configFilePath);
-      if(!setFilterProperty(importRoboMetMontageFilter, "RegistrationFile", var))
+    // Set up the Generate Montage Configuration filter
+    if(factory.get() != nullptr)
+    {
+      importRoboMetMontageFilter = factory->create();
+      if(importRoboMetMontageFilter.get() != nullptr)
       {
+        importRoboMetMontageFilter->setDataContainerArray(dca);
+
+        QVariant var;
+
+        // Set the path for the Robomet Configuration File
+        QString configFilePath = rbmListInfo.RobometFilePath;
+        var.setValue(configFilePath);
+        if(!setFilterProperty(importRoboMetMontageFilter, "RegistrationFile", var))
+        {
+          return;
+        }
+
+        // Set the Data Container Prefix
+        var.setValue(montageWizard->field(ImportMontage::Robomet::FieldNames::DataContainerPrefix));
+        if(!setFilterProperty(importRoboMetMontageFilter, "DataContainerPrefix", var))
+        {
+          return;
+        }
+
+        // Set the Cell Attribute Matrix Name
+        var.setValue(montageWizard->field(ImportMontage::Robomet::FieldNames::CellAttributeMatrixName));
+        if(!setFilterProperty(importRoboMetMontageFilter, "CellAttributeMatrixName", var))
+        {
+          return;
+        }
+
+        // Set the Image Array Name
+        var.setValue(montageWizard->field(ImportMontage::Robomet::FieldNames::ImageArrayName));
+        if(!setFilterProperty(importRoboMetMontageFilter, "AttributeArrayName", var))
+        {
+          return;
+        }
+
+        // Slice number
+        var.setValue(slice);
+        if(!setFilterProperty(importRoboMetMontageFilter, "SliceNumber", var))
+        {
+          return;
+        }
+
+        // Image file prefix
+        QString imageFilePrefix = rbmListInfo.ImagePrefix;
+        var.setValue(imageFilePrefix);
+        if(!setFilterProperty(importRoboMetMontageFilter, "ImageFilePrefix", var))
+        {
+          return;
+        }
+
+        // Image file extension
+        QString imageFileExtension = rbmListInfo.ImageExtension;
+        var.setValue(imageFileExtension);
+        if(!setFilterProperty(importRoboMetMontageFilter, "ImageFileExtension", var))
+        {
+          return;
+        }
+
+        pipeline->pushBack(importRoboMetMontageFilter);
+      }
+      else
+      {
+        statusBar()->showMessage(tr("Could not create filter from %1 factory. Aborting.").arg(filterName));
         return;
       }
-
-      // Set the Data Container Prefix
-      var.setValue(montageWizard->field(ImportMontage::Robomet::FieldNames::DataContainerPrefix));
-      if(!setFilterProperty(importRoboMetMontageFilter, "DataContainerPrefix", var))
-      {
-        return;
-      }
-
-      // Set the Cell Attribute Matrix Name
-      var.setValue(montageWizard->field(ImportMontage::Robomet::FieldNames::CellAttributeMatrixName));
-      if(!setFilterProperty(importRoboMetMontageFilter, "CellAttributeMatrixName", var))
-      {
-        return;
-      }
-
-      // Set the Image Array Name
-      var.setValue(montageWizard->field(ImportMontage::Robomet::FieldNames::ImageArrayName));
-      if(!setFilterProperty(importRoboMetMontageFilter, "AttributeArrayName", var))
-      {
-        return;
-      }
-
-      // Slice number
-      int sliceNumber = rbmListInfo.SliceNumber;
-      var.setValue(sliceNumber);
-      if(!setFilterProperty(importRoboMetMontageFilter, "SliceNumber", var))
-      {
-        return;
-      }
-
-      // Image file prefix
-      QString imageFilePrefix = rbmListInfo.ImagePrefix;
-      var.setValue(imageFilePrefix);
-      if(!setFilterProperty(importRoboMetMontageFilter, "ImageFilePrefix", var))
-      {
-        return;
-      }
-
-      // Image file extension
-      QString imageFileExtension = rbmListInfo.ImageExtension;
-      var.setValue(imageFileExtension);
-      if(!setFilterProperty(importRoboMetMontageFilter, "ImageFileExtension", var))
-      {
-        return;
-      }
-
-      m_pipelines[0]->pushBack(importRoboMetMontageFilter);
     }
     else
     {
-      statusBar()->showMessage(tr("Could not create filter from %1 factory. Aborting.").arg(filterName));
+      statusBar()->showMessage(tr("Could not create %1 factory. Aborting.").arg(filterName));
       return;
     }
-  }
-  else
-  {
-    statusBar()->showMessage(tr("Could not create %1 factory. Aborting.").arg(filterName));
-    return;
-  }
 
-  if(m_displayMontage || m_displayOutline)
-  {
-    importRoboMetMontageFilter->preflight();
-    DataContainerArray::Pointer dca = importRoboMetMontageFilter->getDataContainerArray();
-    QStringList dcNames = dca->getDataContainerNames();
+    if(m_displayMontage || m_displayOutline)
+    {
+      importRoboMetMontageFilter->preflight();
+      DataContainerArray::Pointer dca = importRoboMetMontageFilter->getDataContainerArray();
+      QStringList dcNames = dca->getDataContainerNames();
 
-    ImportMontageWizard::InputType inputType = montageWizard->field(ImportMontage::FieldNames::InputType).value<ImportMontageWizard::InputType>();
+      ImportMontageWizard::InputType inputType = montageWizard->field(ImportMontage::FieldNames::InputType).value<ImportMontageWizard::InputType>();
 
-    int rowCount = rbmListInfo.NumberOfRows;
-    int colCount = rbmListInfo.NumberOfColumns;
+      int rowCount = rbmListInfo.NumberOfRows;
+      int colCount = rbmListInfo.NumberOfColumns;
 
-    performMontaging(montageWizard, dcNames, ImportMontageWizard::InputType::Robomet, rowCount, colCount, 0);
+      performMontaging(montageWizard, dcNames, ImportMontageWizard::InputType::Robomet, rowCount, colCount, pipeline);
+    }
+
+    m_pipelines.push_back(pipeline);
   }
 
   runPipelineThread();
@@ -726,7 +740,6 @@ void IMFViewer_UI::importZeissMontage(ImportMontageWizard* montageWizard)
 	FilterPipeline::Pointer pipeline = FilterPipeline::New();
 	QString montageName = montageWizard->field(ImportMontage::DREAM3D::FieldNames::MontageName).toString();
 	pipeline->setName(montageName);
-	m_pipelines.push_back(pipeline);
 
   // Instantiate Import AxioVision V4 Montage filter
   QString filterName = "ImportAxioVisionV4Montage";
@@ -855,7 +868,7 @@ void IMFViewer_UI::importZeissMontage(ImportMontageWizard* montageWizard)
 		  }
 	  }
 
-      m_pipelines[0]->pushBack(importZeissMontageFilter);
+      pipeline->pushBack(importZeissMontageFilter);
     }
     else
     {
@@ -877,8 +890,10 @@ void IMFViewer_UI::importZeissMontage(ImportMontageWizard* montageWizard)
     int rowCount = importZeissMontageFilter->property("RowCount").toInt();
     int colCount = importZeissMontageFilter->property("ColumnCount").toInt();
 
-    performMontaging(montageWizard, dcNames, ImportMontageWizard::InputType::Zeiss, rowCount, colCount, 0);
+    performMontaging(montageWizard, dcNames, ImportMontageWizard::InputType::Zeiss, rowCount, colCount, pipeline);
   }
+
+  m_pipelines.push_back(pipeline);
 
   runPipelineThread();
 }
@@ -887,7 +902,7 @@ void IMFViewer_UI::importZeissMontage(ImportMontageWizard* montageWizard)
 //
 // -----------------------------------------------------------------------------
 void IMFViewer_UI::performMontaging(ImportMontageWizard* montageWizard, QStringList dataContainerNames,
-	ImportMontageWizard::InputType inputType, int rowCount, int colCount, int index)
+  ImportMontageWizard::InputType inputType, int rowCount, int colCount, FilterPipeline::Pointer pipeline)
 {
   // Instantiate Generate Montage filter
   QString filterName = "ITKPCMTileRegistration";
@@ -1027,8 +1042,8 @@ void IMFViewer_UI::performMontaging(ImportMontageWizard* montageWizard, QStringL
         return;
       }
 
-      m_pipelines[index]->pushBack(itkRegistrationFilter);
-      m_pipelines[index]->pushBack(itkStitchingFilter);
+      pipeline->pushBack(itkRegistrationFilter);
+      pipeline->pushBack(itkStitchingFilter);
     }
     else
     {
