@@ -313,12 +313,30 @@ void IMFViewer_UI::handleMontageResults(FilterPipeline::Pointer pipeline, int er
   if(err >= 0)
   {
     DataContainerArray::Pointer dca = pipeline->getDataContainerArray();
+    QStringList pipelineNameTokens = pipeline->getName().split("_", QString::SplitBehavior::SkipEmptyParts);
+    int slice = 0;
+    if (pipelineNameTokens.size() > 1)
+    {
+      slice = pipelineNameTokens[1].toInt();
+    }
+
     // If Display Montage was selected, remove non-stitched image data containers
     if(m_displayMontage)
     {
       for(DataContainer::Pointer dc : dca->getDataContainers())
       {
-        if(dc->getName() != "MontageDC")
+        if(dc->getName() == "MontageDC")
+        {
+          ImageGeom::Pointer imageGeom = dc->getGeometryAs<ImageGeom>();
+          if (imageGeom)
+          {
+            float origin[3];
+            imageGeom->getOrigin(origin);
+            origin[2] += slice;
+            imageGeom->setOrigin(origin);
+          }
+        }
+        else
         {
           dca->removeDataContainer(dc->getName());
         }
