@@ -201,6 +201,7 @@ void IMFViewer_UI::importMontage()
 {
   ImportMontageWizard* montageWizard = new ImportMontageWizard(this);
   int result = montageWizard->exec();
+  m_pipelines.clear();
 
   m_displayMontage = montageWizard->field(ImportMontage::FieldNames::DisplayMontage).toBool();
   m_displayOutline = montageWizard->field(ImportMontage::FieldNames::DisplayOutlineOnly).toBool();
