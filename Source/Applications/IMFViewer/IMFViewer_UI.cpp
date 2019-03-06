@@ -55,6 +55,14 @@
 #include "SVWidgetsLib/QtSupport/QtSSettings.h"
 #include "SVWidgetsLib/Widgets/SVStyle.h"
 
+#include "SIMPLVtkLib/Wizards/ImportMontage/FijiListWidget.h"
+#include "SIMPLVtkLib/Wizards/ImportMontage/ImportMontageWizard.h"
+#include "SIMPLVtkLib/Wizards/ImportMontage/MontageWorker.h"
+#include "SIMPLVtkLib/Wizards/ImportMontage/RobometListWidget.h"
+#include "SIMPLVtkLib/Wizards/ImportMontage/TileConfigFileGenerator.h"
+#include "SIMPLVtkLib/Wizards/ImportMontage/ZeissListWidget.h"
+#include "SIMPLVtkLib/Wizards/ImportMontage/ImportMontageConstants.h"
+
 #include "BrandedStrings.h"
 
 #include "ui_IMFViewer_UI.h"
