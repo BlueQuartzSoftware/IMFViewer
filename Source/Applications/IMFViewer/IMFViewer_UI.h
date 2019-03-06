@@ -41,8 +41,6 @@
 #include "SIMPLib/DataContainers/DataContainerArray.h"
 #include "SIMPLib/Filtering/FilterPipeline.h"
 
-#include "SIMPLVtkLib/Wizards/ImportMontage/ImportMontageWizard.h"
-
 class QtSSettings;
 class ImportMontageWizard;
 
@@ -128,13 +126,6 @@ protected slots:
   void updateRecentFileList(const QString& file);
 
   /**
-   * @brief handleMontageResults
-   * @param pipeline
-   * @param err
-   */
-  void handleMontageResults(FilterPipeline::Pointer pipeline, int err);
-
-  /**
    * @brief processPipelineMessage
    * @param pipelineMsg
    */
@@ -153,9 +144,6 @@ private:
 
   QString m_OpenDialogLastDirectory = "";
 
-  QThread* m_workerThread;
-  std::vector<FilterPipeline::Pointer> m_pipelines;
-  DataContainerArray::Pointer m_dataContainerArray;
   ImportMontageWizard::DisplayType m_DisplayType = ImportMontageWizard::DisplayType::NotSpecified;
   bool m_displayMontage = false;
   bool m_displayOutline = false;
@@ -169,65 +157,11 @@ private:
   QMenu* createThemeMenu(QActionGroup* actionGroup, QWidget* parent = nullptr);
 
   /**
-   * @brief importGenericMontage
-   * @param montageWizard
-   */
-  void importGenericMontage(ImportMontageWizard* montageWizard);
-
-  /**
-   * @brief importDREAM3DMontage
-   * @param montageWizard
-   */
-  void importDREAM3DMontage(ImportMontageWizard* montageWizard);
-
-  /**
-   * @brief importFijiMontage
-   * @param montageWizard
-   */
-  void importFijiMontage(ImportMontageWizard* montageWizard);
-
-  /**
-   * @brief importRobometMontage
-   * @param montageWizard
-   */
-  void importRobometMontage(ImportMontageWizard* montageWizard);
-
-  /**
-   * @brief importZeissMontage
-   * @param montageWizard
-   */
-  void importZeissMontage(ImportMontageWizard* montageWizard);
-
-  /**
    * @brief loadSession
    * @param filePath
    * @return
    */
   void loadSessionFromFile(const QString& filePath);
-
-  /**
-   * @brief Run the pipeline execution thread
-   * @return
-   */
-  void runPipelineThread();
-
-  /**
-   * @brief Perform the montaging workflow
-   * @param montageWizard
-   * @param dataContainerNames
-   * @param dream3dFile
-   * @return
-   */
-  void performMontaging(ImportMontageWizard* montageWizard, QStringList dataContainerNames,
-    ImportMontageWizard::InputType inputType, int rowCount, int colCount, FilterPipeline::Pointer pipeline);
-
-  /**
-   * @brief printPropertyError
-   * @param filter
-   * @param propertyName
-   * @param value
-   */
-  bool setFilterProperty(AbstractFilter::Pointer filter, const char* propertyName, QVariant value);
 
   IMFViewer_UI(const IMFViewer_UI&);   // Copy Constructor Not Implemented
   void operator=(const IMFViewer_UI&); // Operator '=' Not Implemented
