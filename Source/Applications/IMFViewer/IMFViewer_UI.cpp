@@ -482,7 +482,7 @@ void IMFViewer_UI::importDREAM3DMontage(ImportMontageWizard* montageWizard)
 						  return;
 					  }
 
-					  m_pipeline->pushBack(setOriginResolutionFilter);
+            pipeline->pushBack(setOriginResolutionFilter);
 				  }
 			  }
 		  }
