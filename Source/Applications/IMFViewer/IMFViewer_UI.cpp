@@ -102,6 +102,10 @@ void IMFViewer_UI::setupGui()
   QtSRecentFileList* recentsList = QtSRecentFileList::Instance(5, this);
   connect(recentsList, SIGNAL(fileListChanged(const QString&)), this, SLOT(updateRecentFileList(const QString&)));
 
+  VSMainWidgetBase* baseWidget = dynamic_cast<VSMainWidgetBase*>(m_Internals->vsWidget);
+  connect(baseWidget, &VSMainWidgetBase::notifyErrorMessage, this, &IMFViewer_UI::processErrorMessage);
+  connect(baseWidget, &VSMainWidgetBase::notifyStatusMessage, this, &IMFViewer_UI::processStatusMessage);
+
   createMenu();
 
   readSettings();
@@ -204,13 +208,17 @@ void IMFViewer_UI::importMontage()
 // -----------------------------------------------------------------------------
 //
 // -----------------------------------------------------------------------------
-void IMFViewer_UI::processPipelineMessage(const PipelineMessage& pipelineMsg)
+void IMFViewer_UI::processErrorMessage(const QString &errorMessage, int code)
 {
-  if(pipelineMsg.getType() == PipelineMessage::MessageType::StatusMessage)
-  {
-    QString str = pipelineMsg.generateStatusString();
-    statusBar()->showMessage(str);
-  }
+//  statusBar()->showMessage(errorMessage);
+}
+
+// -----------------------------------------------------------------------------
+//
+// -----------------------------------------------------------------------------
+void IMFViewer_UI::processStatusMessage(const QString &statusMessage)
+{
+  statusBar()->showMessage(statusMessage);
 }
 
 // -----------------------------------------------------------------------------

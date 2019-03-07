@@ -126,10 +126,17 @@ protected slots:
   void updateRecentFileList(const QString& file);
 
   /**
-   * @brief processPipelineMessage
-   * @param pipelineMsg
+   * @brief processErrorMessage
+   * @param errorMessage
+   * @param code
    */
-  void processPipelineMessage(const PipelineMessage& pipelineMsg);
+  void processErrorMessage(const QString &errorMessage, int code);
+
+  /**
+   * @brief processStatusMessage
+   * @param statusMessage
+   */
+  void processStatusMessage(const QString &statusMessage);
 
 private:
   class vsInternals;
@@ -143,10 +150,6 @@ private:
   QActionGroup* m_ThemeActionGroup = nullptr;
 
   QString m_OpenDialogLastDirectory = "";
-
-  ImportMontageWizard::DisplayType m_DisplayType = ImportMontageWizard::DisplayType::NotSpecified;
-  bool m_displayMontage = false;
-  bool m_displayOutline = false;
 
   /**
    * @brief createThemeMenu
