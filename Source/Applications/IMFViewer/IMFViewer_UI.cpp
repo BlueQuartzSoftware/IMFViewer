@@ -55,6 +55,7 @@
 #include "SVWidgetsLib/QtSupport/QtSSettings.h"
 #include "SVWidgetsLib/Widgets/SVStyle.h"
 
+#include "SIMPLVtkLib/Wizards/ExecutePipeline/ExecutePipelineWizard.h"
 #include "SIMPLVtkLib/Wizards/ImportMontage/FijiListWidget.h"
 #include "SIMPLVtkLib/Wizards/ImportMontage/ImportMontageWizard.h"
 #include "SIMPLVtkLib/Wizards/ImportMontage/MontageWorker.h"
@@ -211,6 +212,23 @@ void IMFViewer_UI::importMontage()
   }
 
   delete montageWizard;
+}
+
+// -----------------------------------------------------------------------------
+//
+// -----------------------------------------------------------------------------
+void IMFViewer_UI::executePipeline()
+{
+	ExecutePipelineWizard* executePipelineWizard = new ExecutePipelineWizard(m_Internals->vsWidget);
+	int result = executePipelineWizard->exec();
+
+	if(result == QDialog::Accepted)
+	{
+	  VSMainWidgetBase* baseWidget = dynamic_cast<VSMainWidgetBase*>(m_Internals->vsWidget);
+	  baseWidget->importPipeline(executePipelineWizard);
+	}
+
+	delete executePipelineWizard;
 }
 
 // -----------------------------------------------------------------------------
@@ -445,6 +463,11 @@ void IMFViewer_UI::createMenu()
   importMontageAction->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_M));
   connect(importMontageAction, &QAction::triggered, this, static_cast<void (IMFViewer_UI::*)(void)>(&IMFViewer_UI::importMontage));
   fileMenu->addAction(importMontageAction);
+
+  QAction* executePipelineAction = new QAction("Execute Pipeline");
+  executePipelineAction->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_E));
+  connect(executePipelineAction, &QAction::triggered, this, static_cast<void (IMFViewer_UI::*)(void)>(&IMFViewer_UI::executePipeline));
+  fileMenu->addAction(executePipelineAction);
 
   fileMenu->addSeparator();
 

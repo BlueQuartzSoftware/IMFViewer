@@ -43,6 +43,7 @@
 
 class QtSSettings;
 class ImportMontageWizard;
+class ExecutePipelineWizard;
 
 class IMFViewer_UI : public QMainWindow
 {
@@ -113,6 +114,11 @@ protected slots:
    * @brief importMontage
    */
   void importMontage();
+
+  /**
+   * @brief executePipeline
+   */
+  void executePipeline();
 
   /**
    * @brief openRecentFile
