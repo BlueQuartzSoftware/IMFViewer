@@ -41,9 +41,12 @@
 #include "SIMPLib/DataContainers/DataContainerArray.h"
 #include "SIMPLib/Filtering/FilterPipeline.h"
 
+#include "SIMPLVtkLib/QtWidgets/VSQueueWidget.h"
+
 class QtSSettings;
 class ImportMontageWizard;
 class ExecutePipelineWizard;
+class VSQueueWidget;
 
 class IMFViewer_UI : public QMainWindow
 {
@@ -156,6 +159,7 @@ private:
   QActionGroup* m_ThemeActionGroup = nullptr;
 
   QString m_OpenDialogLastDirectory = "";
+  VSQueueWidget::Pointer m_QueueWidget;
 
   /**
    * @brief createThemeMenu

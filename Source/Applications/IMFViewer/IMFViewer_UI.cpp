@@ -58,7 +58,7 @@
 #include "SIMPLVtkLib/Wizards/ExecutePipeline/ExecutePipelineWizard.h"
 #include "SIMPLVtkLib/Wizards/ImportMontage/FijiListWidget.h"
 #include "SIMPLVtkLib/Wizards/ImportMontage/ImportMontageWizard.h"
-#include "SIMPLVtkLib/Wizards/ImportMontage/MontageWorker.h"
+#include "SIMPLVtkLib/Wizards/ImportMontage/ImporterWorker.h"
 #include "SIMPLVtkLib/Wizards/ImportMontage/RobometListWidget.h"
 #include "SIMPLVtkLib/Wizards/ImportMontage/TileConfigFileGenerator.h"
 #include "SIMPLVtkLib/Wizards/ImportMontage/ZeissListWidget.h"
@@ -107,6 +107,12 @@ IMFViewer_UI::~IMFViewer_UI()
 // -----------------------------------------------------------------------------
 void IMFViewer_UI::setupGui()
 {
+  connect(m_Internals->importDataBtn, &QPushButton::clicked, this, &IMFViewer_UI::importData);
+  connect(m_Internals->importMontageBtn, &QPushButton::clicked, this, &IMFViewer_UI::importMontage);
+
+  m_QueueWidget = VSQueueWidget::New();
+  connect(m_Internals->queueBtn, &QPushButton::clicked, [=] { m_QueueWidget->show(); });
+
   // Connection to update the recent files list on all windows when it changes
   QtSRecentFileList* recentsList = QtSRecentFileList::Instance(5, this);
   connect(recentsList, SIGNAL(fileListChanged(const QString&)), this, SLOT(updateRecentFileList(const QString&)));
@@ -456,12 +462,12 @@ void IMFViewer_UI::createMenu()
 
   QAction* importDataAction = new QAction("Import Data");
   importDataAction->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_D));
-  connect(importDataAction, &QAction::triggered, this, static_cast<void (IMFViewer_UI::*)(void)>(&IMFViewer_UI::importData));
+  connect(importDataAction, &QAction::triggered, this, &IMFViewer_UI::importData);
   fileMenu->addAction(importDataAction);
 
   QAction* importMontageAction = new QAction("Import Montage");
   importMontageAction->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_M));
-  connect(importMontageAction, &QAction::triggered, this, static_cast<void (IMFViewer_UI::*)(void)>(&IMFViewer_UI::importMontage));
+  connect(importMontageAction, &QAction::triggered, this, &IMFViewer_UI::importMontage);
   fileMenu->addAction(importMontageAction);
 
   QAction* executePipelineAction = new QAction("Execute Pipeline");
