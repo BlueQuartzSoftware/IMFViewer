@@ -118,6 +118,7 @@ void IMFViewer_UI::setupGui()
   connect(recentsList, SIGNAL(fileListChanged(const QString&)), this, SLOT(updateRecentFileList(const QString&)));
 
   VSMainWidgetBase* baseWidget = dynamic_cast<VSMainWidgetBase*>(m_Internals->vsWidget);
+  connect(baseWidget, &VSMainWidgetBase::importerAddedToQueue, m_QueueWidget.get(), &VSQueueWidget::addImporterToQueue);
   connect(baseWidget, &VSMainWidgetBase::notifyErrorMessage, this, &IMFViewer_UI::processErrorMessage);
   connect(baseWidget, &VSMainWidgetBase::notifyStatusMessage, this, &IMFViewer_UI::processStatusMessage);
 
