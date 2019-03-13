@@ -55,6 +55,7 @@
 #include "SVWidgetsLib/QtSupport/QtSSettings.h"
 #include "SVWidgetsLib/Widgets/SVStyle.h"
 
+#include "SIMPLVtkLib/QtWidgets/VSQueueModel.h"
 #include "SIMPLVtkLib/Wizards/ExecutePipeline/ExecutePipelineWizard.h"
 #include "SIMPLVtkLib/Wizards/ImportMontage/FijiListWidget.h"
 #include "SIMPLVtkLib/Wizards/ImportMontage/ImportMontageWizard.h"
@@ -118,9 +119,12 @@ void IMFViewer_UI::setupGui()
   connect(recentsList, SIGNAL(fileListChanged(const QString&)), this, SLOT(updateRecentFileList(const QString&)));
 
   VSMainWidgetBase* baseWidget = dynamic_cast<VSMainWidgetBase*>(m_Internals->vsWidget);
-  connect(baseWidget, &VSMainWidgetBase::importerAddedToQueue, m_QueueWidget.get(), &VSQueueWidget::addImporterToQueue);
   connect(baseWidget, &VSMainWidgetBase::notifyErrorMessage, this, &IMFViewer_UI::processErrorMessage);
   connect(baseWidget, &VSMainWidgetBase::notifyStatusMessage, this, &IMFViewer_UI::processStatusMessage);
+
+  VSQueueModel* model = VSQueueModel::Instance();
+  connect(model, &VSQueueModel::notifyErrorMessage, this, &IMFViewer_UI::processErrorMessage);
+  connect(model, &VSQueueModel::notifyStatusMessage, this, &IMFViewer_UI::processStatusMessage);
 
   createMenu();
 
