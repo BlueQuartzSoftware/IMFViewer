@@ -121,6 +121,8 @@ void IMFViewer_UI::setupGui()
   VSMainWidgetBase* baseWidget = dynamic_cast<VSMainWidgetBase*>(m_Internals->vsWidget);
   connect(baseWidget, &VSMainWidgetBase::notifyErrorMessage, this, &IMFViewer_UI::processErrorMessage);
   connect(baseWidget, &VSMainWidgetBase::notifyStatusMessage, this, &IMFViewer_UI::processStatusMessage);
+  connect(m_QueueWidget.get(), &VSQueueWidget::startQueueTriggered, baseWidget, &VSMainWidgetBase::startImportQueue);
+  connect(m_QueueWidget.get(), &VSQueueWidget::stopQueueTriggered, baseWidget, &VSMainWidgetBase::stopImportQueue);
 
   VSQueueModel* model = VSQueueModel::Instance();
   connect(model, &VSQueueModel::notifyErrorMessage, this, &IMFViewer_UI::processErrorMessage);
