@@ -101,7 +101,7 @@ bool IMFViewerApplication::initialize(int argc, char* argv[])
   // Assume we are launching on the main screen.
   float pixelRatio = qApp->screens().at(0)->devicePixelRatio();
 
-  QString name(":/splash/branded_splash");
+  QString name(":/splash/IMFViewer_splash");
   if(pixelRatio >= 2)
   {
     name.append("@2x");
