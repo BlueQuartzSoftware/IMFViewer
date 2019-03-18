@@ -70,6 +70,8 @@
 #include "SIMPLVtkLib/Wizards/ImportMontage/RobometListWidget.h"
 #include "SIMPLVtkLib/Wizards/ImportMontage/TileConfigFileGenerator.h"
 #include "SIMPLVtkLib/Wizards/ImportMontage/ZeissListWidget.h"
+#include "SIMPLVtkLib/Wizards/ImportMontage/ImportMontageConstants.h"
+#include "SIMPLVtkLib/Wizards/PerformMontage/PerformMontageWizard.h"
 
 #include "BrandedStrings.h"
 
@@ -890,6 +892,23 @@ void IMFViewer_UI::importPipeline(ExecutePipelineWizard* executePipelineWizard)
 // -----------------------------------------------------------------------------
 //
 // -----------------------------------------------------------------------------
+void IMFViewer_UI::performMontage()
+{
+  PerformMontageWizard* performMontageWizard = new PerformMontageWizard(m_Internals->vsWidget);
+  int result = performMontageWizard->exec();
+
+  if(result == QDialog::Accepted)
+  {
+    VSMainWidgetBase* baseWidget = dynamic_cast<VSMainWidgetBase*>(m_Internals->vsWidget);
+    baseWidget->performMontage(performMontageWizard);
+  }
+
+  delete performMontageWizard;
+}
+
+// -----------------------------------------------------------------------------
+//
+// -----------------------------------------------------------------------------
 void IMFViewer_UI::processStatusMessage(const QString& statusMessage)
 {
   statusBar()->showMessage(statusMessage);
@@ -1152,6 +1171,11 @@ void IMFViewer_UI::createMenu()
   executePipelineAction->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_E));
   connect(executePipelineAction, &QAction::triggered, this, static_cast<void (IMFViewer_UI::*)(void)>(&IMFViewer_UI::executePipeline));
   fileMenu->addAction(executePipelineAction);
+
+  QAction* performMontageAction = new QAction("Perform Montage");
+  performMontageAction->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_P));
+  connect(performMontageAction, &QAction::triggered, this, static_cast<void (IMFViewer_UI::*)(void)>(&IMFViewer_UI::performMontage));
+  fileMenu->addAction(performMontageAction);
 
   fileMenu->addSeparator();
 

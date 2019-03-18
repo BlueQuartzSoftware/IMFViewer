@@ -153,6 +153,11 @@ protected slots:
   void executePipeline();
 
   /**
+   * @brief importMontage
+   */
+  void performMontage();
+
+  /**
    * @brief openRecentFile
    */
   void openRecentFile();
