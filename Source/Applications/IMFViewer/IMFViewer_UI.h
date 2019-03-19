@@ -47,6 +47,9 @@ class QtSSettings;
 class ImportMontageWizard;
 class ExecutePipelineWizard;
 class VSQueueWidget;
+class PipelineWorker;
+class VSFileNameFilter;
+class VSDataSetFilter;
 
 class IMFViewer_UI : public QMainWindow
 {
@@ -114,7 +117,19 @@ protected slots:
   void importData();
 
   /**
+   * @brief importData
+   */
+  void importData(const QString &filePath);
+
+  /**
+   * @brief Import a pipeline to execute
+   * @param executePipelineWizard
+   */
+  void importPipeline(ExecutePipelineWizard* executePipelineWizard);
+
+  /**
    * @brief importMontage
+   * @return
    */
   void importMontage();
 
@@ -147,6 +162,20 @@ protected slots:
    */
   void processStatusMessage(const QString &statusMessage);
 
+  /**
+   * @brief handleDatasetResults
+   * @param textFilter
+   * @param filter
+   */
+  void handleDatasetResults(VSFileNameFilter* textFilter, VSDataSetFilter* filter);
+
+  /**
+   * @brief handleMontageResults
+   * @param pipeline
+   * @param err
+   */
+  void handleMontageResults(FilterPipeline::Pointer pipeline, int err);
+
 private:
   class vsInternals;
   vsInternals* m_Internals;
@@ -159,7 +188,15 @@ private:
   QActionGroup* m_ThemeActionGroup = nullptr;
 
   QString m_OpenDialogLastDirectory = "";
-  VSQueueWidget::Pointer m_QueueWidget;
+
+  bool m_DisplayMontage = false;
+  bool m_DisplayOutline = false;
+
+  std::vector<FilterPipeline::Pointer> m_Pipelines;
+  DataContainerArray::Pointer m_dataContainerArray;
+
+  QThread* m_PipelineWorkerThread = nullptr;
+  PipelineWorker* m_PipelineWorker = nullptr;
 
   /**
    * @brief createThemeMenu
@@ -175,6 +212,48 @@ private:
    * @return
    */
   void loadSessionFromFile(const QString& filePath);
+
+  /**
+   * @brief importGenericMontage
+   * @param montageWizard
+   */
+  void importGenericMontage(ImportMontageWizard* montageWizard);
+
+  /**
+   * @brief importDREAM3DMontage
+   * @param montageWizard
+   */
+  void importDREAM3DMontage(ImportMontageWizard* montageWizard);
+
+  /**
+   * @brief importFijiMontage
+   * @param montageWizard
+   */
+  void importFijiMontage(ImportMontageWizard* montageWizard);
+
+  /**
+   * @brief importRobometMontage
+   * @param montageWizard
+   */
+  void importRobometMontage(ImportMontageWizard* montageWizard);
+
+  /**
+   * @brief importZeissMontage
+   * @param montageWizard
+   */
+  void importZeissMontage(ImportMontageWizard* montageWizard);
+
+  /**
+   * @brief runPipeline
+   * @param pipeline
+   */
+  void addMontagePipelineToQueue(FilterPipeline::Pointer pipeline);
+
+  /**
+   * @brief executePipeline
+   * @param pipeline
+   */
+  void executePipeline(FilterPipeline::Pointer pipeline, DataContainerArray::Pointer);
 
   IMFViewer_UI(const IMFViewer_UI&);   // Copy Constructor Not Implemented
   void operator=(const IMFViewer_UI&); // Operator '=' Not Implemented

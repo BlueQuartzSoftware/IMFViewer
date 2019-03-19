@@ -143,29 +143,6 @@
        </widget>
       </item>
       <item>
-       <spacer name="horizontalSpacer_2">
-        <property name="orientation">
-         <enum>Qt::Horizontal</enum>
-        </property>
-        <property name="sizeType">
-         <enum>QSizePolicy::Fixed</enum>
-        </property>
-        <property name="sizeHint" stdset="0">
-         <size>
-          <width>40</width>
-          <height>20</height>
-         </size>
-        </property>
-       </spacer>
-      </item>
-      <item>
-       <widget class="QPushButton" name="queueBtn">
-        <property name="text">
-         <string>Queue</string>
-        </property>
-       </widget>
-      </item>
-      <item>
        <spacer name="horizontalSpacer">
         <property name="orientation">
          <enum>Qt::Horizontal</enum>
@@ -186,6 +163,12 @@
    <property name="styleSheet">
     <string notr="true"/>
    </property>
+  </widget>
+  <widget class="QDockWidget" name="queueDockWidget">
+   <attribute name="dockWidgetArea">
+    <number>2</number>
+   </attribute>
+   <widget class="VSQueueWidget" name="queueWidget"/>
   </widget>
   <action name="actionNew">
    <property name="text">
@@ -229,6 +212,12 @@
    <class>VSInfoWidget</class>
    <extends>QWidget</extends>
    <header>VSInfoWidget.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>VSQueueWidget</class>
+   <extends>QWidget</extends>
+   <header location="global">VSQueueWidget.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>
