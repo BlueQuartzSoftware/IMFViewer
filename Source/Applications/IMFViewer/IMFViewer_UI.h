@@ -50,6 +50,7 @@ class VSQueueWidget;
 class PipelineWorker;
 class VSFileNameFilter;
 class VSDataSetFilter;
+class PerformMontageWizard;
 
 class IMFViewer_UI : public QMainWindow
 {
@@ -156,6 +157,12 @@ protected slots:
    * @brief importMontage
    */
   void performMontage();
+
+  /**
+   * @brief performMontage
+   * @param performMontageWizard
+   */
+  void performMontage(PerformMontageWizard* performMontageWizard);
 
   /**
    * @brief openRecentFile

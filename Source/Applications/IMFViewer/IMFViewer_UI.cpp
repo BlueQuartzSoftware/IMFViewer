@@ -72,6 +72,7 @@
 #include "SIMPLVtkLib/Wizards/ImportMontage/ZeissListWidget.h"
 #include "SIMPLVtkLib/Wizards/ImportMontage/ImportMontageConstants.h"
 #include "SIMPLVtkLib/Wizards/PerformMontage/PerformMontageWizard.h"
+#include "SIMPLVtkLib/Wizards/PerformMontage/PerformMontageConstants.h"
 
 #include "BrandedStrings.h"
 
@@ -763,23 +764,26 @@ void IMFViewer_UI::importPipeline(ExecutePipelineWizard* executePipelineWizard)
   m_DisplayMontage = executePipelineWizard->field(ImportMontage::FieldNames::DisplayMontage).toBool();
   m_DisplayOutline = executePipelineWizard->field(ImportMontage::FieldNames::DisplayOutlineOnly).toBool();
 
-  VSMainWidgetBase* baseWidget = dynamic_cast<VSMainWidgetBase*>(m_Ui->vsWidget);
+  VSMainWidgetBase* baseWidget = dynamic_cast<VSMainWidgetBase*>(m_Internals->vsWidget);
   VSFilterViewModel* filterViewModel = baseWidget->getActiveViewWidget()->getFilterViewModel();
   if(m_DisplayMontage)
   {
-    filterViewModel->setDisplayType(ImportMontageWizard::DisplayType::Montage);
+  filterViewModel->setDisplayType(ImportMontageWizard::DisplayType::Montage);
   }
   else if(m_DisplayOutline)
   {
-    filterViewModel->setDisplayType(ImportMontageWizard::DisplayType::Outline);
+  filterViewModel->setDisplayType(ImportMontageWizard::DisplayType::Outline);
   }
   else
   {
-    filterViewModel->setDisplayType(ImportMontageWizard::DisplayType::SideBySide);
+  filterViewModel->setDisplayType(ImportMontageWizard::DisplayType::SideBySide);
   }
 
-  QString filePath = executePipelineWizard->field(ExecutePipeline::FieldNames::PipelineFile).toString();
-  ExecutePipelineWizard::ExecutionType executionType = executePipelineWizard->field(ExecutePipeline::FieldNames::ExecutionType).value<ExecutePipelineWizard::ExecutionType>();
+  QString filePath = executePipelineWizard->field(ExecutePipeline::FieldNames::PipelineFile)
+    .toString();
+  ExecutePipelineWizard::ExecutionType executionType = executePipelineWizard
+    ->field(ExecutePipeline::FieldNames::ExecutionType)
+    .value<ExecutePipelineWizard::ExecutionType>();
 
   if(filePath.isEmpty())
   {
@@ -796,27 +800,22 @@ void IMFViewer_UI::importPipeline(ExecutePipelineWizard* executePipelineWizard)
   jsonFile.close();
   QJsonDocument jsonDoc = QJsonDocument::fromJson(jsonContent.toUtf8());
   QJsonObject jsonObj = jsonDoc.object();
-
   FilterPipeline::Pointer pipelineFromJson = FilterPipeline::FromJson(jsonObj);
 
-  if(pipelineFromJson == FilterPipeline::NullPointer())
+  if(pipelineFromJson != FilterPipeline::NullPointer())
   {
-    QMessageBox::critical(this, "Execute Pipeline", tr("The pipeline from file '%1' could not be executed because it could not be read in correctly.").arg(fi.fileName()), QMessageBox::Ok,
-                          QMessageBox::Ok);
-  }
-
-  if(executionType == ExecutePipelineWizard::ExecutionType::FromFilesystem)
-  {
-    addPipelineToQueue(pipelineFromJson);
-  }
-  else if(executionType == ExecutePipelineWizard::ExecutionType::OnLoadedData)
-  {
+    if(executionType == ExecutePipelineWizard::ExecutionType::FromFilesystem)
+    {
+    addMontagePipelineToQueue(pipelineFromJson);
+    }
+    else if(executionType == ExecutePipelineWizard::ExecutionType::OnLoadedData)
+    {
     int startFilter = executePipelineWizard->field(ExecutePipeline::FieldNames::StartFilter).toInt();
     int selectedDataset = executePipelineWizard->field(ExecutePipeline::FieldNames::SelectedDataset).toInt();
 
     // Construct Data Container Array with selected Dataset
     DataContainerArray::Pointer dca = DataContainerArray::New();
-    VSMainWidgetBase* baseWidget = dynamic_cast<VSMainWidgetBase*>(m_Ui->vsWidget);
+    VSMainWidgetBase* baseWidget = dynamic_cast<VSMainWidgetBase*>(m_Internals->vsWidget);
     VSController* controller = baseWidget->getController();
     VSAbstractFilter::FilterListType datasets = controller->getBaseFilters();
     int i = 0;
@@ -824,28 +823,27 @@ void IMFViewer_UI::importPipeline(ExecutePipelineWizard* executePipelineWizard)
     {
       if(i == selectedDataset)
       {
-        // Add contents to data container array
-        VSAbstractFilter::FilterListType children = dataset->getChildren();
-        for(VSAbstractFilter* childFilter : children)
+      // Add contents to data container array
+      VSAbstractFilter::FilterListType children = dataset->getChildren();
+      for(VSAbstractFilter* childFilter : children)
+      {
+        bool isSIMPL = dynamic_cast<VSSIMPLDataContainerFilter*>(childFilter);
+        if(isSIMPL)
         {
-          bool isSIMPL = dynamic_cast<VSSIMPLDataContainerFilter*>(childFilter);
-          if(isSIMPL)
-          {
-            VSSIMPLDataContainerFilter* dcFilter = dynamic_cast<VSSIMPLDataContainerFilter*>(childFilter);
-            if(dcFilter != nullptr)
-            {
-              DataContainer::Pointer dataContainer = dcFilter->getWrappedDataContainer()->m_DataContainer;
-              dca->addDataContainer(dataContainer);
-            }
-          }
+        VSSIMPLDataContainerFilter* dcFilter = dynamic_cast<VSSIMPLDataContainerFilter*>(childFilter);
+        if(dcFilter != nullptr)
+        {
+          DataContainer::Pointer dataContainer = dcFilter->getWrappedDataContainer()->m_DataContainer;
+          dca->addDataContainer(dataContainer);
         }
-        break;
+        }
+      }
+      break;
       }
       i++;
     }
     // Change origin and/or spacing if specified
     FilterPipeline::Pointer pipeline = FilterPipeline::New();
-    pipeline->setName(pipelineFromJson->getName());
     VSFilterFactory::Pointer filterFactory = VSFilterFactory::New();
     QStringList dcNames = dca->getDataContainerNames();
 
@@ -856,24 +854,24 @@ void IMFViewer_UI::importPipeline(ExecutePipelineWizard* executePipelineWizard)
       float spacingX = executePipelineWizard->field(ExecutePipeline::FieldNames::SpacingX).toFloat();
       float spacingY = executePipelineWizard->field(ExecutePipeline::FieldNames::SpacingY).toFloat();
       float spacingZ = executePipelineWizard->field(ExecutePipeline::FieldNames::SpacingZ).toFloat();
-      FloatVec3_t newSpacing = {spacingX, spacingY, spacingZ};
+      FloatVec3_t newSpacing = { spacingX, spacingY, spacingZ };
       float originX = executePipelineWizard->field(ExecutePipeline::FieldNames::OriginX).toFloat();
       float originY = executePipelineWizard->field(ExecutePipeline::FieldNames::OriginY).toFloat();
       float originZ = executePipelineWizard->field(ExecutePipeline::FieldNames::OriginZ).toFloat();
-      FloatVec3_t newOrigin = {originX, originY, originZ};
+      FloatVec3_t newOrigin = { originX, originY, originZ };
       QVariant var;
 
       // For each data container, add a new filter
       for(QString dcName : dcNames)
       {
-        AbstractFilter::Pointer setOriginResolutionFilter = filterFactory->createSetOriginResolutionFilter(dcName, changeSpacing, changeOrigin, newSpacing, newOrigin);
+      AbstractFilter::Pointer setOriginResolutionFilter = filterFactory->createSetOriginResolutionFilter(dcName, changeSpacing, changeOrigin, newSpacing, newOrigin);
 
-        if(!setOriginResolutionFilter)
-        {
-          // Error!
-        }
+      if(!setOriginResolutionFilter)
+      {
+        // Error!
+      }
 
-        pipeline->pushBack(setOriginResolutionFilter);
+      pipeline->pushBack(setOriginResolutionFilter);
       }
     }
 
@@ -885,7 +883,8 @@ void IMFViewer_UI::importPipeline(ExecutePipelineWizard* executePipelineWizard)
       pipeline->pushBack(filter);
     }
 
-    addPipelineToQueue(pipeline);
+    executePipeline(pipeline, dca);
+    }
   }
 }
 
@@ -899,11 +898,126 @@ void IMFViewer_UI::performMontage()
 
   if(result == QDialog::Accepted)
   {
-    VSMainWidgetBase* baseWidget = dynamic_cast<VSMainWidgetBase*>(m_Internals->vsWidget);
-    baseWidget->performMontage(performMontageWizard);
+    performMontage(performMontageWizard);
   }
 
   delete performMontageWizard;
+}
+
+// -----------------------------------------------------------------------------
+//
+// -----------------------------------------------------------------------------
+void IMFViewer_UI::performMontage(PerformMontageWizard* performMontageWizard)
+{
+  VSMainWidgetBase* baseWidget = dynamic_cast<VSMainWidgetBase*>(m_Internals->vsWidget);
+
+  VSFilterViewModel* filterViewModel = baseWidget->getActiveViewWidget()->getFilterViewModel();
+  bool displayOutline = ((QWizard*)performMontageWizard)->field(PerformMontage::FieldNames::DisplayOutlineOnly).toBool();
+
+  if(displayOutline)
+  {
+  filterViewModel->setDisplayType(ImportMontageWizard::DisplayType::Outline);
+  }
+  else
+  {
+  filterViewModel->setDisplayType(ImportMontageWizard::DisplayType::Montage);
+  }
+
+  VSAbstractFilter::FilterListType selectedFilters = baseWidget->getActiveViewWidget()->getSelectedFilters();
+
+  FilterPipeline::Pointer pipeline = FilterPipeline::New();
+  VSFilterFactory::Pointer filterFactory = VSFilterFactory::New();
+  m_DisplayMontage = performMontageWizard->field(PerformMontage::FieldNames::DisplayMontage).toBool();
+  m_DisplayOutline = performMontageWizard->field(PerformMontage::FieldNames::DisplayOutlineOnly).toBool();
+  bool stitchingOnly = performMontageWizard->field(PerformMontage::FieldNames::StitchingOnly).toBool();
+
+  // Construct Data Container Array with selected Dataset
+  DataContainerArray::Pointer dca = DataContainerArray::New();
+  VSAbstractFilter::FilterListType datasets = baseWidget->getController()->getBaseFilters();
+  VSAbstractFilter::FilterListType montageDatasets;
+  int i = 0;
+  for(VSAbstractFilter* dataset : datasets)
+  {
+    bool found = (std::find(selectedFilters.begin(),
+                            selectedFilters.end(), dataset) != selectedFilters.end());
+    if(found)
+    {
+      // Add contents to data container array
+      VSAbstractFilter::FilterListType children = dataset->getChildren();
+      bool validSIMPL = false;
+      QString amName;
+      QString daName;
+      for(VSAbstractFilter* childFilter : children)
+      {
+        bool isSIMPL = dynamic_cast<VSSIMPLDataContainerFilter*>(childFilter);
+        if(isSIMPL)
+        {
+          VSSIMPLDataContainerFilter* dcFilter = dynamic_cast<VSSIMPLDataContainerFilter*>(childFilter);
+          if(dcFilter != nullptr)
+          {
+            DataContainer::Pointer dataContainer = dcFilter->getWrappedDataContainer()->m_DataContainer;
+            validSIMPL = true;
+            AttributeMatrix::Pointer am = dataContainer->getAttributeMatrices().first();
+            amName = am->getName();
+            daName = am->getAttributeArrayNames().first();
+      montageDatasets.push_back(childFilter);
+          }
+        }
+      }
+
+      if(validSIMPL)
+      {
+    // Build the data container array
+    std::pair<int, int> rowColPair = buildCustomDCA(dca, montageDatasets);
+
+        QStringList dcNames = dca->getDataContainerNames();
+
+        bool changeSpacing = performMontageWizard->field(PerformMontage::FieldNames::ChangeSpacing).toBool();
+        bool changeOrigin = performMontageWizard->field(PerformMontage::FieldNames::ChangeOrigin).toBool();
+        if(changeSpacing || changeOrigin)
+        {
+          float spacingX = performMontageWizard->field(PerformMontage::FieldNames::SpacingX).toFloat();
+          float spacingY = performMontageWizard->field(PerformMontage::FieldNames::SpacingY).toFloat();
+          float spacingZ = performMontageWizard->field(PerformMontage::FieldNames::SpacingZ).toFloat();
+          FloatVec3_t newSpacing = { spacingX, spacingY, spacingZ };
+          float originX = performMontageWizard->field(PerformMontage::FieldNames::OriginX).toFloat();
+          float originY = performMontageWizard->field(PerformMontage::FieldNames::OriginY).toFloat();
+          float originZ = performMontageWizard->field(PerformMontage::FieldNames::OriginZ).toFloat();
+          FloatVec3_t newOrigin = { originX, originY, originZ };
+          QVariant var;
+
+          // For each data container, add a new filter
+          for(QString dcName : dcNames)
+          {
+            AbstractFilter::Pointer setOriginResolutionFilter = filterFactory->createSetOriginResolutionFilter(dcName, changeSpacing, changeOrigin, newSpacing, newOrigin);
+
+            if(!setOriginResolutionFilter)
+            {
+              // Error!
+            }
+
+            pipeline->pushBack(setOriginResolutionFilter);
+          }
+        }
+
+        IntVec3_t montageSize = { rowColPair.second, rowColPair.first, 1 };
+
+        double tileOverlap = 15.0;
+
+        if(!stitchingOnly)
+        {
+          AbstractFilter::Pointer itkRegistrationFilter = filterFactory->createPCMTileRegistrationFilter(montageSize, dcNames, amName, daName);
+          pipeline->pushBack(itkRegistrationFilter);
+        }
+
+        DataArrayPath montagePath("MontageDC", "MontageAM", "MontageData");
+        AbstractFilter::Pointer itkStitchingFilter = filterFactory->createTileStitchingFilter(montageSize, dcNames, amName, daName, montagePath, 15.0);
+        pipeline->pushBack(itkStitchingFilter);
+
+        executePipeline(pipeline, dca);
+      }
+    }
+  }
 }
 
 // -----------------------------------------------------------------------------
