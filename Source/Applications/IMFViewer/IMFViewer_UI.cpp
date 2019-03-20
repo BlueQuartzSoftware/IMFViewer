@@ -1173,6 +1173,8 @@ void IMFViewer_UI::createMenu()
     viewMenu->addSeparator();
   }
 
+  viewMenu->addAction(m_Internals->queueDockWidget->toggleViewAction());
+
   m_MenuBar->addMenu(viewMenu);
 
   // Add Filter Menu
