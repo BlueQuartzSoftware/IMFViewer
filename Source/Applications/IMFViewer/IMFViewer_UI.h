@@ -42,6 +42,7 @@
 #include "SIMPLib/Filtering/FilterPipeline.h"
 
 #include "SIMPLVtkLib/QtWidgets/VSQueueWidget.h"
+#include "SIMPLVtkLib/Visualization/VisualFilters/VSAbstractFilter.h"
 
 class QtSSettings;
 class ImportMontageWizard;
@@ -273,6 +274,14 @@ private:
    * @param pipeline
    */
   void executePipeline(FilterPipeline::Pointer pipeline, DataContainerArray::Pointer);
+
+  /**
+  * @brief Build a custom data container array for montaging
+  * @param dataContainerArray
+  * @param montageDatasets
+  */
+  std::pair<int, int> buildCustomDCA(DataContainerArray::Pointer dca,
+	VSAbstractFilter::FilterListType montageDatasets);
 
   IMFViewer_UI(const IMFViewer_UI&);   // Copy Constructor Not Implemented
   void operator=(const IMFViewer_UI&); // Operator '=' Not Implemented

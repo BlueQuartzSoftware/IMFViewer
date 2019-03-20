@@ -61,6 +61,9 @@
 #include "SIMPLVtkLib/QtWidgets/VSMontageImporter.h"
 #include "SIMPLVtkLib/QtWidgets/VSQueueModel.h"
 #include "SIMPLVtkLib/Visualization/VisualFilters/VSDataSetFilter.h"
+
+#include "SIMPLVtkLib/Visualization/VisualFilters/VSTransform.h"
+#include "SIMPLVtkLib/Wizards/ExecutePipeline/PipelineWorker.h"
 #include "SIMPLVtkLib/Wizards/ExecutePipeline/ExecutePipelineConstants.h"
 #include "SIMPLVtkLib/Wizards/ExecutePipeline/ExecutePipelineWizard.h"
 #include "SIMPLVtkLib/Wizards/ExecutePipeline/PipelineWorker.h"
@@ -647,20 +650,10 @@ void IMFViewer_UI::addPipelineToQueue(FilterPipeline::Pointer pipeline)
 // -----------------------------------------------------------------------------
 void IMFViewer_UI::executePipeline(FilterPipeline::Pointer pipeline, DataContainerArray::Pointer dca)
 {
-  pipeline->addMessageReceiver(this);
-  m_PipelineWorker = new PipelineWorker();
-  connect(m_PipelineWorker, SIGNAL(finished()), this, SLOT(pipelineWorkerFinished()));
-  connect(m_PipelineWorker, &PipelineWorker::resultReady, this, &IMFViewer_UI::handleMontageResults);
+  VSMontageImporter::Pointer importer = VSMontageImporter::New(pipeline, dca);
+  connect(importer.get(), &VSMontageImporter::resultReady, this, &IMFViewer_UI::handleMontageResults);
 
-  m_PipelineWorker->addPipeline(pipeline, dca);
-
-  m_PipelineWorkerThread = new QThread;
-  m_PipelineWorker->moveToThread(m_PipelineWorkerThread);
-  connect(m_PipelineWorkerThread, SIGNAL(started()), m_PipelineWorker, SLOT(process()));
-  connect(m_PipelineWorkerThread, SIGNAL(finished()), this, SLOT(pipelineThreadFinished()));
-  connect(m_PipelineWorker, SIGNAL(finished()), m_PipelineWorkerThread, SLOT(quit()));
-
-  m_PipelineWorkerThread->start();
+  m_Ui->queueWidget->addDataImporter(pipeline->getName(), importer);
 }
 
 // -----------------------------------------------------------------------------
@@ -764,7 +757,7 @@ void IMFViewer_UI::importPipeline(ExecutePipelineWizard* executePipelineWizard)
   m_DisplayMontage = executePipelineWizard->field(ImportMontage::FieldNames::DisplayMontage).toBool();
   m_DisplayOutline = executePipelineWizard->field(ImportMontage::FieldNames::DisplayOutlineOnly).toBool();
 
-  VSMainWidgetBase* baseWidget = dynamic_cast<VSMainWidgetBase*>(m_Internals->vsWidget);
+  VSMainWidgetBase* baseWidget = dynamic_cast<VSMainWidgetBase*>(m_Ui->vsWidget);
   VSFilterViewModel* filterViewModel = baseWidget->getActiveViewWidget()->getFilterViewModel();
   if(m_DisplayMontage)
   {
@@ -806,7 +799,7 @@ void IMFViewer_UI::importPipeline(ExecutePipelineWizard* executePipelineWizard)
   {
     if(executionType == ExecutePipelineWizard::ExecutionType::FromFilesystem)
     {
-    addMontagePipelineToQueue(pipelineFromJson);
+    addPipelineToQueue(pipelineFromJson);
     }
     else if(executionType == ExecutePipelineWizard::ExecutionType::OnLoadedData)
     {
@@ -815,7 +808,7 @@ void IMFViewer_UI::importPipeline(ExecutePipelineWizard* executePipelineWizard)
 
     // Construct Data Container Array with selected Dataset
     DataContainerArray::Pointer dca = DataContainerArray::New();
-    VSMainWidgetBase* baseWidget = dynamic_cast<VSMainWidgetBase*>(m_Internals->vsWidget);
+    VSMainWidgetBase* baseWidget = dynamic_cast<VSMainWidgetBase*>(m_Ui->vsWidget);
     VSController* controller = baseWidget->getController();
     VSAbstractFilter::FilterListType datasets = controller->getBaseFilters();
     int i = 0;
@@ -893,7 +886,7 @@ void IMFViewer_UI::importPipeline(ExecutePipelineWizard* executePipelineWizard)
 // -----------------------------------------------------------------------------
 void IMFViewer_UI::performMontage()
 {
-  PerformMontageWizard* performMontageWizard = new PerformMontageWizard(m_Internals->vsWidget);
+  PerformMontageWizard* performMontageWizard = new PerformMontageWizard(m_Ui->vsWidget);
   int result = performMontageWizard->exec();
 
   if(result == QDialog::Accepted)
@@ -909,7 +902,7 @@ void IMFViewer_UI::performMontage()
 // -----------------------------------------------------------------------------
 void IMFViewer_UI::performMontage(PerformMontageWizard* performMontageWizard)
 {
-  VSMainWidgetBase* baseWidget = dynamic_cast<VSMainWidgetBase*>(m_Internals->vsWidget);
+  VSMainWidgetBase* baseWidget = dynamic_cast<VSMainWidgetBase*>(m_Ui->vsWidget);
 
   VSFilterViewModel* filterViewModel = baseWidget->getActiveViewWidget()->getFilterViewModel();
   bool displayOutline = ((QWizard*)performMontageWizard)->field(PerformMontage::FieldNames::DisplayOutlineOnly).toBool();
@@ -960,15 +953,16 @@ void IMFViewer_UI::performMontage(PerformMontageWizard* performMontageWizard)
             AttributeMatrix::Pointer am = dataContainer->getAttributeMatrices().first();
             amName = am->getName();
             daName = am->getAttributeArrayNames().first();
-      montageDatasets.push_back(childFilter);
+
+            montageDatasets.push_back(childFilter);
           }
         }
       }
 
       if(validSIMPL)
       {
-    // Build the data container array
-    std::pair<int, int> rowColPair = buildCustomDCA(dca, montageDatasets);
+        // Build the data container array
+        std::pair<int, int> rowColPair = buildCustomDCA(dca, montageDatasets);
 
         QStringList dcNames = dca->getDataContainerNames();
 
@@ -1385,3 +1379,80 @@ QMenu* IMFViewer_UI::createThemeMenu(QActionGroup* actionGroup, QWidget* parent)
 
   return menuThemes;
 }
+
+// -----------------------------------------------------------------------------
+//
+// -----------------------------------------------------------------------------
+std::pair<int, int> IMFViewer_UI::buildCustomDCA(DataContainerArray::Pointer dca,
+  VSAbstractFilter::FilterListType montageDatasets)
+{
+  montageDatasets.sort([](VSAbstractFilter* first, VSAbstractFilter* second)
+  {
+	VSTransform* firstTransform = first->getTransform();
+	VSTransform* secondTransform = second->getTransform();
+	return floor(1.1 * firstTransform->getLocalPosition()[0]) < secondTransform->getLocalPosition()[0];
+  });
+  montageDatasets.sort([](VSAbstractFilter* first, VSAbstractFilter* second)
+  {
+	VSTransform* firstTransform = first->getTransform();
+	VSTransform* secondTransform = second->getTransform();
+	return floor(1.1 * firstTransform->getLocalPosition()[1]) < secondTransform->getLocalPosition()[1];
+  });
+
+  int row = 0;
+  int col = 0;
+  int numRows = 0;
+  int numCols = 0;
+  bool firstDataset = true;
+  double prevX;
+  double prevY;
+
+  std::list<VSAbstractFilter*>::const_iterator iterator;
+  for(iterator = montageDatasets.begin(); iterator != montageDatasets.end(); ++iterator)
+  {
+	VSAbstractFilter* montageDataset = *iterator;
+	double* pos = montageDataset->getTransform()->getLocalPosition();
+	if(firstDataset)
+	{
+	  prevX = pos[0];
+	  prevY = pos[1];
+	  firstDataset = false;
+	}
+	else
+	{
+	  if(pos[0] > prevX)
+	  {
+		col++;
+	  }
+	  else
+	  {
+		row++;
+		col = 0;
+	  }
+	  if((row + 1) > numRows)
+	  {
+		numRows = row + 1;
+	  }
+	  if((col + 1) > numCols)
+	  {
+		numCols = col + 1;
+	  }
+	  prevX = pos[0];
+	  prevY = pos[1];
+	}
+	VSSIMPLDataContainerFilter* dcFilter = dynamic_cast<VSSIMPLDataContainerFilter*>(montageDataset);
+	DataContainer::Pointer dataContainer = dcFilter->getWrappedDataContainer()->m_DataContainer;
+	QString dataContainerName = dataContainer->getName();
+	int indexOfUnderscore = dataContainerName.lastIndexOf("_");
+	QString dataContainerPrefix = dataContainerName.left(indexOfUnderscore - 1);
+	QString rowColIdString = tr("r%1c%2").arg(row).arg(col);
+	QString dcName = tr("%1_%2").arg(dataContainerPrefix).arg(rowColIdString);
+	dataContainer->setName(dcName);
+
+	ImageGeom::Pointer geom = dataContainer->getGeometryAs<ImageGeom>();
+	geom->setOrigin(pos[0], pos[1], 1.0f);
+	dca->addDataContainer(dataContainer);
+  }
+  return std::pair<int, int>(numRows, numCols);
+}
+
