@@ -793,91 +793,96 @@ void IMFViewer_UI::importPipeline(ExecutePipelineWizard* executePipelineWizard)
   jsonFile.close();
   QJsonDocument jsonDoc = QJsonDocument::fromJson(jsonContent.toUtf8());
   QJsonObject jsonObj = jsonDoc.object();
+
   FilterPipeline::Pointer pipelineFromJson = FilterPipeline::FromJson(jsonObj);
 
-  if(pipelineFromJson != FilterPipeline::NullPointer())
+  if(pipelineFromJson == FilterPipeline::NullPointer())
   {
-    if(executionType == ExecutePipelineWizard::ExecutionType::FromFilesystem)
-    {
-      addPipelineToQueue(pipelineFromJson);
-    }
-    else if(executionType == ExecutePipelineWizard::ExecutionType::OnLoadedData)
-    {
-      int startFilter = executePipelineWizard->field(ExecutePipeline::FieldNames::StartFilter).toInt();
-      int selectedDataset = executePipelineWizard->field(ExecutePipeline::FieldNames::SelectedDataset).toInt();
+    QMessageBox::critical(this, "Execute Pipeline", tr("The pipeline from file '%1' could not be executed because it could not be read in correctly.").arg(fi.fileName()), QMessageBox::Ok,
+                          QMessageBox::Ok);
+  }
 
-      // Construct Data Container Array with selected Dataset
-      DataContainerArray::Pointer dca = DataContainerArray::New();
-      VSMainWidgetBase* baseWidget = dynamic_cast<VSMainWidgetBase*>(m_Internals->vsWidget);
-      VSController* controller = baseWidget->getController();
-      VSAbstractFilter::FilterListType datasets = controller->getBaseFilters();
-      int i = 0;
-      for(VSAbstractFilter* dataset : datasets)
+  if(executionType == ExecutePipelineWizard::ExecutionType::FromFilesystem)
+  {
+    addPipelineToQueue(pipelineFromJson);
+  }
+  else if(executionType == ExecutePipelineWizard::ExecutionType::OnLoadedData)
+  {
+    int startFilter = executePipelineWizard->field(ExecutePipeline::FieldNames::StartFilter).toInt();
+    int selectedDataset = executePipelineWizard->field(ExecutePipeline::FieldNames::SelectedDataset).toInt();
+
+    // Construct Data Container Array with selected Dataset
+    DataContainerArray::Pointer dca = DataContainerArray::New();
+    VSMainWidgetBase* baseWidget = dynamic_cast<VSMainWidgetBase*>(m_Internals->vsWidget);
+    VSController* controller = baseWidget->getController();
+    VSAbstractFilter::FilterListType datasets = controller->getBaseFilters();
+    int i = 0;
+    for(VSAbstractFilter* dataset : datasets)
+    {
+      if(i == selectedDataset)
       {
-        if(i == selectedDataset)
+        // Add contents to data container array
+        VSAbstractFilter::FilterListType children = dataset->getChildren();
+        for(VSAbstractFilter* childFilter : children)
         {
-          // Add contents to data container array
-          VSAbstractFilter::FilterListType children = dataset->getChildren();
-          for(VSAbstractFilter* childFilter : children)
+          bool isSIMPL = dynamic_cast<VSSIMPLDataContainerFilter*>(childFilter);
+          if(isSIMPL)
           {
-            bool isSIMPL = dynamic_cast<VSSIMPLDataContainerFilter*>(childFilter);
-            if(isSIMPL)
+            VSSIMPLDataContainerFilter* dcFilter = dynamic_cast<VSSIMPLDataContainerFilter*>(childFilter);
+            if(dcFilter != nullptr)
             {
-              VSSIMPLDataContainerFilter* dcFilter = dynamic_cast<VSSIMPLDataContainerFilter*>(childFilter);
-              if(dcFilter != nullptr)
-              {
-                DataContainer::Pointer dataContainer = dcFilter->getWrappedDataContainer()->m_DataContainer;
-                dca->addDataContainer(dataContainer);
-              }
+              DataContainer::Pointer dataContainer = dcFilter->getWrappedDataContainer()->m_DataContainer;
+              dca->addDataContainer(dataContainer);
             }
           }
-          break;
         }
-        i++;
+        break;
       }
-      // Change origin and/or spacing if specified
-      FilterPipeline::Pointer pipeline = FilterPipeline::New();
-      VSFilterFactory::Pointer filterFactory = VSFilterFactory::New();
-      QStringList dcNames = dca->getDataContainerNames();
-
-      bool changeSpacing = executePipelineWizard->field(ExecutePipeline::FieldNames::ChangeSpacing).toBool();
-      bool changeOrigin = executePipelineWizard->field(ExecutePipeline::FieldNames::ChangeOrigin).toBool();
-      if(changeSpacing || changeOrigin)
-      {
-        float spacingX = executePipelineWizard->field(ExecutePipeline::FieldNames::SpacingX).toFloat();
-        float spacingY = executePipelineWizard->field(ExecutePipeline::FieldNames::SpacingY).toFloat();
-        float spacingZ = executePipelineWizard->field(ExecutePipeline::FieldNames::SpacingZ).toFloat();
-        FloatVec3_t newSpacing = {spacingX, spacingY, spacingZ};
-        float originX = executePipelineWizard->field(ExecutePipeline::FieldNames::OriginX).toFloat();
-        float originY = executePipelineWizard->field(ExecutePipeline::FieldNames::OriginY).toFloat();
-        float originZ = executePipelineWizard->field(ExecutePipeline::FieldNames::OriginZ).toFloat();
-        FloatVec3_t newOrigin = {originX, originY, originZ};
-        QVariant var;
-
-        // For each data container, add a new filter
-        for(QString dcName : dcNames)
-        {
-          AbstractFilter::Pointer setOriginResolutionFilter = filterFactory->createSetOriginResolutionFilter(dcName, changeSpacing, changeOrigin, newSpacing, newOrigin);
-
-          if(!setOriginResolutionFilter)
-          {
-            // Error!
-          }
-
-          pipeline->pushBack(setOriginResolutionFilter);
-        }
-      }
-
-      // Reconstruct pipeline starting with new start filter
-      for(int i = startFilter; i < pipelineFromJson->getFilterContainer().size(); i++)
-      {
-        AbstractFilter::Pointer filter = pipelineFromJson->getFilterContainer().at(i);
-        filter->setDataContainerArray(dca);
-        pipeline->pushBack(filter);
-      }
-
-      addPipelineToQueue(pipeline);
+      i++;
     }
+    // Change origin and/or spacing if specified
+    FilterPipeline::Pointer pipeline = FilterPipeline::New();
+    pipeline->setName(pipelineFromJson->getName());
+    VSFilterFactory::Pointer filterFactory = VSFilterFactory::New();
+    QStringList dcNames = dca->getDataContainerNames();
+
+    bool changeSpacing = executePipelineWizard->field(ExecutePipeline::FieldNames::ChangeSpacing).toBool();
+    bool changeOrigin = executePipelineWizard->field(ExecutePipeline::FieldNames::ChangeOrigin).toBool();
+    if(changeSpacing || changeOrigin)
+    {
+      float spacingX = executePipelineWizard->field(ExecutePipeline::FieldNames::SpacingX).toFloat();
+      float spacingY = executePipelineWizard->field(ExecutePipeline::FieldNames::SpacingY).toFloat();
+      float spacingZ = executePipelineWizard->field(ExecutePipeline::FieldNames::SpacingZ).toFloat();
+      FloatVec3_t newSpacing = {spacingX, spacingY, spacingZ};
+      float originX = executePipelineWizard->field(ExecutePipeline::FieldNames::OriginX).toFloat();
+      float originY = executePipelineWizard->field(ExecutePipeline::FieldNames::OriginY).toFloat();
+      float originZ = executePipelineWizard->field(ExecutePipeline::FieldNames::OriginZ).toFloat();
+      FloatVec3_t newOrigin = {originX, originY, originZ};
+      QVariant var;
+
+      // For each data container, add a new filter
+      for(QString dcName : dcNames)
+      {
+        AbstractFilter::Pointer setOriginResolutionFilter = filterFactory->createSetOriginResolutionFilter(dcName, changeSpacing, changeOrigin, newSpacing, newOrigin);
+
+        if(!setOriginResolutionFilter)
+        {
+          // Error!
+        }
+
+        pipeline->pushBack(setOriginResolutionFilter);
+      }
+    }
+
+    // Reconstruct pipeline starting with new start filter
+    for(int i = startFilter; i < pipelineFromJson->getFilterContainer().size(); i++)
+    {
+      AbstractFilter::Pointer filter = pipelineFromJson->getFilterContainer().at(i);
+      filter->setDataContainerArray(dca);
+      pipeline->pushBack(filter);
+    }
+
+    addPipelineToQueue(pipeline);
   }
 }
 
