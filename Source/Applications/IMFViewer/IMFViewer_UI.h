@@ -119,7 +119,7 @@ protected slots:
   /**
    * @brief importData
    */
-  void importData(const QString &filePath);
+  void importData(const QString& filePath);
 
   /**
    * @brief Import a pipeline to execute
@@ -154,13 +154,13 @@ protected slots:
    * @param errorMessage
    * @param code
    */
-  void processErrorMessage(const QString &errorMessage, int code);
+  void processErrorMessage(const QString& errorMessage, int code);
 
   /**
    * @brief processStatusMessage
    * @param statusMessage
    */
-  void processStatusMessage(const QString &statusMessage);
+  void processStatusMessage(const QString& statusMessage);
 
   /**
    * @brief handleDatasetResults
@@ -247,7 +247,7 @@ private:
    * @brief runPipeline
    * @param pipeline
    */
-  void addMontagePipelineToQueue(FilterPipeline::Pointer pipeline);
+  void addPipelineToQueue(FilterPipeline::Pointer pipeline);
 
   /**
    * @brief executePipeline
