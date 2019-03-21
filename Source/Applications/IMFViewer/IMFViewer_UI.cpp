@@ -726,7 +726,9 @@ void IMFViewer_UI::handleMontageResults(FilterPipeline::Pointer pipeline, int er
 // -----------------------------------------------------------------------------
 void IMFViewer_UI::importData(const QString& filePath)
 {
-  VSDatasetImporter::Pointer importer = VSDatasetImporter::New(filePath);
+  VSFileNameFilter* textFilter = new VSFileNameFilter(filePath);
+  VSDataSetFilter* filter = new VSDataSetFilter(filePath, textFilter);
+  VSDatasetImporter::Pointer importer = VSDatasetImporter::New(textFilter, filter);
   connect(importer.get(), &VSDatasetImporter::resultReady, this, &IMFViewer_UI::handleDatasetResults);
 
   QFileInfo fi(filePath);
