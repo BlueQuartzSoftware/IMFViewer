@@ -55,6 +55,7 @@
 #include "SVWidgetsLib/QtSupport/QtSSettings.h"
 #include "SVWidgetsLib/Widgets/SVStyle.h"
 
+#include "SIMPLVtkLib/Common/SIMPLVtkLibConstants.h"
 #include "SIMPLVtkLib/QtWidgets/VSDatasetImporter.h"
 #include "SIMPLVtkLib/QtWidgets/VSFilterFactory.h"
 #include "SIMPLVtkLib/QtWidgets/VSMontageImporter.h"
@@ -90,9 +91,9 @@ public:
 // -----------------------------------------------------------------------------
 IMFViewer_UI::IMFViewer_UI(QWidget* parent)
 : QMainWindow(parent)
-, m_Internals(new vsInternals())
+, m_Ui(new vsInternals())
 {
-  m_Internals->setupUi(this);
+  m_Ui->setupUi(this);
 
   setupGui();
 }
@@ -113,24 +114,24 @@ IMFViewer_UI::~IMFViewer_UI()
 // -----------------------------------------------------------------------------
 void IMFViewer_UI::setupGui()
 {
-  connect(m_Internals->importDataBtn, &QPushButton::clicked, [=] { importData(); });
-  connect(m_Internals->importMontageBtn, &QPushButton::clicked, this, &IMFViewer_UI::importMontage);
+  connect(m_Ui->importDataBtn, &QPushButton::clicked, [=] { importData(); });
+  connect(m_Ui->importMontageBtn, &QPushButton::clicked, this, &IMFViewer_UI::importMontage);
 
   // Connection to update the recent files list on all windows when it changes
   QtSRecentFileList* recentsList = QtSRecentFileList::Instance(5, this);
   connect(recentsList, SIGNAL(fileListChanged(const QString&)), this, SLOT(updateRecentFileList(const QString&)));
 
-  VSQueueModel* queueModel = new VSQueueModel(m_Internals->queueWidget);
-  m_Internals->queueWidget->setQueueModel(queueModel);
-  connect(m_Internals->queueWidget, &VSQueueWidget::notifyErrorMessage, this, &IMFViewer_UI::processErrorMessage);
-  connect(m_Internals->queueWidget, &VSQueueWidget::notifyStatusMessage, this, &IMFViewer_UI::processStatusMessage);
+  VSQueueModel* queueModel = new VSQueueModel(m_Ui->queueWidget);
+  m_Ui->queueWidget->setQueueModel(queueModel);
+  connect(m_Ui->queueWidget, &VSQueueWidget::notifyStatusMessage, this, &IMFViewer_UI::processStatusMessage);
 
   createMenu();
 
-  readSettings();
+  m_Ui->queueDockWidget->hide();
+  m_Ui->vsWidget->setFilterView(m_Ui->treeView);
+  m_Ui->vsWidget->setInfoWidget(m_Ui->infoWidget);
 
-  m_Internals->vsWidget->setFilterView(m_Internals->treeView);
-  m_Internals->vsWidget->setInfoWidget(m_Internals->infoWidget);
+  readSettings();
 }
 
 // -----------------------------------------------------------------------------
@@ -154,7 +155,7 @@ void IMFViewer_UI::importData()
   QMimeDatabase db;
   QMimeType mimeType = db.mimeTypeForFile(filePath, QMimeDatabase::MatchContent);
 
-  VSMainWidgetBase* baseWidget = dynamic_cast<VSMainWidgetBase*>(m_Internals->vsWidget);
+  VSMainWidgetBase* baseWidget = dynamic_cast<VSMainWidgetBase*>(m_Ui->vsWidget);
 
   if(ext == "dream3d")
   {
@@ -196,7 +197,7 @@ void IMFViewer_UI::importMontage()
     m_DisplayMontage = montageWizard->field(ImportMontage::FieldNames::DisplayMontage).toBool();
     m_DisplayOutline = montageWizard->field(ImportMontage::FieldNames::DisplayOutlineOnly).toBool();
 
-    VSMainWidgetBase* baseWidget = dynamic_cast<VSMainWidgetBase*>(m_Internals->vsWidget);
+    VSMainWidgetBase* baseWidget = dynamic_cast<VSMainWidgetBase*>(m_Ui->vsWidget);
     VSFilterViewModel* filterViewModel = baseWidget->getActiveViewWidget()->getFilterViewModel();
     if(m_DisplayMontage)
     {
@@ -635,7 +636,7 @@ void IMFViewer_UI::addPipelineToQueue(FilterPipeline::Pointer pipeline)
   VSMontageImporter::Pointer importer = VSMontageImporter::New(pipeline);
   connect(importer.get(), &VSMontageImporter::resultReady, this, &IMFViewer_UI::handleMontageResults);
 
-  m_Internals->queueWidget->addDataImporter(pipeline->getName(), importer);
+  m_Ui->queueWidget->addDataImporter(pipeline->getName(), importer);
 }
 
 // -----------------------------------------------------------------------------
@@ -667,7 +668,7 @@ void IMFViewer_UI::handleDatasetResults(VSFileNameFilter* textFilter, VSDataSetF
   // Check if any data was imported
   if(filter->getOutput())
   {
-    VSMainWidgetBase* baseWidget = dynamic_cast<VSMainWidgetBase*>(m_Internals->vsWidget);
+    VSMainWidgetBase* baseWidget = dynamic_cast<VSMainWidgetBase*>(m_Ui->vsWidget);
     VSController* controller = baseWidget->getController();
     VSFilterModel* filterModel = controller->getFilterModel();
     filterModel->addFilter(textFilter, false);
@@ -719,7 +720,7 @@ void IMFViewer_UI::handleMontageResults(FilterPipeline::Pointer pipeline, int er
       }
     }
 
-    VSMainWidgetBase* baseWidget = dynamic_cast<VSMainWidgetBase*>(m_Internals->vsWidget);
+    VSMainWidgetBase* baseWidget = dynamic_cast<VSMainWidgetBase*>(m_Ui->vsWidget);
     baseWidget->importPipelineOutput(pipeline, dca);
   }
 }
@@ -733,7 +734,7 @@ void IMFViewer_UI::importData(const QString& filePath)
   connect(importer.get(), &VSDatasetImporter::resultReady, this, &IMFViewer_UI::handleDatasetResults);
 
   QFileInfo fi(filePath);
-  m_Internals->queueWidget->addDataImporter(fi.fileName(), importer);
+  m_Ui->queueWidget->addDataImporter(fi.fileName(), importer);
 }
 
 // -----------------------------------------------------------------------------
@@ -741,7 +742,7 @@ void IMFViewer_UI::importData(const QString& filePath)
 // -----------------------------------------------------------------------------
 void IMFViewer_UI::executePipeline()
 {
-  ExecutePipelineWizard* executePipelineWizard = new ExecutePipelineWizard(m_Internals->vsWidget);
+  ExecutePipelineWizard* executePipelineWizard = new ExecutePipelineWizard(m_Ui->vsWidget);
   int result = executePipelineWizard->exec();
 
   if(result == QDialog::Accepted)
@@ -760,7 +761,7 @@ void IMFViewer_UI::importPipeline(ExecutePipelineWizard* executePipelineWizard)
   m_DisplayMontage = executePipelineWizard->field(ImportMontage::FieldNames::DisplayMontage).toBool();
   m_DisplayOutline = executePipelineWizard->field(ImportMontage::FieldNames::DisplayOutlineOnly).toBool();
 
-  VSMainWidgetBase* baseWidget = dynamic_cast<VSMainWidgetBase*>(m_Internals->vsWidget);
+  VSMainWidgetBase* baseWidget = dynamic_cast<VSMainWidgetBase*>(m_Ui->vsWidget);
   VSFilterViewModel* filterViewModel = baseWidget->getActiveViewWidget()->getFilterViewModel();
   if(m_DisplayMontage)
   {
@@ -813,7 +814,7 @@ void IMFViewer_UI::importPipeline(ExecutePipelineWizard* executePipelineWizard)
 
     // Construct Data Container Array with selected Dataset
     DataContainerArray::Pointer dca = DataContainerArray::New();
-    VSMainWidgetBase* baseWidget = dynamic_cast<VSMainWidgetBase*>(m_Internals->vsWidget);
+    VSMainWidgetBase* baseWidget = dynamic_cast<VSMainWidgetBase*>(m_Ui->vsWidget);
     VSController* controller = baseWidget->getController();
     VSAbstractFilter::FilterListType datasets = controller->getBaseFilters();
     int i = 0;
@@ -889,14 +890,6 @@ void IMFViewer_UI::importPipeline(ExecutePipelineWizard* executePipelineWizard)
 // -----------------------------------------------------------------------------
 //
 // -----------------------------------------------------------------------------
-void IMFViewer_UI::processErrorMessage(const QString& errorMessage, int code)
-{
-  //  statusBar()->showMessage(errorMessage);
-}
-
-// -----------------------------------------------------------------------------
-//
-// -----------------------------------------------------------------------------
 void IMFViewer_UI::processStatusMessage(const QString& statusMessage)
 {
   statusBar()->showMessage(statusMessage);
@@ -962,7 +955,7 @@ void IMFViewer_UI::saveSession()
 
   m_OpenDialogLastDirectory = filePath;
 
-  VSController* controller = m_Internals->vsWidget->getController();
+  VSController* controller = m_Ui->vsWidget->getController();
   bool success = controller->saveSession(filePath);
 
   if(success)
@@ -1003,7 +996,7 @@ void IMFViewer_UI::loadSession()
 // -----------------------------------------------------------------------------
 void IMFViewer_UI::loadSessionFromFile(const QString& filePath)
 {
-  VSController* controller = m_Internals->vsWidget->getController();
+  VSController* controller = m_Ui->vsWidget->getController();
   bool success = controller->loadSession(filePath);
 
   if(success)
@@ -1023,6 +1016,14 @@ void IMFViewer_UI::readSettings()
 
   // Read the window settings from the prefs file
   readWindowSettings(prefs.data());
+
+  prefs->beginGroup(SIMPLVtkLib::DockWidgetSettings::GroupName);
+
+  prefs->beginGroup(SIMPLVtkLib::DockWidgetSettings::ImportQueueGroupName);
+  readDockWidgetSettings(prefs.data(), m_Ui->queueDockWidget);
+  prefs->endGroup();
+
+  prefs->endGroup();
 
   QtSRecentFileList::Instance()->readList(prefs.data());
 }
@@ -1052,11 +1053,23 @@ void IMFViewer_UI::readWindowSettings(QtSSettings* prefs)
   }
 
   QByteArray splitterGeometry = prefs->value("Splitter_Geometry", QByteArray());
-  m_Internals->splitter->restoreGeometry(splitterGeometry);
+  m_Ui->splitter->restoreGeometry(splitterGeometry);
   QByteArray splitterSizes = prefs->value("Splitter_Sizes", QByteArray());
-  m_Internals->splitter->restoreState(splitterSizes);
+  m_Ui->splitter->restoreState(splitterSizes);
 
   prefs->endGroup();
+}
+
+// -----------------------------------------------------------------------------
+//
+// -----------------------------------------------------------------------------
+void IMFViewer_UI::readDockWidgetSettings(QtSSettings* prefs, QDockWidget* dw)
+{
+  restoreDockWidget(dw);
+
+  QString name = dw->objectName();
+  bool b = prefs->value(dw->objectName(), QVariant(false)).toBool();
+  dw->setHidden(b);
 }
 
 // -----------------------------------------------------------------------------
@@ -1068,6 +1081,14 @@ void IMFViewer_UI::writeSettings()
 
   // Write the window settings to the prefs file
   writeWindowSettings(prefs.data());
+
+  prefs->beginGroup(SIMPLVtkLib::DockWidgetSettings::GroupName);
+
+  prefs->beginGroup(SIMPLVtkLib::DockWidgetSettings::ImportQueueGroupName);
+  writeDockWidgetSettings(prefs.get(), m_Ui->queueDockWidget);
+  prefs->endGroup();
+
+  prefs->endGroup();
 
   QtSRecentFileList::Instance()->writeList(prefs.data());
 }
@@ -1083,12 +1104,20 @@ void IMFViewer_UI::writeWindowSettings(QtSSettings* prefs)
   prefs->setValue(QString("MainWindowGeometry"), geo_data);
   prefs->setValue(QString("MainWindowState"), layout_data);
 
-  QByteArray splitterGeometry = m_Internals->splitter->saveGeometry();
-  QByteArray splitterSizes = m_Internals->splitter->saveState();
+  QByteArray splitterGeometry = m_Ui->splitter->saveGeometry();
+  QByteArray splitterSizes = m_Ui->splitter->saveState();
   prefs->setValue(QString("Splitter_Geometry"), splitterGeometry);
   prefs->setValue(QString("Splitter_Sizes"), splitterSizes);
 
   prefs->endGroup();
+}
+
+// -----------------------------------------------------------------------------
+//
+// -----------------------------------------------------------------------------
+void IMFViewer_UI::writeDockWidgetSettings(QtSSettings* prefs, QDockWidget* dw)
+{
+  prefs->setValue(dw->objectName(), dw->isHidden());
 }
 
 // -----------------------------------------------------------------------------
@@ -1173,12 +1202,12 @@ void IMFViewer_UI::createMenu()
     viewMenu->addSeparator();
   }
 
-  viewMenu->addAction(m_Internals->queueDockWidget->toggleViewAction());
+  viewMenu->addAction(m_Ui->queueDockWidget->toggleViewAction());
 
   m_MenuBar->addMenu(viewMenu);
 
   // Add Filter Menu
-  QMenu* filterMenu = m_Internals->vsWidget->getFilterMenu();
+  QMenu* filterMenu = m_Ui->vsWidget->getFilterMenu();
   m_MenuBar->addMenu(filterMenu);
 
   // Apply Menu Bar

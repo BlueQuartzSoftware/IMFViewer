@@ -100,6 +100,13 @@ protected:
   void readWindowSettings(QtSSettings* prefs);
 
   /**
+   * @brief readDockWidgetSettings
+   * @param prefs
+   * @param dw
+   */
+  void readDockWidgetSettings(QtSSettings* prefs, QDockWidget* dw);
+
+  /**
    * @brief writeSettings
    */
   void writeSettings();
@@ -109,6 +116,13 @@ protected:
    * @param prefs
    */
   void writeWindowSettings(QtSSettings* prefs);
+
+  /**
+   * @brief writeDockWidgetSettings
+   * @param prefs
+   * @param dw
+   */
+  void writeDockWidgetSettings(QtSSettings* prefs, QDockWidget* dw);
 
 protected slots:
   /**
@@ -150,13 +164,6 @@ protected slots:
   void updateRecentFileList(const QString& file);
 
   /**
-   * @brief processErrorMessage
-   * @param errorMessage
-   * @param code
-   */
-  void processErrorMessage(const QString& errorMessage, int code);
-
-  /**
    * @brief processStatusMessage
    * @param statusMessage
    */
@@ -178,7 +185,7 @@ protected slots:
 
 private:
   class vsInternals;
-  vsInternals* m_Internals;
+  vsInternals* m_Ui;
 
   QMenuBar* m_MenuBar = nullptr;
   QMenu* m_RecentFilesMenu = nullptr;
