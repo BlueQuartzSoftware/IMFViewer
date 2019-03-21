@@ -415,7 +415,7 @@ void IMFViewer_UI::importFijiMontage(ImportMontageWizard* montageWizard)
   VSFilterFactory::Pointer filterFactory = VSFilterFactory::New();
 
   FilterPipeline::Pointer pipeline = FilterPipeline::New();
-  QString montageName = montageWizard->field(ImportMontage::DREAM3D::FieldNames::MontageName).toString();
+  QString montageName = montageWizard->field(ImportMontage::Fiji::FieldNames::MontageName).toString();
   pipeline->setName(montageName);
 
   FijiListInfo_t fijiListInfo = montageWizard->field(ImportMontage::Fiji::FieldNames::FijiListInfo).value<FijiListInfo_t>();
@@ -506,7 +506,7 @@ void IMFViewer_UI::importRobometMontage(ImportMontageWizard* montageWizard)
   for(int slice = sliceMin; slice <= sliceMax; slice++)
   {
     FilterPipeline::Pointer pipeline = FilterPipeline::New();
-    QString montageName = montageWizard->field(ImportMontage::DREAM3D::FieldNames::MontageName).toString();
+    QString montageName = montageWizard->field(ImportMontage::Robomet::FieldNames::MontageName).toString();
     QString pipelineName = montageName;
     pipelineName.append(tr("_%1").arg(slice));
     pipeline->setName(pipelineName);
@@ -562,7 +562,7 @@ void IMFViewer_UI::importZeissMontage(ImportMontageWizard* montageWizard)
 {
   FilterPipeline::Pointer pipeline = FilterPipeline::New();
   AbstractFilter::Pointer importZeissMontage;
-  QString montageName = montageWizard->field(ImportMontage::DREAM3D::FieldNames::MontageName).toString();
+  QString montageName = montageWizard->field(ImportMontage::Zeiss::FieldNames::MontageName).toString();
   pipeline->setName(montageName);
 
   VSFilterFactory::Pointer filterFactory = VSFilterFactory::New();
@@ -924,6 +924,13 @@ void IMFViewer_UI::performMontage(PerformMontageWizard* performMontageWizard)
   m_DisplayOutline = performMontageWizard->field(PerformMontage::FieldNames::DisplayOutlineOnly).toBool();
   bool stitchingOnly = performMontageWizard->field(PerformMontage::FieldNames::StitchingOnly).toBool();
 
+  QString montageName = performMontageWizard->field(PerformMontage::FieldNames::MontageName).toString();
+  pipeline->setName(montageName);
+  QString amName = performMontageWizard
+	->field(PerformMontage::FieldNames::CellAttributeMatrixName).toString();
+  QString daName = performMontageWizard
+	->field(PerformMontage::FieldNames::ImageDataArrayName).toString();
+
   // Construct Data Container Array with selected Dataset
   DataContainerArray::Pointer dca = DataContainerArray::New();
   VSAbstractFilter::FilterListType datasets = baseWidget->getController()->getBaseFilters();
@@ -938,8 +945,6 @@ void IMFViewer_UI::performMontage(PerformMontageWizard* performMontageWizard)
       // Add contents to data container array
       VSAbstractFilter::FilterListType children = dataset->getChildren();
       bool validSIMPL = false;
-      QString amName;
-      QString daName;
       for(VSAbstractFilter* childFilter : children)
       {
         bool isSIMPL = dynamic_cast<VSSIMPLDataContainerFilter*>(childFilter);
@@ -948,13 +953,8 @@ void IMFViewer_UI::performMontage(PerformMontageWizard* performMontageWizard)
           VSSIMPLDataContainerFilter* dcFilter = dynamic_cast<VSSIMPLDataContainerFilter*>(childFilter);
           if(dcFilter != nullptr)
           {
-            DataContainer::Pointer dataContainer = dcFilter->getWrappedDataContainer()->m_DataContainer;
             validSIMPL = true;
-            AttributeMatrix::Pointer am = dataContainer->getAttributeMatrices().first();
-            amName = am->getName();
-            daName = am->getAttributeArrayNames().first();
-
-            montageDatasets.push_back(childFilter);
+			montageDatasets.push_back(childFilter);
           }
         }
       }
