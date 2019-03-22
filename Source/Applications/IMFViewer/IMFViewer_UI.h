@@ -138,6 +138,17 @@ protected slots:
   void importData(const QString& filePath);
 
   /**
+   * @brief importImage
+   */
+  void importImage();
+
+  /**
+   * @brief importImage
+   * @param filePath
+   */
+  void importImage(const QString& filePath);
+
+  /**
    * @brief Import a pipeline to execute
    * @param executePipelineWizard
    */

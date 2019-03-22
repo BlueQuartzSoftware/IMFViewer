@@ -193,6 +193,43 @@ void IMFViewer_UI::importData()
 // -----------------------------------------------------------------------------
 //
 // -----------------------------------------------------------------------------
+void IMFViewer_UI::importImage()
+{
+  QString filter = tr("Image File (*.png *.tiff *.jpeg *.bmp);;All Files (*.*)");
+  QString filePath = QFileDialog::getOpenFileName(this, tr("Select an image file"),
+    m_OpenDialogLastDirectory, filter);
+
+  if(filePath.isEmpty())
+  {
+    return;
+  }
+
+  m_OpenDialogLastDirectory = filePath;
+
+  QFileInfo fi(filePath);
+  QString ext = fi.completeSuffix();
+  QMimeDatabase db;
+  QMimeType mimeType = db.mimeTypeForFile(filePath, QMimeDatabase::MatchContent);
+
+  VSMainWidgetBase* baseWidget = dynamic_cast<VSMainWidgetBase*>(m_Ui->vsWidget);
+
+  if(mimeType.inherits("image/png") || mimeType.inherits("image/tiff") || mimeType.inherits("image/jpeg") || mimeType.inherits("image/bmp"))
+  {
+    importImage(filePath);
+  }
+  else
+  {
+    QMessageBox::critical(this, "Invalid File Type",
+                          tr("IMF Viewer failed to detect a valid image file type for the path provided.")
+                              .arg(filePath),
+                          QMessageBox::StandardButton::Ok);
+    return;
+  }
+}
+
+// -----------------------------------------------------------------------------
+//
+// -----------------------------------------------------------------------------
 void IMFViewer_UI::importMontage()
 {
   ImportMontageWizard* montageWizard = new ImportMontageWizard(this);
@@ -738,6 +775,29 @@ void IMFViewer_UI::importData(const QString& filePath)
 // -----------------------------------------------------------------------------
 //
 // -----------------------------------------------------------------------------
+void IMFViewer_UI::importImage(const QString& filePath)
+{
+  VSFilterFactory::Pointer filterFactory = VSFilterFactory::New();
+
+  FilterPipeline::Pointer pipeline = FilterPipeline::New();
+  QFileInfo fi(filePath);
+  pipeline->setName(fi.fileName());
+    
+  AbstractFilter::Pointer imageReaderFilter = filterFactory->createImageFileReaderFilter(filePath);
+  if(!imageReaderFilter)
+  {
+    // Error!
+  }
+
+  pipeline->pushBack(imageReaderFilter);
+
+  // Run the pipeline
+  addPipelineToQueue(pipeline);
+}
+
+// -----------------------------------------------------------------------------
+//
+// -----------------------------------------------------------------------------
 void IMFViewer_UI::executePipeline()
 {
   ExecutePipelineWizard* executePipelineWizard = new ExecutePipelineWizard(m_Ui->vsWidget);
@@ -1271,6 +1331,11 @@ void IMFViewer_UI::createMenu()
   importDataAction->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_D));
   connect(importDataAction, &QAction::triggered, [=] { IMFViewer_UI::importData(); });
   fileMenu->addAction(importDataAction);
+
+  QAction* importImageAction = new QAction("Import Image");
+  importImageAction->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_I));
+  connect(importImageAction, &QAction::triggered, [=] { IMFViewer_UI::importImage(); });
+  fileMenu->addAction(importImageAction);
 
   QAction* importMontageAction = new QAction("Import Montage");
   importMontageAction->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_M));
