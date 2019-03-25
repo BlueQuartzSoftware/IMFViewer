@@ -136,6 +136,13 @@
        </widget>
       </item>
       <item>
+       <widget class="QPushButton" name="importImagesBtn">
+        <property name="text">
+         <string>Import Images</string>
+        </property>
+       </widget>
+      </item>
+      <item>
        <widget class="QPushButton" name="importMontageBtn">
         <property name="text">
          <string>Import Montage</string>

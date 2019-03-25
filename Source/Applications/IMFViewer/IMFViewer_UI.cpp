@@ -121,6 +121,7 @@ IMFViewer_UI::~IMFViewer_UI()
 void IMFViewer_UI::setupGui()
 {
   connect(m_Ui->importDataBtn, &QPushButton::clicked, [=] { importData(); });
+  connect(m_Ui->importImagesBtn, &QPushButton::clicked, [=] { importImages(); });
   connect(m_Ui->importMontageBtn, &QPushButton::clicked, this, &IMFViewer_UI::importMontage);
 
   // Connection to update the recent files list on all windows when it changes
