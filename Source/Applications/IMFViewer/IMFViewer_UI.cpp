@@ -193,38 +193,38 @@ void IMFViewer_UI::importData()
 // -----------------------------------------------------------------------------
 //
 // -----------------------------------------------------------------------------
-void IMFViewer_UI::importImage()
+void IMFViewer_UI::importImages()
 {
-  QString filter = tr("Image File (*.png *.tiff *.jpeg *.bmp);;All Files (*.*)");
-  QString filePath = QFileDialog::getOpenFileName(this, tr("Select an image file"),
+  QString filter = tr("Image File (*.png *.tiff *.tif *.jpeg *.jpg *.bmp);;All Files (*.*)");
+  QStringList filePaths = QFileDialog::getOpenFileNames(this, tr("Select an image file"),
     m_OpenDialogLastDirectory, filter);
 
-  if(filePath.isEmpty())
+  if(filePaths.isEmpty())
   {
     return;
   }
 
-  m_OpenDialogLastDirectory = filePath;
+  m_OpenDialogLastDirectory = filePaths[0];
 
-  QFileInfo fi(filePath);
-  QString ext = fi.completeSuffix();
-  QMimeDatabase db;
-  QMimeType mimeType = db.mimeTypeForFile(filePath, QMimeDatabase::MatchContent);
-
-  VSMainWidgetBase* baseWidget = dynamic_cast<VSMainWidgetBase*>(m_Ui->vsWidget);
-
-  if(mimeType.inherits("image/png") || mimeType.inherits("image/tiff") || mimeType.inherits("image/jpeg") || mimeType.inherits("image/bmp"))
+  for(QString filePath : filePaths)
   {
-    importImage(filePath);
+	QFileInfo fi(filePath);
+	QString ext = fi.completeSuffix();
+	QMimeDatabase db;
+	QMimeType mimeType = db.mimeTypeForFile(filePath, QMimeDatabase::MatchContent);
+
+	if(!(mimeType.inherits("image/png") || mimeType.inherits("image/tiff") ||
+	  mimeType.inherits("image/jpeg") || mimeType.inherits("image/bmp")))
+	{
+	  QMessageBox::critical(this, "Invalid File Type",
+		tr("IMF Viewer failed to detect a valid image file type for the one of the file paths provided.")
+		.arg(filePath),
+		QMessageBox::StandardButton::Ok);
+	  return;
+	}
   }
-  else
-  {
-    QMessageBox::critical(this, "Invalid File Type",
-                          tr("IMF Viewer failed to detect a valid image file type for the path provided.")
-                              .arg(filePath),
-                          QMessageBox::StandardButton::Ok);
-    return;
-  }
+
+  importImages(filePaths);
 }
 
 // -----------------------------------------------------------------------------
@@ -775,21 +775,27 @@ void IMFViewer_UI::importData(const QString& filePath)
 // -----------------------------------------------------------------------------
 //
 // -----------------------------------------------------------------------------
-void IMFViewer_UI::importImage(const QString& filePath)
+void IMFViewer_UI::importImages(const QStringList& filePaths)
 {
   VSFilterFactory::Pointer filterFactory = VSFilterFactory::New();
 
   FilterPipeline::Pointer pipeline = FilterPipeline::New();
-  QFileInfo fi(filePath);
+  QFileInfo fi(filePaths[0]);
   pipeline->setName(fi.fileName());
     
-  AbstractFilter::Pointer imageReaderFilter = filterFactory->createImageFileReaderFilter(filePath);
-  if(!imageReaderFilter)
+  for(int i = 0; i < filePaths.size(); i++)
   {
-    // Error!
-  }
+	QString filePath = filePaths[i];
+	QString dcName = tr("ImageDataContainer_%1").arg(i);
+	AbstractFilter::Pointer imageReaderFilter = filterFactory->createImageFileReaderFilter(filePath, dcName);
+	if(!imageReaderFilter)
+	{
+	  // Error!
+	  continue;
+	}
 
-  pipeline->pushBack(imageReaderFilter);
+	pipeline->pushBack(imageReaderFilter);
+  }
 
   // Run the pipeline
   addPipelineToQueue(pipeline);
@@ -1332,10 +1338,10 @@ void IMFViewer_UI::createMenu()
   connect(importDataAction, &QAction::triggered, [=] { IMFViewer_UI::importData(); });
   fileMenu->addAction(importDataAction);
 
-  QAction* importImageAction = new QAction("Import Image");
-  importImageAction->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_I));
-  connect(importImageAction, &QAction::triggered, [=] { IMFViewer_UI::importImage(); });
-  fileMenu->addAction(importImageAction);
+  QAction* importImagesAction = new QAction("Import Images");
+  importImagesAction->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_I));
+  connect(importImagesAction, &QAction::triggered, [=] { IMFViewer_UI::importImages(); });
+  fileMenu->addAction(importImagesAction);
 
   QAction* importMontageAction = new QAction("Import Montage");
   importMontageAction->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_M));
