@@ -79,6 +79,12 @@ public:
    */
   QMenuBar* getMenuBar();
 
+  /**
+   * @brief Saves an image to a file
+   * @return
+   */
+  void saveImage();
+
 protected:
   /**
    * @brief setupGui
@@ -206,6 +212,12 @@ protected slots:
    * @param err
    */
   void handleMontageResults(FilterPipeline::Pointer pipeline, int err);
+
+  /**
+   * @brief listenSelectionChanged
+   * @param filters
+   */
+  void listenSelectionChanged(VSAbstractFilter::FilterListType filters);
 
 private:
   class vsInternals;

@@ -123,6 +123,8 @@ void IMFViewer_UI::setupGui()
   connect(m_Ui->importDataBtn, &QPushButton::clicked, [=] { importData(); });
   connect(m_Ui->importImagesBtn, &QPushButton::clicked, [=] { importImages(); });
   connect(m_Ui->importMontageBtn, &QPushButton::clicked, this, &IMFViewer_UI::importMontage);
+  connect(m_Ui->saveImageBtn, &QPushButton::clicked, this, [=] { saveImage(); });
+  m_Ui->saveImageBtn->setEnabled(false);
 
   // Connection to update the recent files list on all windows when it changes
   QtSRecentFileList* recentsList = QtSRecentFileList::Instance(5, this);
@@ -139,6 +141,12 @@ void IMFViewer_UI::setupGui()
   m_Ui->vsWidget->setInfoWidget(m_Ui->infoWidget);
 
   readSettings();
+
+  // Set up the save image action for the filter view
+  VSMainWidgetBase* baseWidget = dynamic_cast<VSMainWidgetBase*>(m_Ui->vsWidget);
+  VSFilterView* filterView = baseWidget->getFilterView();
+  connect(filterView, &VSFilterView::saveFilterRequested, [=] { saveImage(); });
+  connect(baseWidget, &VSMainWidgetBase::selectedFiltersChanged, this, &IMFViewer_UI::listenSelectionChanged);
 }
 
 // -----------------------------------------------------------------------------
@@ -985,8 +993,7 @@ void IMFViewer_UI::performMontage(PerformMontageWizard* performMontageWizard)
   filterViewModel->setDisplayType(ImportMontageWizard::DisplayType::Montage);
   }
 
-  VSAbstractFilter::FilterListType selectedFilters = baseWidget->getActiveViewWidget()->getSelectedFilters();
-
+  QString selectedFilterName = performMontageWizard->field(PerformMontage::FieldNames::SelectedDataset).toString();
   FilterPipeline::Pointer pipeline = FilterPipeline::New();
   VSFilterFactory::Pointer filterFactory = VSFilterFactory::New();
   m_DisplayMontage = performMontageWizard->field(PerformMontage::FieldNames::DisplayMontage).toBool();
@@ -1007,9 +1014,7 @@ void IMFViewer_UI::performMontage(PerformMontageWizard* performMontageWizard)
   int i = 0;
   for(VSAbstractFilter* dataset : datasets)
   {
-    bool found = (std::find(selectedFilters.begin(),
-                            selectedFilters.end(), dataset) != selectedFilters.end());
-    if(found)
+    if(selectedFilterName == dataset->getFilterName())
     {
       // Add contents to data container array
       VSAbstractFilter::FilterListType children = dataset->getChildren();
@@ -1077,9 +1082,27 @@ void IMFViewer_UI::performMontage(PerformMontageWizard* performMontageWizard)
         AbstractFilter::Pointer itkStitchingFilter = filterFactory->createTileStitchingFilter(montageSize, dcNames, amName, daName, montagePath, 15.0);
         pipeline->pushBack(itkStitchingFilter);
 
+		// Check if output to file was requested
+		bool saveToFile = performMontageWizard->field(PerformMontage::FieldNames::SaveToFile).toBool();
+		if(saveToFile)
+		{
+		  QString outputFilePath = performMontageWizard
+			->field(PerformMontage::FieldNames::OutputFilePath).toString();
+		  QString dcName = performMontageWizard
+			->field(PerformMontage::FieldNames::OutputDataContainerName).toString();
+		  QString amName = performMontageWizard
+			->field(PerformMontage::FieldNames::OutputCellAttributeMatrixName).toString();
+		  QString dataArrayName = performMontageWizard
+			->field(PerformMontage::FieldNames::OutputImageArrayName).toString();
+		  AbstractFilter::Pointer itkImageWriterFilter = filterFactory->createImageFileWriterFilter(outputFilePath,
+			dcName, amName, dataArrayName);
+		  pipeline->pushBack(itkImageWriterFilter);
+		}
+
         executePipeline(pipeline, dca);
       }
     }
+	break;
   }
 }
 
@@ -1159,6 +1182,41 @@ void IMFViewer_UI::saveSession()
     // Add file to the recent files list
     QtSRecentFileList* list = QtSRecentFileList::Instance();
     list->addFile(filePath);
+  }
+}
+
+// -----------------------------------------------------------------------------
+//
+// -----------------------------------------------------------------------------
+void IMFViewer_UI::saveImage()
+{
+  QString filter = tr("Image File (*.png *.tiff *.jpeg *.bmp)");
+  QString filePath = QFileDialog::getSaveFileName(this, "Save As Image File", m_OpenDialogLastDirectory, filter);
+  if(filePath.isEmpty())
+  {
+	return;
+  }
+
+  m_OpenDialogLastDirectory = filePath;
+  VSController* controller = m_Ui->vsWidget->getController();
+  VSMainWidgetBase* baseWidget = dynamic_cast<VSMainWidgetBase*>(m_Ui->vsWidget);
+  VSFilterViewModel* filterViewModel = baseWidget->getActiveViewWidget()->getFilterViewModel();
+  VSAbstractFilter::FilterListType selectedFilters = baseWidget->getActiveViewWidget()->getSelectedFilters();
+
+  bool success = controller->saveAsImage(filePath, selectedFilters.front());
+
+  if(success)
+  {
+	// Add file to the recent files list
+	QtSRecentFileList* list = QtSRecentFileList::Instance();
+	list->addFile(filePath);
+  }
+  else
+  {
+	QMessageBox::critical(this, "Invalid Filter Type",
+	  tr("The filter must be a data container filter."),
+	  QMessageBox::StandardButton::Ok);
+	return;
   }
 }
 
@@ -1367,9 +1425,15 @@ void IMFViewer_UI::createMenu()
   fileMenu->addAction(openAction);
 
   QAction* saveAction = new QAction("Save Session");
-  openAction->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_S));
+  saveAction->setShortcut(QKeySequence(Qt::CTRL + Qt::SHIFT + Qt::Key_S));
   connect(saveAction, &QAction::triggered, this, &IMFViewer_UI::saveSession);
   fileMenu->addAction(saveAction);
+
+  QAction* saveImageAction = new QAction("Save Image");
+  saveImageAction->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_S));
+  saveImageAction->setEnabled(false);
+  connect(saveImageAction, &QAction::triggered, this, &IMFViewer_UI::saveImage);
+  fileMenu->addAction(saveImageAction);
 
   fileMenu->addSeparator();
 
@@ -1452,6 +1516,36 @@ QMenu* IMFViewer_UI::createThemeMenu(QActionGroup* actionGroup, QWidget* parent)
   }
 
   return menuThemes;
+}
+
+// -----------------------------------------------------------------------------
+//
+// -----------------------------------------------------------------------------
+void IMFViewer_UI::listenSelectionChanged(VSAbstractFilter::FilterListType filters)
+{
+  if(filters.empty())
+  {
+	return;
+  }
+  bool isSIMPL = dynamic_cast<VSSIMPLDataContainerFilter*>(filters.front());
+  m_Ui->saveImageBtn->setEnabled(isSIMPL);
+  QList<QAction*> actions = m_MenuBar->actions();
+  for(QAction* action : actions)
+  {
+	if(action->text() == "File")
+	{
+	  QList<QAction*> fileActions = action->menu()->actions();
+	  for(QAction* fileAction : fileActions)
+	  {
+		if(fileAction->text() == "Save Image")
+		{
+		  fileAction->setEnabled(isSIMPL);
+		  break;
+		}
+	  }
+	  break;
+	}
+  }
 }
 
 // -----------------------------------------------------------------------------
