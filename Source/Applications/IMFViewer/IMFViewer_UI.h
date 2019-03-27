@@ -85,6 +85,12 @@ public:
    */
   void saveImage();
 
+  /**
+   * @brief Saves filter data to a DREAM3D File
+   * @return
+   */
+  void saveDream3d();
+
 protected:
   /**
    * @brief setupGui

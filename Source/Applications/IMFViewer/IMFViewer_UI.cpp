@@ -36,6 +36,7 @@
 #include "IMFViewer_UI.h"
 
 #include <QtConcurrent>
+#include <QDesktopServices>
 
 #include <QtCore/QFileInfo>
 #include <QtCore/QMimeDatabase>
@@ -1210,11 +1211,50 @@ void IMFViewer_UI::saveImage()
 	// Add file to the recent files list
 	QtSRecentFileList* list = QtSRecentFileList::Instance();
 	list->addFile(filePath);
+
+	// Open the image in the default application for the system
+	QDesktopServices::openUrl(QUrl::fromLocalFile(filePath));
   }
   else
   {
 	QMessageBox::critical(this, "Invalid Filter Type",
 	  tr("The filter must be a data container filter."),
+	  QMessageBox::StandardButton::Ok);
+	return;
+  }
+}
+
+// -----------------------------------------------------------------------------
+//
+// -----------------------------------------------------------------------------
+void IMFViewer_UI::saveDream3d()
+{
+  QString filter = tr("DREAM3D File (*.dream3d)");
+  QString filePath = QFileDialog::getSaveFileName(this, "Save As DREAM3D File",
+	m_OpenDialogLastDirectory, filter);
+  if(filePath.isEmpty())
+  {
+	return;
+  }
+
+  m_OpenDialogLastDirectory = filePath;
+  VSController* controller = m_Ui->vsWidget->getController();
+  VSMainWidgetBase* baseWidget = dynamic_cast<VSMainWidgetBase*>(m_Ui->vsWidget);
+  VSFilterViewModel* filterViewModel = baseWidget->getActiveViewWidget()->getFilterViewModel();
+  VSAbstractFilter::FilterListType selectedFilters = baseWidget->getActiveViewWidget()->getSelectedFilters();
+
+  bool success = controller->saveAsDREAM3D(filePath, selectedFilters.front());
+
+  if(success)
+  {
+	// Add file to the recent files list
+	QtSRecentFileList* list = QtSRecentFileList::Instance();
+	list->addFile(filePath);
+  }
+  else
+  {
+	QMessageBox::critical(this, "Invalid Filter Type",
+	  tr("The filter must be a data container or pipeline filter."),
 	  QMessageBox::StandardButton::Ok);
 	return;
   }
@@ -1435,6 +1475,12 @@ void IMFViewer_UI::createMenu()
   connect(saveImageAction, &QAction::triggered, this, &IMFViewer_UI::saveImage);
   fileMenu->addAction(saveImageAction);
 
+  QAction* saveDream3dAction = new QAction("Save As DREAM3D File");
+  saveDream3dAction->setShortcut(QKeySequence(Qt::CTRL + Qt::SHIFT + Qt::Key_D));
+  saveDream3dAction->setEnabled(false);
+  connect(saveDream3dAction, &QAction::triggered, this, &IMFViewer_UI::saveDream3d);
+  fileMenu->addAction(saveDream3dAction);
+
   fileMenu->addSeparator();
 
   m_RecentFilesMenu = new QMenu("Recent Sessions", this);
@@ -1528,6 +1574,7 @@ void IMFViewer_UI::listenSelectionChanged(VSAbstractFilter::FilterListType filte
 	return;
   }
   bool isSIMPL = dynamic_cast<VSSIMPLDataContainerFilter*>(filters.front());
+  bool isPipeline = dynamic_cast<VSPipelineFilter*>(filters.front());
   m_Ui->saveImageBtn->setEnabled(isSIMPL);
   QList<QAction*> actions = m_MenuBar->actions();
   for(QAction* action : actions)
@@ -1540,7 +1587,10 @@ void IMFViewer_UI::listenSelectionChanged(VSAbstractFilter::FilterListType filte
 		if(fileAction->text() == "Save Image")
 		{
 		  fileAction->setEnabled(isSIMPL);
-		  break;
+		}
+		else if(fileAction->text() == "Save As DREAM3D File")
+		{
+		  fileAction->setEnabled(isSIMPL || isPipeline);
 		}
 	  }
 	  break;
