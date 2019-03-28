@@ -773,7 +773,11 @@ void IMFViewer_UI::handleMontageResults(FilterPipeline::Pointer pipeline, int er
 // -----------------------------------------------------------------------------
 void IMFViewer_UI::importData(const QString& filePath)
 {
+  VSMainWidgetBase* baseWidget = dynamic_cast<VSMainWidgetBase*>(m_Ui->vsWidget);
+  VSFilterModel* filterModel = baseWidget->getController()->getFilterModel();
+  VSRootFilter* rootFilter = filterModel->getRootFilter();
   VSFileNameFilter* textFilter = new VSFileNameFilter(filePath);
+  textFilter->setParentFilter((VSAbstractFilter*) rootFilter);
   VSDataSetFilter* filter = new VSDataSetFilter(filePath, textFilter);
   VSDatasetImporter::Pointer importer = VSDatasetImporter::New(textFilter, filter);
   connect(importer.get(), &VSDatasetImporter::resultReady, this, &IMFViewer_UI::handleDatasetResults);
