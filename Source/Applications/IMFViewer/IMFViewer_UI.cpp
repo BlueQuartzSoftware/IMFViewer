@@ -1579,6 +1579,9 @@ void IMFViewer_UI::listenSelectionChanged(VSAbstractFilter::FilterListType filte
   }
   bool isSIMPL = dynamic_cast<VSSIMPLDataContainerFilter*>(filters.front());
   bool isPipeline = dynamic_cast<VSPipelineFilter*>(filters.front());
+  bool isDream3dFile = dynamic_cast<VSFileNameFilter*>(filters.front()) &&
+	filters.front()->getChildCount() > 0 &&
+	dynamic_cast<VSSIMPLDataContainerFilter*>(filters.front()->getChildren().front());
   m_Ui->saveImageBtn->setEnabled(isSIMPL);
   QList<QAction*> actions = m_MenuBar->actions();
   for(QAction* action : actions)
@@ -1594,7 +1597,7 @@ void IMFViewer_UI::listenSelectionChanged(VSAbstractFilter::FilterListType filte
 		}
 		else if(fileAction->text() == "Save As DREAM3D File")
 		{
-		  fileAction->setEnabled(isSIMPL || isPipeline);
+		  fileAction->setEnabled(isSIMPL || isPipeline || isDream3dFile);
 		}
 	  }
 	  break;
