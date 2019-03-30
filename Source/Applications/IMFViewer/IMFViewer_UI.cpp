@@ -1025,15 +1025,6 @@ void IMFViewer_UI::performMontage(PerformMontageWizard* performMontageWizard)
 	{
 	  if(dynamic_cast<VSFileNameFilter*>(selectedFilter))
 	  {
-		//// Set the origin of the filenamefilter to the transform of the child
-		//// if the child is of type VSDatasetFilter
-		//VSDataSetFilter* childFilter = dynamic_cast<VSDataSetFilter*>(selectedFilter
-		//  ->getChildren().front());
-		//if(childFilter != nullptr)
-		//{
-		//  selectedFilter->getTransform()->setLocalPosition(childFilter->getTransform()
-		//	->getLocalPosition());
-		//}
 		selectedFilterNames.push_back(selectedFilter->getFilterName());
 		filenameFilters.push_back(selectedFilter);
 	  }
@@ -1047,8 +1038,6 @@ void IMFViewer_UI::performMontage(PerformMontageWizard* performMontageWizard)
 			selectedFilterNames.push_back(parentFilterName);
 			filenameFilters.push_back(selectedFilter->getParentFilter());
 		  }
-		 // selectedFilter->getParentFilter()->getTransform()
-			//->setLocalPosition(selectedFilter->getTransform()->getLocalPosition());
 		}
 	  }
 	}
