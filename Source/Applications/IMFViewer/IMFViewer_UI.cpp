@@ -37,6 +37,7 @@
 
 #include <QtConcurrent>
 #include <QDesktopServices>
+#include <vtkImageData.h>
 
 #include <QtCore/QFileInfo>
 #include <QtCore/QMimeDatabase>
@@ -1004,11 +1005,11 @@ void IMFViewer_UI::performMontage(PerformMontageWizard* performMontageWizard)
 
   if(displayOutline)
   {
-  filterViewModel->setDisplayType(ImportMontageWizard::DisplayType::Outline);
+	filterViewModel->setDisplayType(ImportMontageWizard::DisplayType::Outline);
   }
   else
   {
-  filterViewModel->setDisplayType(ImportMontageWizard::DisplayType::Montage);
+	filterViewModel->setDisplayType(ImportMontageWizard::DisplayType::Montage);
   }
 
   QStringList selectedFilterNames;
@@ -1061,16 +1062,58 @@ void IMFViewer_UI::performMontage(PerformMontageWizard* performMontageWizard)
 	  for(VSAbstractFilter* filter : filenameFilters)
 	  {
 		VSFileNameFilter* filenameFilter = dynamic_cast<VSFileNameFilter*>(filter);
+		double* pos = filenameFilter->getChildren().front()->getTransform()->getLocalPosition();
+		double scale[3] = { 1.0f, 1.0f, 1.0f };
+		vtkImageData* imageData = dynamic_cast<vtkImageData*>(filenameFilter
+		  ->getChildren().front()->getOutput().Get());
+		if(imageData != nullptr)
+		{
+		  int extent[6];
+		  imageData->GetExtent(extent);
+		  scale[0] = extent[1];
+		  scale[1] = extent[3];
+		}
 		QString filePath = filenameFilter->getFilePath();
-		QString dcName = dcNames.at(i++);
+		QFileInfo fi(filePath);
+		QString fileName = fi.fileName();
+		QString dcName;
+		for(QString name : dcNames)
+		{
+		  if(name.contains(fileName))
+		  {
+			dcName = name;
+		  }
+		}
+		if(dcName.isEmpty())
+		{
+		  // Error!
+		  continue;
+		}
+
 		AbstractFilter::Pointer imageReaderFilter = filterFactory->createImageFileReaderFilter(filePath, dcName);
 		if(!imageReaderFilter)
 		{
 		  // Error!
 		  continue;
 		}
+		else
+		{
+		  pipeline->pushBack(imageReaderFilter);
+		  float originX = pos[0] * scale[0];
+		  float originY = pos[1] * scale[1];
+		  float originZ = 1.0f;
+		  FloatVec3_t newOrigin = { originX, originY, originZ };
+		  AbstractFilter::Pointer setOriginResolutionFilter = filterFactory->createSetOriginResolutionFilter(dcName, false, true,
+			newOrigin, newOrigin);
 
-		pipeline->pushBack(imageReaderFilter);
+		  if(!setOriginResolutionFilter)
+		  {
+			// Error!
+			continue;
+		  }
+
+		  pipeline->pushBack(setOriginResolutionFilter);
+		}
 	  }
 	  
 	  bool changeSpacing = performMontageWizard->field(PerformMontage::FieldNames::ChangeSpacing).toBool();
@@ -1836,7 +1879,6 @@ std::pair<int, int> IMFViewer_UI::buildCustomDCA(DataContainerArray::Pointer dca
 	  dataContainer->setGeometry(geom);
 	}
 	geom->setOrigin(pos[0], pos[1], 1.0f);
-	qDebug() << "Origin {X, Y, Z}: {" << pos[0] << ", " << pos[1] << ", " << "1.0f}";
 	dca->addDataContainer(dataContainer);
 
   }
