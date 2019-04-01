@@ -1063,16 +1063,6 @@ void IMFViewer_UI::performMontage(PerformMontageWizard* performMontageWizard)
 	  {
 		VSFileNameFilter* filenameFilter = dynamic_cast<VSFileNameFilter*>(filter);
 		double* pos = filenameFilter->getChildren().front()->getTransform()->getLocalPosition();
-		double scale[3] = { 1.0f, 1.0f, 1.0f };
-		vtkImageData* imageData = dynamic_cast<vtkImageData*>(filenameFilter
-		  ->getChildren().front()->getOutput().Get());
-		if(imageData != nullptr)
-		{
-		  int extent[6];
-		  imageData->GetExtent(extent);
-		  scale[0] = extent[1];
-		  scale[1] = extent[3];
-		}
 		QString filePath = filenameFilter->getFilePath();
 		QFileInfo fi(filePath);
 		QString fileName = fi.fileName();
@@ -1099,8 +1089,8 @@ void IMFViewer_UI::performMontage(PerformMontageWizard* performMontageWizard)
 		else
 		{
 		  pipeline->pushBack(imageReaderFilter);
-		  float originX = pos[0] * scale[0];
-		  float originY = pos[1] * scale[1];
+		  float originX = pos[0];
+		  float originY = pos[1];
 		  float originZ = 1.0f;
 		  FloatVec3_t newOrigin = { originX, originY, originZ };
 		  AbstractFilter::Pointer setOriginResolutionFilter = filterFactory->createSetOriginResolutionFilter(dcName, false, true,
