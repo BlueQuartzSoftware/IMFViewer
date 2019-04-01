@@ -989,6 +989,8 @@ void IMFViewer_UI::performMontage(PerformMontageWizard* performMontageWizard)
   VSFilterFactory::Pointer filterFactory = VSFilterFactory::New();
   DataContainerArray::Pointer dca = DataContainerArray::New();
   VSAbstractFilter::FilterListType montageDatasets;
+  VSAbstractFilter::FilterListType filenameFilters;
+  std::pair<int, int> rowColPair;
   bool validSIMPL = false;
 
   m_DisplayMontage = performMontageWizard->field(PerformMontage::FieldNames::DisplayMontage).toBool();
@@ -1017,11 +1019,13 @@ void IMFViewer_UI::performMontage(PerformMontageWizard* performMontageWizard)
 	->field(PerformMontage::FieldNames::ImageSource).value<PerformMontageWizard::ImageSource>();
   QString amName;
   QString daName;
-  if(imageSource == PerformMontageWizard::ImageSource::Datasets)
+  bool datasetImageSource = (imageSource == PerformMontageWizard::ImageSource::Datasets);
+  if(datasetImageSource)
   {
+	amName = "CellData";
+	daName = "ImageData";
 	VSAbstractFilter::FilterListType selectedFilters = baseWidget->getActiveViewWidget()
 	  ->getSelectedFilters();
-	VSAbstractFilter::FilterListType filenameFilters;
 	for(VSAbstractFilter* selectedFilter : selectedFilters)
 	{
 	  if(dynamic_cast<VSFileNameFilter*>(selectedFilter))
@@ -1052,13 +1056,10 @@ void IMFViewer_UI::performMontage(PerformMontageWizard* performMontageWizard)
 	else
 	{
 	  // Sort filename filters by x and y
-	  std::pair<int, int> rowColPair = buildCustomDCA(dca, filenameFilters);
+	  rowColPair = buildCustomDCA(dca, filenameFilters);
 	  QStringList dcNames = dca->getDataContainerNames();
 
 	  // Add image readers with the filenames
-	  amName = "CellData";
-	  daName = "ImageData";
-	  int i = 0;
 	  for(VSAbstractFilter* filter : filenameFilters)
 	  {
 		VSFileNameFilter* filenameFilter = dynamic_cast<VSFileNameFilter*>(filter);
@@ -1105,67 +1106,6 @@ void IMFViewer_UI::performMontage(PerformMontageWizard* performMontageWizard)
 		  pipeline->pushBack(setOriginResolutionFilter);
 		}
 	  }
-	  
-	  bool changeSpacing = performMontageWizard->field(PerformMontage::FieldNames::ChangeSpacing).toBool();
-	  bool changeOrigin = performMontageWizard->field(PerformMontage::FieldNames::ChangeOrigin).toBool();
-	  if(changeSpacing || changeOrigin)
-	  {
-		float spacingX = performMontageWizard->field(PerformMontage::FieldNames::SpacingX).toFloat();
-		float spacingY = performMontageWizard->field(PerformMontage::FieldNames::SpacingY).toFloat();
-		float spacingZ = performMontageWizard->field(PerformMontage::FieldNames::SpacingZ).toFloat();
-		FloatVec3_t newSpacing = { spacingX, spacingY, spacingZ };
-		float originX = performMontageWizard->field(PerformMontage::FieldNames::OriginX).toFloat();
-		float originY = performMontageWizard->field(PerformMontage::FieldNames::OriginY).toFloat();
-		float originZ = performMontageWizard->field(PerformMontage::FieldNames::OriginZ).toFloat();
-		FloatVec3_t newOrigin = { originX, originY, originZ };
-		QVariant var;
-
-		// For each data container, add a new filter
-		for(QString dcName : dcNames)
-		{
-		  AbstractFilter::Pointer setOriginResolutionFilter = filterFactory->createSetOriginResolutionFilter(dcName, changeSpacing, changeOrigin, newSpacing, newOrigin);
-
-		  if(!setOriginResolutionFilter)
-		  {
-			// Error!
-		  }
-
-		  pipeline->pushBack(setOriginResolutionFilter);
-		}
-	  }
-
-	  IntVec3_t montageSize = { rowColPair.second, rowColPair.first, 1 };
-
-	  double tileOverlap = 15.0;
-
-	  if(!stitchingOnly)
-	  {
-		AbstractFilter::Pointer itkRegistrationFilter = filterFactory->createPCMTileRegistrationFilter(montageSize, dcNames, amName, daName);
-		pipeline->pushBack(itkRegistrationFilter);
-	  }
-
-	  DataArrayPath montagePath("MontageDC", "MontageAM", "MontageData");
-	  AbstractFilter::Pointer itkStitchingFilter = filterFactory->createTileStitchingFilter(montageSize, dcNames, amName, daName, montagePath, 15.0);
-	  pipeline->pushBack(itkStitchingFilter);
-
-	  // Check if output to file was requested
-	  bool saveToFile = performMontageWizard->field(PerformMontage::FieldNames::SaveToFile).toBool();
-	  if(saveToFile)
-	  {
-		QString outputFilePath = performMontageWizard
-		  ->field(PerformMontage::FieldNames::OutputFilePath).toString();
-		QString dcName = performMontageWizard
-		  ->field(PerformMontage::FieldNames::OutputDataContainerName).toString();
-		QString amName = performMontageWizard
-		  ->field(PerformMontage::FieldNames::OutputCellAttributeMatrixName).toString();
-		QString dataArrayName = performMontageWizard
-		  ->field(PerformMontage::FieldNames::OutputImageArrayName).toString();
-		AbstractFilter::Pointer itkImageWriterFilter = filterFactory->createImageFileWriterFilter(outputFilePath,
-		  dcName, amName, dataArrayName);
-		pipeline->pushBack(itkImageWriterFilter);
-	  }
-
-	  addPipelineToQueue(pipeline);
 	}
   }
   else
@@ -1204,11 +1144,13 @@ void IMFViewer_UI::performMontage(PerformMontageWizard* performMontageWizard)
 	}
   }
 
-  if(validSIMPL)
+  if(validSIMPL || datasetImageSource)
   {
 	// Build the data container array
-	std::pair<int, int> rowColPair = buildCustomDCA(dca, montageDatasets);
-
+	if(!datasetImageSource)
+	{
+	  rowColPair = buildCustomDCA(dca, montageDatasets);
+	}
 	QStringList dcNames = dca->getDataContainerNames();
 
 	bool changeSpacing = performMontageWizard->field(PerformMontage::FieldNames::ChangeSpacing).toBool();
@@ -1270,7 +1212,14 @@ void IMFViewer_UI::performMontage(PerformMontageWizard* performMontageWizard)
 	  pipeline->pushBack(itkImageWriterFilter);
 	}
 
-	executePipeline(pipeline, dca);
+	if(!datasetImageSource)
+	{
+	  executePipeline(pipeline, dca);
+	}
+	else
+	{
+	  addPipelineToQueue(pipeline);
+	}
   }
 }
 
