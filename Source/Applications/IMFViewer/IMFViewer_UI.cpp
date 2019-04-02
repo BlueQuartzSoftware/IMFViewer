@@ -76,6 +76,7 @@
 #include "SIMPLVtkLib/Wizards/ImportMontage/TileConfigFileGenerator.h"
 #include "SIMPLVtkLib/Wizards/ImportMontage/ZeissListWidget.h"
 #include "SIMPLVtkLib/Wizards/ImportMontage/ImportMontageConstants.h"
+#include "SIMPLVtkLib/Wizards/PerformMontage/DatasetListWidget.h"
 #include "SIMPLVtkLib/Wizards/PerformMontage/PerformMontageWizard.h"
 #include "SIMPLVtkLib/Wizards/PerformMontage/PerformMontageConstants.h"
 
@@ -1015,8 +1016,6 @@ void IMFViewer_UI::performMontage(PerformMontageWizard* performMontageWizard)
   }
 
   QStringList selectedFilterNames;
-  PerformMontageWizard::ImageSource imageSource = performMontageWizard
-	->field(PerformMontage::FieldNames::ImageSource).value<PerformMontageWizard::ImageSource>();
   VSAbstractFilter::FilterListType selectedFilters = baseWidget->getActiveViewWidget()
 	->getSelectedFilters();
   VSAbstractFilter* firstFilter = selectedFilters.front();
@@ -1112,7 +1111,8 @@ void IMFViewer_UI::performMontage(PerformMontageWizard* performMontageWizard)
   }
   else
   {
-	QString selectedFilterName = performMontageWizard->field(PerformMontage::FieldNames::SelectedDataset).toString();
+	DatasetListInfo_t selectedFilter = performMontageWizard->field(PerformMontage::FieldNames::SelectedDataset).value<DatasetListInfo_t>();
+	QString selectedFilterName = selectedFilter.DatasetNames.front();
 	selectedFilterNames.push_back(selectedFilterName);
 	amName = performMontageWizard
 	  ->field(PerformMontage::FieldNames::CellAttributeMatrixName).toString();
