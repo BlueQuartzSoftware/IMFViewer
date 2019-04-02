@@ -1017,15 +1017,17 @@ void IMFViewer_UI::performMontage(PerformMontageWizard* performMontageWizard)
   QStringList selectedFilterNames;
   PerformMontageWizard::ImageSource imageSource = performMontageWizard
 	->field(PerformMontage::FieldNames::ImageSource).value<PerformMontageWizard::ImageSource>();
+  VSAbstractFilter::FilterListType selectedFilters = baseWidget->getActiveViewWidget()
+	->getSelectedFilters();
+  VSAbstractFilter* firstFilter = selectedFilters.front();
   QString amName;
   QString daName;
-  bool datasetImageSource = (imageSource == PerformMontageWizard::ImageSource::Datasets);
+  bool datasetImageSource = dynamic_cast<VSFileNameFilter*>(firstFilter) || 
+	dynamic_cast<VSDataSetFilter*>(firstFilter);
   if(datasetImageSource)
   {
 	amName = "CellData";
 	daName = "ImageData";
-	VSAbstractFilter::FilterListType selectedFilters = baseWidget->getActiveViewWidget()
-	  ->getSelectedFilters();
 	for(VSAbstractFilter* selectedFilter : selectedFilters)
 	{
 	  if(dynamic_cast<VSFileNameFilter*>(selectedFilter))
