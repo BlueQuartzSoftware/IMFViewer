@@ -105,6 +105,8 @@ IMFViewer_UI::IMFViewer_UI(QWidget* parent)
   m_Ui->setupUi(this);
 
   setupGui();
+
+  qRegisterMetaType<FilterPipeline::Pointer>();
 }
 
 // -----------------------------------------------------------------------------
@@ -410,11 +412,11 @@ void IMFViewer_UI::importDREAM3DMontage(ImportMontageWizard* montageWizard)
         float spacingX = montageWizard->field(ImportMontage::DREAM3D::FieldNames::SpacingX).toFloat();
         float spacingY = montageWizard->field(ImportMontage::DREAM3D::FieldNames::SpacingY).toFloat();
         float spacingZ = montageWizard->field(ImportMontage::DREAM3D::FieldNames::SpacingZ).toFloat();
-        FloatVec3_t newSpacing = {spacingX, spacingY, spacingZ};
+        FloatVec3Type newSpacing = {spacingX, spacingY, spacingZ};
         float originX = montageWizard->field(ImportMontage::DREAM3D::FieldNames::OriginX).toFloat();
         float originY = montageWizard->field(ImportMontage::DREAM3D::FieldNames::OriginY).toFloat();
         float originZ = montageWizard->field(ImportMontage::DREAM3D::FieldNames::OriginZ).toFloat();
-        FloatVec3_t newOrigin = {originX, originY, originZ};
+        FloatVec3Type newOrigin = {originX, originY, originZ};
         QVariant var;
 
         // For each data container, add a new filter
@@ -434,7 +436,7 @@ void IMFViewer_UI::importDREAM3DMontage(ImportMontageWizard* montageWizard)
       int rowCount = montageWizard->field(ImportMontage::DREAM3D::FieldNames::NumberOfRows).toInt();
       int colCount = montageWizard->field(ImportMontage::DREAM3D::FieldNames::NumberOfColumns).toInt();
 
-      IntVec3_t montageSize = {colCount, rowCount, 1};
+      IntVec3Type montageSize = {colCount, rowCount, 1};
 
       QString amName = montageWizard->field(ImportMontage::DREAM3D::FieldNames::CellAttributeMatrixName).toString();
       QString daName = montageWizard->field(ImportMontage::DREAM3D::FieldNames::ImageArrayName).toString();
@@ -497,11 +499,11 @@ void IMFViewer_UI::importFijiMontage(ImportMontageWizard* montageWizard)
       float spacingX = montageWizard->field(ImportMontage::Fiji::FieldNames::SpacingX).toFloat();
       float spacingY = montageWizard->field(ImportMontage::Fiji::FieldNames::SpacingY).toFloat();
       float spacingZ = montageWizard->field(ImportMontage::Fiji::FieldNames::SpacingZ).toFloat();
-      FloatVec3_t newSpacing = {spacingX, spacingY, spacingZ};
+      FloatVec3Type newSpacing = {spacingX, spacingY, spacingZ};
       float originX = montageWizard->field(ImportMontage::Fiji::FieldNames::OriginX).toFloat();
       float originY = montageWizard->field(ImportMontage::Fiji::FieldNames::OriginY).toFloat();
       float originZ = montageWizard->field(ImportMontage::Fiji::FieldNames::OriginZ).toFloat();
-      FloatVec3_t newOrigin = {originX, originY, originZ};
+      FloatVec3Type newOrigin = {originX, originY, originZ};
       QVariant var;
 
       // For each data container, add a new filter
@@ -520,7 +522,7 @@ void IMFViewer_UI::importFijiMontage(ImportMontageWizard* montageWizard)
     int rowCount = importFijiMontageFilter->property("RowCount").toInt();
     int colCount = importFijiMontageFilter->property("ColumnCount").toInt();
 
-    IntVec3_t montageSize = {colCount, rowCount, 1};
+    IntVec3Type montageSize = {colCount, rowCount, 1};
     double tileOverlap = 0.0;
 
     bool changeOverlap = montageWizard->field(ImportMontage::Fiji::FieldNames::ChangeTileOverlap).toBool();
@@ -583,7 +585,7 @@ void IMFViewer_UI::importRobometMontage(ImportMontageWizard* montageWizard)
 
       int rowCount = rbmListInfo.NumberOfRows;
       int colCount = rbmListInfo.NumberOfColumns;
-      IntVec3_t montageSize = {colCount, rowCount, 1};
+      IntVec3Type montageSize = {colCount, rowCount, 1};
       double tileOverlap = 0.0;
 
       bool changeOverlap = montageWizard->field(ImportMontage::Robomet::FieldNames::ChangeTileOverlap).toBool();
@@ -663,7 +665,7 @@ void IMFViewer_UI::importZeissMontage(ImportMontageWizard* montageWizard)
     QStringList dcNames = dca->getDataContainerNames();
     int rowCount = importZeissMontage->property("RowCount").toInt();
     int colCount = importZeissMontage->property("ColumnCount").toInt();
-    IntVec3_t montageSize = {colCount, rowCount, 1};
+    IntVec3Type montageSize = {colCount, rowCount, 1};
     double tileOverlap = 0.0;
 
     bool changeOverlap = montageWizard->field(ImportMontage::Zeiss::FieldNames::ChangeTileOverlap).toBool();
@@ -752,7 +754,7 @@ void IMFViewer_UI::handleMontageResults(FilterPipeline::Pointer pipeline, int er
           ImageGeom::Pointer imageGeom = dc->getGeometryAs<ImageGeom>();
           if(imageGeom)
           {
-            float origin[3];
+            FloatVec3Type origin;
             imageGeom->getOrigin(origin);
             origin[2] += slice;
             imageGeom->setOrigin(origin);
@@ -911,7 +913,7 @@ void IMFViewer_UI::importPipeline(ExecutePipelineWizard* executePipelineWizard)
         if(dcFilter != nullptr)
         {
           DataContainer::Pointer dataContainer = dcFilter->getWrappedDataContainer()->m_DataContainer;
-          dca->addDataContainer(dataContainer);
+          dca->addOrReplaceDataContainer(dataContainer);
         }
         }
       }
@@ -931,11 +933,11 @@ void IMFViewer_UI::importPipeline(ExecutePipelineWizard* executePipelineWizard)
       float spacingX = executePipelineWizard->field(ExecutePipeline::FieldNames::SpacingX).toFloat();
       float spacingY = executePipelineWizard->field(ExecutePipeline::FieldNames::SpacingY).toFloat();
       float spacingZ = executePipelineWizard->field(ExecutePipeline::FieldNames::SpacingZ).toFloat();
-      FloatVec3_t newSpacing = { spacingX, spacingY, spacingZ };
+      FloatVec3Type newSpacing = { spacingX, spacingY, spacingZ };
       float originX = executePipelineWizard->field(ExecutePipeline::FieldNames::OriginX).toFloat();
       float originY = executePipelineWizard->field(ExecutePipeline::FieldNames::OriginY).toFloat();
       float originZ = executePipelineWizard->field(ExecutePipeline::FieldNames::OriginZ).toFloat();
-      FloatVec3_t newOrigin = { originX, originY, originZ };
+      FloatVec3Type newOrigin = { originX, originY, originZ };
       QVariant var;
 
       // For each data container, add a new filter
@@ -1021,8 +1023,10 @@ void IMFViewer_UI::performMontage(PerformMontageWizard* performMontageWizard)
   VSAbstractFilter* firstFilter = selectedFilters.front();
   QString amName;
   QString daName;
-  bool datasetImageSource = dynamic_cast<VSDataSetFilter*>(firstFilter) ||
-	dynamic_cast<VSDataSetFilter*>(firstFilter->getChildren().front());
+  bool isSIMPL = dynamic_cast<VSSIMPLDataContainerFilter*>(firstFilter) ||
+	dynamic_cast<VSSIMPLDataContainerFilter*>(firstFilter->getChildren().front());
+  bool datasetImageSource = !isSIMPL && (dynamic_cast<VSDataSetFilter*>(firstFilter) ||
+	dynamic_cast<VSDataSetFilter*>(firstFilter->getChildren().front()));
   if(datasetImageSource)
   {
 	amName = "CellData";
@@ -1094,7 +1098,7 @@ void IMFViewer_UI::performMontage(PerformMontageWizard* performMontageWizard)
 		  float originX = pos[0];
 		  float originY = pos[1];
 		  float originZ = 1.0f;
-		  FloatVec3_t newOrigin = { originX, originY, originZ };
+		  FloatVec3Type newOrigin = { originX, originY, originZ };
 		  AbstractFilter::Pointer setOriginResolutionFilter = filterFactory->createSetOriginResolutionFilter(dcName, false, true,
 			newOrigin, newOrigin);
 
@@ -1160,11 +1164,11 @@ void IMFViewer_UI::performMontage(PerformMontageWizard* performMontageWizard)
 	  float spacingX = performMontageWizard->field(PerformMontage::FieldNames::SpacingX).toFloat();
 	  float spacingY = performMontageWizard->field(PerformMontage::FieldNames::SpacingY).toFloat();
 	  float spacingZ = performMontageWizard->field(PerformMontage::FieldNames::SpacingZ).toFloat();
-	  FloatVec3_t newSpacing = { spacingX, spacingY, spacingZ };
+	  FloatVec3Type newSpacing = { spacingX, spacingY, spacingZ };
 	  float originX = performMontageWizard->field(PerformMontage::FieldNames::OriginX).toFloat();
 	  float originY = performMontageWizard->field(PerformMontage::FieldNames::OriginY).toFloat();
 	  float originZ = performMontageWizard->field(PerformMontage::FieldNames::OriginZ).toFloat();
-	  FloatVec3_t newOrigin = { originX, originY, originZ };
+	  FloatVec3Type newOrigin = { originX, originY, originZ };
 	  QVariant var;
 
 	  // For each data container, add a new filter
@@ -1181,7 +1185,7 @@ void IMFViewer_UI::performMontage(PerformMontageWizard* performMontageWizard)
 	  }
 	}
 
-	IntVec3_t montageSize = { rowColPair.second, rowColPair.first, 1 };
+	IntVec3Type montageSize = { rowColPair.second, rowColPair.first, 1 };
 
 	double tileOverlap = 15.0;
 
@@ -1818,7 +1822,7 @@ std::pair<int, int> IMFViewer_UI::buildCustomDCA(DataContainerArray::Pointer dca
 	  dataContainer->setGeometry(geom);
 	}
 	geom->setOrigin(pos[0], pos[1], 1.0f);
-	dca->addDataContainer(dataContainer);
+	dca->addOrReplaceDataContainer(dataContainer);
 
   }
   return std::pair<int, int>(numRows, numCols);
