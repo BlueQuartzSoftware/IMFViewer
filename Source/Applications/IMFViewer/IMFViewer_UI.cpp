@@ -1021,8 +1021,8 @@ void IMFViewer_UI::performMontage(PerformMontageWizard* performMontageWizard)
   VSAbstractFilter* firstFilter = selectedFilters.front();
   QString amName;
   QString daName;
-  bool datasetImageSource = dynamic_cast<VSFileNameFilter*>(firstFilter) || 
-	dynamic_cast<VSDataSetFilter*>(firstFilter);
+  bool datasetImageSource = dynamic_cast<VSDataSetFilter*>(firstFilter) ||
+	dynamic_cast<VSDataSetFilter*>(firstFilter->getChildren().front());
   if(datasetImageSource)
   {
 	amName = "CellData";
@@ -1112,8 +1112,7 @@ void IMFViewer_UI::performMontage(PerformMontageWizard* performMontageWizard)
   else
   {
 	DatasetListInfo_t selectedFilter = performMontageWizard->field(PerformMontage::FieldNames::SelectedDataset).value<DatasetListInfo_t>();
-	QString selectedFilterName = selectedFilter.DatasetNames.front();
-	selectedFilterNames.push_back(selectedFilterName);
+	QStringList selectedFilterNames = selectedFilter.DatasetNames;
 	amName = performMontageWizard
 	  ->field(PerformMontage::FieldNames::CellAttributeMatrixName).toString();
 	daName = performMontageWizard
@@ -1142,7 +1141,6 @@ void IMFViewer_UI::performMontage(PerformMontageWizard* performMontageWizard)
 		  }
 		}
 	  }
-	  break;
 	}
   }
 
