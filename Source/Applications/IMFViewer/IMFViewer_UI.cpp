@@ -1579,16 +1579,6 @@ void IMFViewer_UI::createMenu()
 
   fileMenu->addSeparator();
 
-  QAction* openAction = new QAction("Open Session");
-  openAction->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_O));
-  connect(openAction, &QAction::triggered, this, &IMFViewer_UI::loadSession);
-  fileMenu->addAction(openAction);
-
-  QAction* saveAction = new QAction("Save Session");
-  saveAction->setShortcut(QKeySequence(Qt::CTRL + Qt::SHIFT + Qt::Key_S));
-  connect(saveAction, &QAction::triggered, this, &IMFViewer_UI::saveSession);
-  fileMenu->addAction(saveAction);
-
   QAction* saveImageAction = new QAction("Save Image");
   saveImageAction->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_S));
   saveImageAction->setEnabled(false);
