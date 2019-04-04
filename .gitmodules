@@ -8,12 +8,12 @@ url=ssh://git@github.com/tplatt77/SIMPLVtkLib.git
 	branch = feature/OSD_GUI
 [submodule "Source/External_Projects/CMP"]
 	path = Source/External_Projects/CMP
-	url = https://www.github.com/bluequartzsoftware/CMP.git
+	url = ssh://git@github.com/bluequartzsoftware/CMP.git
 	branch = develop
 [submodule "Source/Plugins/ITKImageProcessing"]
 	path = Source/Plugins/ITKImageProcessing
-	url = https://www.github.com/tplatt77/ITKImageProcessing.git
+	url = ssh://git@github.com/bluequartzsoftware/ITKImageProcessing.git
 	branch = feature/OSD_GUI
 [submodule "Source/External_Projects/ZeissImport"]
 	path = Source/Plugins/ZeissImport
-	url = https://www.github.com/bluequartzsoftware/ZeissImport.git
+	url = ssh://git@github.com/bluequartzsoftware/ZeissImport.git
