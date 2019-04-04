@@ -1015,7 +1015,8 @@ void IMFViewer_UI::performMontage(PerformMontageWizard* performMontageWizard)
   QString amName;
   QString daName;
   bool isSIMPL = dynamic_cast<VSSIMPLDataContainerFilter*>(firstFilter) ||
-	dynamic_cast<VSSIMPLDataContainerFilter*>(firstFilter->getChildren().front());
+	(!firstFilter->getChildren().empty() &&
+	  dynamic_cast<VSSIMPLDataContainerFilter*>(firstFilter->getChildren().front()));
   bool datasetImageSource = !isSIMPL && (dynamic_cast<VSDataSetFilter*>(firstFilter) ||
 	dynamic_cast<VSDataSetFilter*>(firstFilter->getChildren().front()));
   if(datasetImageSource)
