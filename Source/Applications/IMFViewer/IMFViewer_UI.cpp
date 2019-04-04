@@ -996,8 +996,7 @@ void IMFViewer_UI::performMontage(PerformMontageWizard* performMontageWizard)
   std::pair<int, int> rowColPair;
   bool validSIMPL = false;
 
-  m_DisplayMontage = performMontageWizard->field(PerformMontage::FieldNames::DisplayMontage).toBool();
-  m_DisplayOutline = performMontageWizard->field(PerformMontage::FieldNames::DisplayOutlineOnly).toBool();
+  m_DisplayMontage = true;
   bool stitchingOnly = performMontageWizard->field(PerformMontage::FieldNames::StitchingOnly).toBool();
 
   QString montageName = performMontageWizard->field(PerformMontage::FieldNames::MontageName).toString();
@@ -1006,16 +1005,8 @@ void IMFViewer_UI::performMontage(PerformMontageWizard* performMontageWizard)
   VSMainWidgetBase* baseWidget = dynamic_cast<VSMainWidgetBase*>(m_Ui->vsWidget);
 
   VSFilterViewModel* filterViewModel = baseWidget->getActiveViewWidget()->getFilterViewModel();
-  bool displayOutline = ((QWizard*)performMontageWizard)->field(PerformMontage::FieldNames::DisplayOutlineOnly).toBool();
 
-  if(displayOutline)
-  {
-	filterViewModel->setDisplayType(ImportMontageWizard::DisplayType::Outline);
-  }
-  else
-  {
-	filterViewModel->setDisplayType(ImportMontageWizard::DisplayType::Montage);
-  }
+  filterViewModel->setDisplayType(ImportMontageWizard::DisplayType::Montage);
 
   QStringList selectedFilterNames;
   VSAbstractFilter::FilterListType selectedFilters = baseWidget->getActiveViewWidget()
@@ -1117,10 +1108,6 @@ void IMFViewer_UI::performMontage(PerformMontageWizard* performMontageWizard)
   {
 	DatasetListInfo_t selectedFilter = performMontageWizard->field(PerformMontage::FieldNames::SelectedDataset).value<DatasetListInfo_t>();
 	QStringList selectedFilterNames = selectedFilter.DatasetNames;
-	amName = performMontageWizard
-	  ->field(PerformMontage::FieldNames::CellAttributeMatrixName).toString();
-	daName = performMontageWizard
-	  ->field(PerformMontage::FieldNames::ImageDataArrayName).toString();
 
 	// Construct Data Container Array with selected Dataset
 	VSAbstractFilter::FilterListType datasets = baseWidget->getController()->getBaseFilters();
@@ -1140,6 +1127,21 @@ void IMFViewer_UI::performMontage(PerformMontageWizard* performMontageWizard)
 			if(dcFilter != nullptr)
 			{
 			  validSIMPL = true;
+			  DataContainer::Pointer dataContainer = dcFilter
+				->getWrappedDataContainer()->m_DataContainer;
+			  if(dataContainer != DataContainer::NullPointer())
+			  {
+				for(AttributeMatrix::Pointer am : dataContainer->getAttributeMatrices())
+				{
+				  QVector<size_t> tupleDims = am->getTupleDimensions();
+				  if(tupleDims.size() >= 2)
+				  {
+					amName = am->getName();
+					daName = am->getAttributeArrayNames().first();
+					break;
+				  }
+				}
+			  }
 			  montageDatasets.push_back(childFilter);
 			}
 		  }
@@ -1158,23 +1160,20 @@ void IMFViewer_UI::performMontage(PerformMontageWizard* performMontageWizard)
 	QStringList dcNames = dca->getDataContainerNames();
 
 	bool changeSpacing = performMontageWizard->field(PerformMontage::FieldNames::ChangeSpacing).toBool();
-	bool changeOrigin = performMontageWizard->field(PerformMontage::FieldNames::ChangeOrigin).toBool();
-	if(changeSpacing || changeOrigin)
+	bool changeOrigin = false;
+	if(changeSpacing)
 	{
 	  float spacingX = performMontageWizard->field(PerformMontage::FieldNames::SpacingX).toFloat();
 	  float spacingY = performMontageWizard->field(PerformMontage::FieldNames::SpacingY).toFloat();
 	  float spacingZ = performMontageWizard->field(PerformMontage::FieldNames::SpacingZ).toFloat();
 	  FloatVec3Type newSpacing = { spacingX, spacingY, spacingZ };
-	  float originX = performMontageWizard->field(PerformMontage::FieldNames::OriginX).toFloat();
-	  float originY = performMontageWizard->field(PerformMontage::FieldNames::OriginY).toFloat();
-	  float originZ = performMontageWizard->field(PerformMontage::FieldNames::OriginZ).toFloat();
-	  FloatVec3Type newOrigin = { originX, originY, originZ };
 	  QVariant var;
 
 	  // For each data container, add a new filter
 	  for(QString dcName : dcNames)
 	  {
-		AbstractFilter::Pointer setOriginResolutionFilter = filterFactory->createSetOriginResolutionFilter(dcName, changeSpacing, changeOrigin, newSpacing, newOrigin);
+		AbstractFilter::Pointer setOriginResolutionFilter = filterFactory->createSetOriginResolutionFilter(dcName, changeSpacing,
+		  changeOrigin, newSpacing, { 0, 0, 0 });
 
 		if(!setOriginResolutionFilter)
 		{
@@ -1205,12 +1204,9 @@ void IMFViewer_UI::performMontage(PerformMontageWizard* performMontageWizard)
 	{
 	  QString outputFilePath = performMontageWizard
 		->field(PerformMontage::FieldNames::OutputFilePath).toString();
-	  QString dcName = performMontageWizard
-		->field(PerformMontage::FieldNames::OutputDataContainerName).toString();
-	  QString amName = performMontageWizard
-		->field(PerformMontage::FieldNames::OutputCellAttributeMatrixName).toString();
-	  QString dataArrayName = performMontageWizard
-		->field(PerformMontage::FieldNames::OutputImageArrayName).toString();
+	  QString dcName = "MontageDC";
+	  QString amName = "MontageAM";
+	  QString dataArrayName = "MontageData";
 	  AbstractFilter::Pointer itkImageWriterFilter = filterFactory->createImageFileWriterFilter(outputFilePath,
 		dcName, amName, dataArrayName);
 	  pipeline->pushBack(itkImageWriterFilter);
@@ -1726,7 +1722,10 @@ std::pair<int, int> IMFViewer_UI::buildCustomDCA(DataContainerArray::Pointer dca
 	  firstTransform = first->getChildren().front()->getTransform();
 	  secondTransform = second->getChildren().front()->getTransform();
 	}
-	return floor(1.1 * firstTransform->getLocalPosition()[0]) < secondTransform->getLocalPosition()[0];
+	double firstX = firstTransform->getLocalPosition()[0];
+	double secondX = secondTransform->getLocalPosition()[0];
+	bool secondXGreaterThanFirstX = floor(1.001 * firstX) < secondX;
+	return secondXGreaterThanFirstX;
   });
   montageDatasets.sort([](VSAbstractFilter* first, VSAbstractFilter* second)
   {
@@ -1737,7 +1736,10 @@ std::pair<int, int> IMFViewer_UI::buildCustomDCA(DataContainerArray::Pointer dca
 	  firstTransform = first->getChildren().front()->getTransform();
 	  secondTransform = second->getChildren().front()->getTransform();
 	}
-	return floor(1.1 * firstTransform->getLocalPosition()[1]) < secondTransform->getLocalPosition()[1];
+	double firstY = firstTransform->getLocalPosition()[1];
+	double secondY = secondTransform->getLocalPosition()[1];
+	bool secondYGreaterThanFirstY = floor(1.001 * firstY) < secondY;
+	return secondYGreaterThanFirstY;
   });
 
   int row = 0;
