@@ -1112,7 +1112,6 @@ void IMFViewer_UI::performMontage(PerformMontageWizard* performMontageWizard)
 
 	// Construct Data Container Array with selected Dataset
 	VSAbstractFilter::FilterListType datasets = baseWidget->getController()->getBaseFilters();
-	int i = 0;
 	for(VSAbstractFilter* dataset : datasets)
 	{
 	  if(selectedFilterNames.contains(dataset->getFilterName()))
@@ -1187,7 +1186,7 @@ void IMFViewer_UI::performMontage(PerformMontageWizard* performMontageWizard)
 
 	IntVec3Type montageSize = { rowColPair.second, rowColPair.first, 1 };
 
-	double tileOverlap = 15.0;
+//	double tileOverlap = 15.0;
 
 	if(!stitchingOnly)
 	{
@@ -1318,7 +1317,7 @@ void IMFViewer_UI::saveImage()
   m_OpenDialogLastDirectory = filePath;
   VSController* controller = m_Ui->vsWidget->getController();
   VSMainWidgetBase* baseWidget = dynamic_cast<VSMainWidgetBase*>(m_Ui->vsWidget);
-  VSFilterViewModel* filterViewModel = baseWidget->getActiveViewWidget()->getFilterViewModel();
+//  VSFilterViewModel* filterViewModel = baseWidget->getActiveViewWidget()->getFilterViewModel();
   VSAbstractFilter::FilterListType selectedFilters = baseWidget->getActiveViewWidget()->getSelectedFilters();
 
   bool success = controller->saveAsImage(filePath, selectedFilters.front());
@@ -1357,7 +1356,7 @@ void IMFViewer_UI::saveDream3d()
   m_OpenDialogLastDirectory = filePath;
   VSController* controller = m_Ui->vsWidget->getController();
   VSMainWidgetBase* baseWidget = dynamic_cast<VSMainWidgetBase*>(m_Ui->vsWidget);
-  VSFilterViewModel* filterViewModel = baseWidget->getActiveViewWidget()->getFilterViewModel();
+//  VSFilterViewModel* filterViewModel = baseWidget->getActiveViewWidget()->getFilterViewModel();
   VSAbstractFilter::FilterListType selectedFilters = baseWidget->getActiveViewWidget()->getSelectedFilters();
 
   bool success = controller->saveAsDREAM3D(filePath, selectedFilters.front());
