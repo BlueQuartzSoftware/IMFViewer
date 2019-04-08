@@ -1552,10 +1552,28 @@ void IMFViewer_UI::createMenu()
   connect(importImagesAction, &QAction::triggered, [=] { IMFViewer_UI::importImages(); });
   fileMenu->addAction(importImagesAction);
 
-  QAction* importMontageAction = new QAction("Import Montage");
-  importMontageAction->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_M));
-  connect(importMontageAction, &QAction::triggered, this, &IMFViewer_UI::importMontage);
-  fileMenu->addAction(importMontageAction);
+  QMenu* importMontageMenu = new QMenu("Import Montage");
+  fileMenu->addMenu(importMontageMenu);
+
+  QAction* genericMontageAction = new QAction("Generic");
+  connect(genericMontageAction, &QAction::triggered, this, &IMFViewer_UI::importGenericMontage);
+  importMontageMenu->addAction(genericMontageAction);
+
+  QAction* robometMontageAction = new QAction("Robomet");
+  connect(robometMontageAction, &QAction::triggered, this, &IMFViewer_UI::importRobometMontage);
+  importMontageMenu->addAction(robometMontageAction);
+
+  QAction* fijiMontageAction = new QAction("Fiji");
+  connect(fijiMontageAction, &QAction::triggered, this, &IMFViewer_UI::importFijiMontage);
+  importMontageMenu->addAction(fijiMontageAction);
+
+  QAction* zeissMontageAction = new QAction("Zeiss XML");
+  connect(zeissMontageAction, &QAction::triggered, this, &IMFViewer_UI::importZeissMontage);
+  importMontageMenu->addAction(zeissMontageAction);
+
+  QAction* d3dMontageAction = new QAction("DREAM3D");
+  connect(d3dMontageAction, &QAction::triggered, this, &IMFViewer_UI::importDREAM3DMontage);
+  importMontageMenu->addAction(d3dMontageAction);
 
   QAction* executePipelineAction = new QAction("Execute Pipeline");
   executePipelineAction->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_E));
