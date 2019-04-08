@@ -125,12 +125,6 @@ IMFViewer_UI::~IMFViewer_UI()
 // -----------------------------------------------------------------------------
 void IMFViewer_UI::setupGui()
 {
-  connect(m_Ui->importDataBtn, &QPushButton::clicked, [=] { importData(); });
-  connect(m_Ui->importImagesBtn, &QPushButton::clicked, [=] { importImages(); });
-  connect(m_Ui->importMontageBtn, &QPushButton::clicked, this, &IMFViewer_UI::importMontage);
-  connect(m_Ui->saveImageBtn, &QPushButton::clicked, this, [=] { saveImage(); });
-  m_Ui->saveImageBtn->setEnabled(false);
-
   // Connection to update the recent files list on all windows when it changes
   QtSRecentFileList* recentsList = QtSRecentFileList::Instance(5, this);
   connect(recentsList, SIGNAL(fileListChanged(const QString&)), this, SLOT(updateRecentFileList(const QString&)));
@@ -1684,7 +1678,6 @@ void IMFViewer_UI::listenSelectionChanged(VSAbstractFilter::FilterListType filte
   bool isDream3dFile = dynamic_cast<VSFileNameFilter*>(filters.front()) &&
 	filters.front()->getChildCount() > 0 &&
 	dynamic_cast<VSSIMPLDataContainerFilter*>(filters.front()->getChildren().front());
-  m_Ui->saveImageBtn->setEnabled(isSIMPL);
   QList<QAction*> actions = m_MenuBar->actions();
   for(QAction* action : actions)
   {
