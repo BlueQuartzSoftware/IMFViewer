@@ -58,27 +58,27 @@
 #include "SVWidgetsLib/Widgets/SVStyle.h"
 
 #include "SIMPLVtkLib/Common/SIMPLVtkLibConstants.h"
+#include "SIMPLVtkLib/Dialogs/ImportDREAM3DMontageDialog.h"
+#include "SIMPLVtkLib/Dialogs/ImportFijiMontageDialog.h"
+#include "SIMPLVtkLib/Dialogs/ImportGenericMontageDialog.h"
+#include "SIMPLVtkLib/Dialogs/ImportRobometMontageDialog.h"
+#include "SIMPLVtkLib/Dialogs/ImportZeissMontageDialog.h"
+#include "SIMPLVtkLib/Dialogs/Utilities/TileConfigFileGenerator.h"
 #include "SIMPLVtkLib/QtWidgets/VSDatasetImporter.h"
 #include "SIMPLVtkLib/QtWidgets/VSFilterFactory.h"
 #include "SIMPLVtkLib/QtWidgets/VSMontageImporter.h"
 #include "SIMPLVtkLib/QtWidgets/VSQueueModel.h"
 #include "SIMPLVtkLib/Visualization/VisualFilters/VSDataSetFilter.h"
 
+#include "SIMPLVtkLib/Dialogs/RobometListWidget.h"
+#include "SIMPLVtkLib/Dialogs/ZeissListWidget.h"
 #include "SIMPLVtkLib/Visualization/VisualFilters/VSTransform.h"
-#include "SIMPLVtkLib/Wizards/ExecutePipeline/PipelineWorker.h"
 #include "SIMPLVtkLib/Wizards/ExecutePipeline/ExecutePipelineConstants.h"
 #include "SIMPLVtkLib/Wizards/ExecutePipeline/ExecutePipelineWizard.h"
 #include "SIMPLVtkLib/Wizards/ExecutePipeline/PipelineWorker.h"
-#include "SIMPLVtkLib/Wizards/ImportMontage/FijiListWidget.h"
-#include "SIMPLVtkLib/Wizards/ImportMontage/ImportMontageConstants.h"
-#include "SIMPLVtkLib/Wizards/ImportMontage/ImportMontageWizard.h"
-#include "SIMPLVtkLib/Wizards/ImportMontage/RobometListWidget.h"
-#include "SIMPLVtkLib/Wizards/ImportMontage/TileConfigFileGenerator.h"
-#include "SIMPLVtkLib/Wizards/ImportMontage/ZeissListWidget.h"
-#include "SIMPLVtkLib/Wizards/ImportMontage/ImportMontageConstants.h"
 #include "SIMPLVtkLib/Wizards/PerformMontage/DatasetListWidget.h"
-#include "SIMPLVtkLib/Wizards/PerformMontage/PerformMontageWizard.h"
 #include "SIMPLVtkLib/Wizards/PerformMontage/PerformMontageConstants.h"
+#include "SIMPLVtkLib/Wizards/PerformMontage/PerformMontageWizard.h"
 
 #include "BrandedStrings.h"
 
@@ -238,81 +238,31 @@ void IMFViewer_UI::importImages()
 // -----------------------------------------------------------------------------
 //
 // -----------------------------------------------------------------------------
-void IMFViewer_UI::importMontage()
+void IMFViewer_UI::importGenericMontage()
 {
-  ImportMontageWizard* montageWizard = new ImportMontageWizard(this);
-  int result = montageWizard->exec();
-
-  if(result == QDialog::Accepted)
+  ImportGenericMontageDialog::Pointer dialog = ImportGenericMontageDialog::New(this);
+  int ret = dialog->exec();
+  if(ret == QDialog::Rejected)
   {
-    m_DisplayMontage = montageWizard->field(ImportMontage::FieldNames::DisplayMontage).toBool();
-    m_DisplayOutline = montageWizard->field(ImportMontage::FieldNames::DisplayOutlineOnly).toBool();
-
-    VSMainWidgetBase* baseWidget = dynamic_cast<VSMainWidgetBase*>(m_Ui->vsWidget);
-    VSFilterViewModel* filterViewModel = baseWidget->getActiveViewWidget()->getFilterViewModel();
-    if(m_DisplayMontage)
-    {
-      filterViewModel->setDisplayType(ImportMontageWizard::DisplayType::Montage);
-    }
-    else if(m_DisplayOutline)
-    {
-      filterViewModel->setDisplayType(ImportMontageWizard::DisplayType::Outline);
-    }
-    else
-    {
-      filterViewModel->setDisplayType(ImportMontageWizard::DisplayType::SideBySide);
-    }
-
-    ImportMontageWizard::InputType inputType = montageWizard->field(ImportMontage::FieldNames::InputType).value<ImportMontageWizard::InputType>();
-
-    // Based on the type of file imported, perform next action
-    if(inputType == ImportMontageWizard::InputType::Generic)
-    {
-      importGenericMontage(montageWizard);
-    }
-    else if(inputType == ImportMontageWizard::InputType::DREAM3D)
-    {
-      importDREAM3DMontage(montageWizard);
-    }
-    else if(inputType == ImportMontageWizard::InputType::Fiji)
-    {
-      importFijiMontage(montageWizard);
-    }
-    else if(inputType == ImportMontageWizard::InputType::Robomet)
-    {
-      importRobometMontage(montageWizard);
-    }
-    else if(inputType == ImportMontageWizard::InputType::Zeiss)
-    {
-      importZeissMontage(montageWizard);
-    }
-    else
-    {
-      QString msg = tr("IMF Viewer failed to detect the proper data file type from the given input file.  "
-                       "Supported file types are DREAM3D files, as well as Fiji, Robomet, and Zeiss configuration files.");
-      QMessageBox::critical(this, "Import Montage", msg, QMessageBox::StandardButton::Ok, QMessageBox::StandardButton::Ok);
-    }
+    return;
   }
 
-  delete montageWizard;
-}
+  VSMainWidgetBase* baseWidget = dynamic_cast<VSMainWidgetBase*>(m_Ui->vsWidget);
+  VSFilterViewModel* filterViewModel = baseWidget->getActiveViewWidget()->getFilterViewModel();
+  m_DisplayType = dialog->getDisplayType();
+  filterViewModel->setDisplayType(m_DisplayType);
 
-// -----------------------------------------------------------------------------
-//
-// -----------------------------------------------------------------------------
-void IMFViewer_UI::importGenericMontage(ImportMontageWizard* montageWizard)
-{
   QString tileConfigFile = "TileConfiguration.txt";
-  int numOfRows = montageWizard->field(ImportMontage::Generic::FieldNames::NumberOfRows).toInt();
-  int numOfCols = montageWizard->field(ImportMontage::Generic::FieldNames::NumberOfColumns).toInt();
+
+  std::tuple<int, int> montageDims = dialog->getMontageDimensions();
+  int numOfRows = std::get<0>(montageDims);
+  int numOfCols = std::get<1>(montageDims);
 
   // Get input file names
-  FileListInfo_t inputFileInfo = montageWizard->field(ImportMontage::Generic::FieldNames::FileListInfo).value<FileListInfo_t>();
+  FileListInfo_t inputFileInfo = dialog->getFileListInfo();
 
   // Generate tile configuration file.
-  TileConfigFileGenerator tileConfigFileGenerator(inputFileInfo, montageWizard->field(ImportMontage::Generic::FieldNames::MontageType).value<MontageSettings::MontageType>(),
-                                                  montageWizard->field(ImportMontage::Generic::FieldNames::MontageOrder).value<MontageSettings::MontageOrder>(), numOfCols, numOfRows,
-                                                  montageWizard->field(ImportMontage::Generic::FieldNames::TileOverlap).toDouble(), tileConfigFile);
+  TileConfigFileGenerator tileConfigFileGenerator(inputFileInfo, dialog->getMontageType(), dialog->getMontageOrder(), numOfCols, numOfRows, dialog->getTileOverlap(), tileConfigFile);
   tileConfigFileGenerator.buildTileConfigFile();
 
   QString fijiFilePath(inputFileInfo.InputPath);
@@ -320,53 +270,44 @@ void IMFViewer_UI::importGenericMontage(ImportMontageWizard* montageWizard)
   fijiFilePath.append(tileConfigFile);
 
   // Change wizard data for Fiji use case
-  QString montageName = montageWizard->field(ImportMontage::Generic::FieldNames::MontageName).toString();
-  montageWizard->setField(ImportMontage::Fiji::FieldNames::MontageName, montageName);
+  QString montageName = dialog->getMontageName();
   FijiListInfo_t fijiListInfo;
   fijiListInfo.FijiFilePath = fijiFilePath;
-  QVariant var;
-  var.setValue(fijiListInfo);
-  montageWizard->setField(ImportMontage::Fiji::FieldNames::FijiListInfo, var);
-  bool changeSpacing = montageWizard->field(ImportMontage::Generic::FieldNames::ChangeSpacing).toBool();
-  montageWizard->setField(ImportMontage::Fiji::FieldNames::ChangeSpacing, changeSpacing);
-  if(changeSpacing)
-  {
-    float spacingX = montageWizard->field(ImportMontage::Generic::FieldNames::SpacingX).toFloat();
-    float spacingY = montageWizard->field(ImportMontage::Generic::FieldNames::SpacingY).toFloat();
-    float spacingZ = montageWizard->field(ImportMontage::Generic::FieldNames::SpacingZ).toFloat();
-    montageWizard->setField(ImportMontage::Fiji::FieldNames::SpacingX, spacingX);
-    montageWizard->setField(ImportMontage::Fiji::FieldNames::SpacingY, spacingY);
-    montageWizard->setField(ImportMontage::Fiji::FieldNames::SpacingZ, spacingZ);
-  }
-  bool changeOrigin = montageWizard->field(ImportMontage::Generic::FieldNames::ChangeOrigin).toBool();
-  montageWizard->setField(ImportMontage::Fiji::FieldNames::ChangeOrigin, changeOrigin);
-  if(changeOrigin)
-  {
-    float originX = montageWizard->field(ImportMontage::Generic::FieldNames::OriginX).toFloat();
-    float originY = montageWizard->field(ImportMontage::Generic::FieldNames::OriginY).toFloat();
-    float originZ = montageWizard->field(ImportMontage::Generic::FieldNames::OriginZ).toFloat();
-    montageWizard->setField(ImportMontage::Fiji::FieldNames::OriginX, originX);
-    montageWizard->setField(ImportMontage::Fiji::FieldNames::OriginY, originY);
-    montageWizard->setField(ImportMontage::Fiji::FieldNames::OriginZ, originZ);
-  }
+  int tileOverlap = dialog->getTileOverlap();
+  bool overrideSpacing = dialog->getOverrideSpacing();
+  SpacingTuple spacing = dialog->getSpacing();
+  bool overrideOrigin = dialog->getOverrideOrigin();
+  OriginTuple origin = dialog->getOrigin();
 
-  importFijiMontage(montageWizard);
+  importFijiMontage(montageName, fijiListInfo, true, tileOverlap, overrideSpacing, spacing, overrideOrigin, origin);
 }
 
 // -----------------------------------------------------------------------------
 //
 // -----------------------------------------------------------------------------
-void IMFViewer_UI::importDREAM3DMontage(ImportMontageWizard* montageWizard)
+void IMFViewer_UI::importDREAM3DMontage()
 {
+  ImportDREAM3DMontageDialog::Pointer dialog = ImportDREAM3DMontageDialog::New(this);
+  int ret = dialog->exec();
+  if(ret == QDialog::Rejected)
+  {
+    return;
+  }
+
+  VSMainWidgetBase* baseWidget = dynamic_cast<VSMainWidgetBase*>(m_Ui->vsWidget);
+  VSFilterViewModel* filterViewModel = baseWidget->getActiveViewWidget()->getFilterViewModel();
+  m_DisplayType = dialog->getDisplayType();
+  filterViewModel->setDisplayType(m_DisplayType);
+
   VSFilterFactory::Pointer filterFactory = VSFilterFactory::New();
   connect(filterFactory.get(), &VSFilterFactory::notifyErrorMessage,
           [=](const QString& msg, int code) { QMessageBox::critical(this, "Import DREAM3D Montage", msg, QMessageBox::StandardButton::Ok, QMessageBox::StandardButton::Ok); });
 
   FilterPipeline::Pointer pipeline = FilterPipeline::New();
-  QString montageName = montageWizard->field(ImportMontage::DREAM3D::FieldNames::MontageName).toString();
+  QString montageName = dialog->getMontageName();
   pipeline->setName(montageName);
 
-  QString dataFilePath = montageWizard->field(ImportMontage::DREAM3D::FieldNames::DataFilePath).toString();
+  QString dataFilePath = dialog->getDataFilePath();
 
   SIMPLH5DataReader reader;
   bool success = reader.openFile(dataFilePath);
@@ -375,7 +316,7 @@ void IMFViewer_UI::importDREAM3DMontage(ImportMontageWizard* montageWizard)
     connect(&reader, &SIMPLH5DataReader::errorGenerated,
             [=](const QString& title, const QString& msg, const int& code) { QMessageBox::critical(this, title, msg, QMessageBox::StandardButton::Ok, QMessageBox::StandardButton::Ok); });
 
-    DataContainerArrayProxy dream3dProxy = montageWizard->field(ImportMontage::DREAM3D::FieldNames::Proxy).value<DataContainerArrayProxy>();
+    DataContainerArrayProxy dream3dProxy = dialog->getProxy();
 
     m_dataContainerArray = reader.readSIMPLDataUsingProxy(dream3dProxy, false);
     if(m_dataContainerArray.get() == nullptr)
@@ -394,48 +335,46 @@ void IMFViewer_UI::importDREAM3DMontage(ImportMontageWizard* montageWizard)
 
     pipeline->pushBack(dataContainerReader);
 
-    if(m_DisplayMontage || m_DisplayOutline)
+    QStringList dcNames = m_dataContainerArray->getDataContainerNames();
+
+    // Change spacing and/or origin (if selected)
+    bool changeSpacing = dialog->getOverrideSpacing();
+    bool changeOrigin = dialog->getOverrideOrigin();
+    if(changeSpacing || changeOrigin)
     {
-      QStringList dcNames = m_dataContainerArray->getDataContainerNames();
+      SpacingTuple spacing = dialog->getSpacing();
+      FloatVec3Type newSpacing = {std::get<0>(spacing), std::get<1>(spacing), std::get<2>(spacing)};
 
-      // Change spacing and/or origin (if selected)
-      bool changeSpacing = montageWizard->field(ImportMontage::DREAM3D::FieldNames::ChangeSpacing).toBool();
-      bool changeOrigin = montageWizard->field(ImportMontage::DREAM3D::FieldNames::ChangeOrigin).toBool();
-      if(changeSpacing || changeOrigin)
+      OriginTuple origin = dialog->getOrigin();
+      FloatVec3Type newOrigin = {std::get<0>(origin), std::get<1>(origin), std::get<2>(origin)};
+
+      // For each data container, add a new filter
+      for(QString dcName : dcNames)
       {
-        float spacingX = montageWizard->field(ImportMontage::DREAM3D::FieldNames::SpacingX).toFloat();
-        float spacingY = montageWizard->field(ImportMontage::DREAM3D::FieldNames::SpacingY).toFloat();
-        float spacingZ = montageWizard->field(ImportMontage::DREAM3D::FieldNames::SpacingZ).toFloat();
-        FloatVec3Type newSpacing = {spacingX, spacingY, spacingZ};
-        float originX = montageWizard->field(ImportMontage::DREAM3D::FieldNames::OriginX).toFloat();
-        float originY = montageWizard->field(ImportMontage::DREAM3D::FieldNames::OriginY).toFloat();
-        float originZ = montageWizard->field(ImportMontage::DREAM3D::FieldNames::OriginZ).toFloat();
-        FloatVec3Type newOrigin = {originX, originY, originZ};
-        QVariant var;
+        AbstractFilter::Pointer setOriginResolutionFilter = filterFactory->createSetOriginResolutionFilter(dcName, changeSpacing, changeOrigin, newSpacing, newOrigin);
 
-        // For each data container, add a new filter
-        for(QString dcName : dcNames)
+        if(!setOriginResolutionFilter)
         {
-          AbstractFilter::Pointer setOriginResolutionFilter = filterFactory->createSetOriginResolutionFilter(dcName, changeSpacing, changeOrigin, newSpacing, newOrigin);
-
-          if(!setOriginResolutionFilter)
-          {
-            // Error!
-          }
-
-          pipeline->pushBack(setOriginResolutionFilter);
+          // Error!
         }
+
+        pipeline->pushBack(setOriginResolutionFilter);
       }
+    }
 
-      int rowCount = montageWizard->field(ImportMontage::DREAM3D::FieldNames::NumberOfRows).toInt();
-      int colCount = montageWizard->field(ImportMontage::DREAM3D::FieldNames::NumberOfColumns).toInt();
+    std::tuple<int, int> montageDims = dialog->getMontageDimensions();
+    int rowCount = std::get<0>(montageDims);
+    int colCount = std::get<1>(montageDims);
 
-      IntVec3Type montageSize = {colCount, rowCount, 1};
+    IntVec3Type montageSize = {colCount, rowCount, 1};
 
-      QString amName = montageWizard->field(ImportMontage::DREAM3D::FieldNames::CellAttributeMatrixName).toString();
-      QString daName = montageWizard->field(ImportMontage::DREAM3D::FieldNames::ImageArrayName).toString();
-      double tileOverlap = montageWizard->field(ImportMontage::DREAM3D::FieldNames::TileOverlap).toDouble();
+    double tileOverlap = dialog->getTileOverlap();
 
+    QString amName = dialog->getAttributeMatrixName();
+    QString daName = dialog->getDataArrayName();
+
+    if(m_DisplayType != AbstractImportMontageDialog::DisplayType::SideBySide)
+    {
       AbstractFilter::Pointer itkRegistrationFilter = filterFactory->createPCMTileRegistrationFilter(montageSize, dcNames, amName, daName);
       pipeline->pushBack(itkRegistrationFilter);
 
@@ -455,21 +394,47 @@ void IMFViewer_UI::importDREAM3DMontage(ImportMontageWizard* montageWizard)
 // -----------------------------------------------------------------------------
 //
 // -----------------------------------------------------------------------------
-void IMFViewer_UI::importFijiMontage(ImportMontageWizard* montageWizard)
+void IMFViewer_UI::importFijiMontage()
+{
+  ImportFijiMontageDialog::Pointer dialog = ImportFijiMontageDialog::New(this);
+  int ret = dialog->exec();
+  if(ret == QDialog::Rejected)
+  {
+    return;
+  }
+
+  VSMainWidgetBase* baseWidget = dynamic_cast<VSMainWidgetBase*>(m_Ui->vsWidget);
+  VSFilterViewModel* filterViewModel = baseWidget->getActiveViewWidget()->getFilterViewModel();
+  m_DisplayType = dialog->getDisplayType();
+  filterViewModel->setDisplayType(m_DisplayType);
+
+  QString montageName = dialog->getMontageName();
+  FijiListInfo_t fijiListInfo = dialog->getFijiListInfo();
+  bool overrideTileOverlap = dialog->getOverrideTileOverlap();
+  int tileOverlap = dialog->getTileOverlap();
+  bool overrideSpacing = dialog->getOverrideSpacing();
+  SpacingTuple spacing = dialog->getSpacing();
+  bool overrideOrigin = dialog->getOverrideOrigin();
+  OriginTuple origin = dialog->getOrigin();
+
+  importFijiMontage(montageName, fijiListInfo, overrideTileOverlap, tileOverlap, overrideSpacing, spacing, overrideOrigin, origin);
+}
+
+// -----------------------------------------------------------------------------
+//
+// -----------------------------------------------------------------------------
+void IMFViewer_UI::importFijiMontage(const QString& montageName, FijiListInfo_t fijiListInfo, bool overrideTileOverlap, int tileOverlap, bool overrideSpacing, SpacingTuple spacing,
+                                     bool overrideOrigin, OriginTuple origin)
 {
   VSFilterFactory::Pointer filterFactory = VSFilterFactory::New();
 
   FilterPipeline::Pointer pipeline = FilterPipeline::New();
-  QString montageName = montageWizard->field(ImportMontage::Fiji::FieldNames::MontageName).toString();
   pipeline->setName(montageName);
 
-  FijiListInfo_t fijiListInfo = montageWizard->field(ImportMontage::Fiji::FieldNames::FijiListInfo).value<FijiListInfo_t>();
-
   QString fijiConfigFilePath = fijiListInfo.FijiFilePath;
-  QString dcPrefix = montageWizard->field(ImportMontage::Fiji::FieldNames::DataContainerPrefix).toString();
-  QString amName = montageWizard->field(ImportMontage::Fiji::FieldNames::CellAttributeMatrixName).toString();
-  QString daName = montageWizard->field(ImportMontage::Fiji::FieldNames::ImageArrayName).toString();
-
+  QString dcPrefix = "UntitledMontage_";
+  QString amName = "Cell Attribute Matrix";
+  QString daName = "Image Data";
   AbstractFilter::Pointer importFijiMontageFilter = filterFactory->createImportFijiMontageFilter(fijiConfigFilePath, dcPrefix, amName, daName);
   if(!importFijiMontageFilter)
   {
@@ -478,53 +443,42 @@ void IMFViewer_UI::importFijiMontage(ImportMontageWizard* montageWizard)
 
   pipeline->pushBack(importFijiMontageFilter);
 
-  if(m_DisplayMontage || m_DisplayOutline)
+  // Set Image Data Containers
+  importFijiMontageFilter->preflight();
+  DataContainerArray::Pointer dca = importFijiMontageFilter->getDataContainerArray();
+  QStringList dcNames = dca->getDataContainerNames();
+
+  // Change spacing and/or origin (if selected)
+  if(overrideSpacing || overrideOrigin)
   {
-    // Set Image Data Containers
-    importFijiMontageFilter->preflight();
-    DataContainerArray::Pointer dca = importFijiMontageFilter->getDataContainerArray();
-    QStringList dcNames = dca->getDataContainerNames();
+    FloatVec3Type newSpacing = {std::get<0>(spacing), std::get<1>(spacing), std::get<2>(spacing)};
+    FloatVec3Type newOrigin = {std::get<0>(origin), std::get<1>(origin), std::get<2>(origin)};
+    QVariant var;
 
-    // Change spacing and/or origin (if selected)
-    bool changeSpacing = montageWizard->field(ImportMontage::Fiji::FieldNames::ChangeSpacing).toBool();
-    bool changeOrigin = montageWizard->field(ImportMontage::Fiji::FieldNames::ChangeOrigin).toBool();
-    if(changeSpacing || changeOrigin)
+    // For each data container, add a new filter
+    for(QString dcName : dcNames)
     {
-      float spacingX = montageWizard->field(ImportMontage::Fiji::FieldNames::SpacingX).toFloat();
-      float spacingY = montageWizard->field(ImportMontage::Fiji::FieldNames::SpacingY).toFloat();
-      float spacingZ = montageWizard->field(ImportMontage::Fiji::FieldNames::SpacingZ).toFloat();
-      FloatVec3Type newSpacing = {spacingX, spacingY, spacingZ};
-      float originX = montageWizard->field(ImportMontage::Fiji::FieldNames::OriginX).toFloat();
-      float originY = montageWizard->field(ImportMontage::Fiji::FieldNames::OriginY).toFloat();
-      float originZ = montageWizard->field(ImportMontage::Fiji::FieldNames::OriginZ).toFloat();
-      FloatVec3Type newOrigin = {originX, originY, originZ};
-      QVariant var;
-
-      // For each data container, add a new filter
-      for(QString dcName : dcNames)
+      AbstractFilter::Pointer setOriginResolutionFilter = filterFactory->createSetOriginResolutionFilter(dcName, overrideSpacing, overrideOrigin, newSpacing, newOrigin);
+      if(!setOriginResolutionFilter)
       {
-        AbstractFilter::Pointer setOriginResolutionFilter = filterFactory->createSetOriginResolutionFilter(dcName, changeSpacing, changeOrigin, newSpacing, newOrigin);
-        if(!setOriginResolutionFilter)
-        {
-          // Error!
-        }
-
-        pipeline->pushBack(setOriginResolutionFilter);
+        // Error!
       }
+
+      pipeline->pushBack(setOriginResolutionFilter);
     }
+  }
 
-    int rowCount = importFijiMontageFilter->property("RowCount").toInt();
-    int colCount = importFijiMontageFilter->property("ColumnCount").toInt();
+  int rowCount = importFijiMontageFilter->property("RowCount").toInt();
+  int colCount = importFijiMontageFilter->property("ColumnCount").toInt();
 
-    IntVec3Type montageSize = {colCount, rowCount, 1};
-    double tileOverlap = 0.0;
+  IntVec3Type montageSize = {colCount, rowCount, 1};
+  if(!overrideTileOverlap)
+  {
+    tileOverlap = 0.0;
+  }
 
-    bool changeOverlap = montageWizard->field(ImportMontage::Fiji::FieldNames::ChangeTileOverlap).toBool();
-    if(changeOverlap)
-    {
-      tileOverlap = montageWizard->field(ImportMontage::Fiji::FieldNames::TileOverlap).toDouble();
-    }
-
+  if(m_DisplayType != AbstractImportMontageDialog::DisplayType::SideBySide)
+  {
     AbstractFilter::Pointer itkRegistrationFilter = filterFactory->createPCMTileRegistrationFilter(montageSize, dcNames, amName, daName);
     pipeline->pushBack(itkRegistrationFilter);
 
@@ -540,26 +494,38 @@ void IMFViewer_UI::importFijiMontage(ImportMontageWizard* montageWizard)
 // -----------------------------------------------------------------------------
 //
 // -----------------------------------------------------------------------------
-void IMFViewer_UI::importRobometMontage(ImportMontageWizard* montageWizard)
+void IMFViewer_UI::importRobometMontage()
 {
+  ImportRobometMontageDialog::Pointer dialog = ImportRobometMontageDialog::New(this);
+  int ret = dialog->exec();
+  if(ret == QDialog::Rejected)
+  {
+    return;
+  }
+
+  VSMainWidgetBase* baseWidget = dynamic_cast<VSMainWidgetBase*>(m_Ui->vsWidget);
+  VSFilterViewModel* filterViewModel = baseWidget->getActiveViewWidget()->getFilterViewModel();
+  m_DisplayType = dialog->getDisplayType();
+  filterViewModel->setDisplayType(m_DisplayType);
+
   VSFilterFactory::Pointer filterFactory = VSFilterFactory::New();
 
-  RobometListInfo_t rbmListInfo = montageWizard->field(ImportMontage::Robomet::FieldNames::RobometListInfo).value<RobometListInfo_t>();
+  RobometListInfo_t rbmListInfo = dialog->getRobometListInfo();
   int sliceMin = rbmListInfo.SliceMin;
   int sliceMax = rbmListInfo.SliceMax;
 
   for(int slice = sliceMin; slice <= sliceMax; slice++)
   {
     FilterPipeline::Pointer pipeline = FilterPipeline::New();
-    QString montageName = montageWizard->field(ImportMontage::Robomet::FieldNames::MontageName).toString();
+    QString montageName = dialog->getMontageName();
     QString pipelineName = montageName;
     pipelineName.append(tr("_%1").arg(slice));
     pipeline->setName(pipelineName);
 
     QString robometFilePath = rbmListInfo.RobometFilePath;
-    QString dcPrefix = montageWizard->field(ImportMontage::Robomet::FieldNames::DataContainerPrefix).toString();
-    QString amName = montageWizard->field(ImportMontage::Robomet::FieldNames::CellAttributeMatrixName).toString();
-    QString daName = montageWizard->field(ImportMontage::Robomet::FieldNames::ImageArrayName).toString();
+    QString dcPrefix = "UntitledMontage_";
+    QString amName = "Cell Attribute Matrix";
+    QString daName = "Image Data";
     QString imagePrefix = rbmListInfo.ImagePrefix;
     QString imageFileExtension = rbmListInfo.ImageExtension;
 
@@ -571,23 +537,23 @@ void IMFViewer_UI::importRobometMontage(ImportMontageWizard* montageWizard)
 
     pipeline->pushBack(importRoboMetMontageFilter);
 
-    if(m_DisplayMontage || m_DisplayOutline)
+    importRoboMetMontageFilter->preflight();
+    DataContainerArray::Pointer dca = importRoboMetMontageFilter->getDataContainerArray();
+    QStringList dcNames = dca->getDataContainerNames();
+
+    int rowCount = rbmListInfo.NumberOfRows;
+    int colCount = rbmListInfo.NumberOfColumns;
+    IntVec3Type montageSize = {colCount, rowCount, 1};
+    double tileOverlap = 0.0;
+
+    bool changeOverlap = dialog->getOverrideTileOverlap();
+    if(changeOverlap)
     {
-      importRoboMetMontageFilter->preflight();
-      DataContainerArray::Pointer dca = importRoboMetMontageFilter->getDataContainerArray();
-      QStringList dcNames = dca->getDataContainerNames();
+      tileOverlap = dialog->getTileOverlap();
+    }
 
-      int rowCount = rbmListInfo.NumberOfRows;
-      int colCount = rbmListInfo.NumberOfColumns;
-      IntVec3Type montageSize = {colCount, rowCount, 1};
-      double tileOverlap = 0.0;
-
-      bool changeOverlap = montageWizard->field(ImportMontage::Robomet::FieldNames::ChangeTileOverlap).toBool();
-      if(changeOverlap)
-      {
-        tileOverlap = montageWizard->field(ImportMontage::Robomet::FieldNames::TileOverlap).toDouble();
-      }
-
+    if(m_DisplayType != AbstractImportMontageDialog::DisplayType::SideBySide)
+    {
       AbstractFilter::Pointer itkRegistrationFilter = filterFactory->createPCMTileRegistrationFilter(montageSize, dcNames, amName, daName);
       pipeline->pushBack(itkRegistrationFilter);
 
@@ -603,47 +569,64 @@ void IMFViewer_UI::importRobometMontage(ImportMontageWizard* montageWizard)
 // -----------------------------------------------------------------------------
 //
 // -----------------------------------------------------------------------------
-void IMFViewer_UI::importZeissMontage(ImportMontageWizard* montageWizard)
+void IMFViewer_UI::importZeissMontage()
 {
+  ImportZeissMontageDialog::Pointer dialog = ImportZeissMontageDialog::New(this);
+  int ret = dialog->exec();
+  if(ret == QDialog::Rejected)
+  {
+    return;
+  }
+
+  VSMainWidgetBase* baseWidget = dynamic_cast<VSMainWidgetBase*>(m_Ui->vsWidget);
+  VSFilterViewModel* filterViewModel = baseWidget->getActiveViewWidget()->getFilterViewModel();
+  m_DisplayType = dialog->getDisplayType();
+  filterViewModel->setDisplayType(m_DisplayType);
+
   FilterPipeline::Pointer pipeline = FilterPipeline::New();
   AbstractFilter::Pointer importZeissMontage;
-  QString montageName = montageWizard->field(ImportMontage::Zeiss::FieldNames::MontageName).toString();
+  QString montageName = dialog->getMontageName();
   pipeline->setName(montageName);
 
   VSFilterFactory::Pointer filterFactory = VSFilterFactory::New();
 
-  ZeissListInfo_t zeissListInfo = montageWizard->field(ImportMontage::Zeiss::FieldNames::ZeissListInfo).value<ZeissListInfo_t>();
+  ZeissListInfo_t zeissListInfo = dialog->getZeissListInfo();
 
   QString configFilePath = zeissListInfo.ZeissFilePath;
-  QString dataContainerPrefix = montageWizard->field(ImportMontage::Zeiss::FieldNames::DataContainerPrefix).toString();
-  QString cellAttrMatrixName = montageWizard->field(ImportMontage::Zeiss::FieldNames::CellAttributeMatrixName).toString();
-  QString attributeArrayName = montageWizard->field(ImportMontage::Zeiss::FieldNames::ImageDataArrayName).toString();
-  QString metadataAttrMatrixName = montageWizard->field(ImportMontage::Zeiss::FieldNames::MetadataAttrMatrixName).toString();
+  QString dcPrefix = "UntitledMontage_";
+  QString amName = "Cell Attribute Matrix";
+  QString daName = "Image Data";
+  QString metadataAMName = "Metadata Attribute Matrix";
   bool importAllMetadata = true;
-  bool convertToGrayscale = montageWizard->field(ImportMontage::Zeiss::FieldNames::ConvertToGrayscale).toBool();
-  bool changeSpacing = montageWizard->field(ImportMontage::Zeiss::FieldNames::ChangeSpacing).toBool();
-  bool changeOrigin = montageWizard->field(ImportMontage::Zeiss::FieldNames::ChangeOrigin).toBool();
+  bool convertToGrayscale = dialog->getConvertToGrayscale();
+  bool changeSpacing = dialog->getOverrideSpacing();
+  bool changeOrigin = dialog->getOverrideOrigin();
   float colorWeights[3];
   float newSpacing[3];
   float newOrigin[3];
 
   if(changeSpacing || changeOrigin)
   {
-    newSpacing[0] = montageWizard->field(ImportMontage::Zeiss::FieldNames::SpacingX).toFloat();
-    newSpacing[1] = montageWizard->field(ImportMontage::Zeiss::FieldNames::SpacingY).toFloat();
-    newSpacing[2] = montageWizard->field(ImportMontage::Zeiss::FieldNames::SpacingZ).toFloat();
-    newOrigin[0] = montageWizard->field(ImportMontage::Zeiss::FieldNames::OriginX).toFloat();
-    newOrigin[1] = montageWizard->field(ImportMontage::Zeiss::FieldNames::OriginY).toFloat();
-    newOrigin[2] = montageWizard->field(ImportMontage::Zeiss::FieldNames::OriginZ).toFloat();
+    SpacingTuple spacing = dialog->getSpacing();
+
+    newSpacing[0] = std::get<0>(spacing);
+    newSpacing[1] = std::get<1>(spacing);
+    newSpacing[2] = std::get<2>(spacing);
+
+    OriginTuple origin = dialog->getOrigin();
+    newOrigin[0] = std::get<0>(origin);
+    newOrigin[1] = std::get<1>(origin);
+    newOrigin[2] = std::get<2>(origin);
   }
   if(convertToGrayscale)
   {
-    colorWeights[0] = montageWizard->field(ImportMontage::Zeiss::FieldNames::ColorWeightingR).toFloat();
-    colorWeights[1] = montageWizard->field(ImportMontage::Zeiss::FieldNames::ColorWeightingG).toFloat();
-    colorWeights[2] = montageWizard->field(ImportMontage::Zeiss::FieldNames::ColorWeightingB).toFloat();
+    ColorWeightingTuple colorWeighting = dialog->getColorWeighting();
+    colorWeights[0] = std::get<0>(colorWeighting);
+    colorWeights[1] = std::get<1>(colorWeighting);
+    colorWeights[2] = std::get<2>(colorWeighting);
   }
-  importZeissMontage = filterFactory->createImportZeissMontageFilter(configFilePath, dataContainerPrefix, cellAttrMatrixName, attributeArrayName, metadataAttrMatrixName, importAllMetadata,
-                                                                     convertToGrayscale, changeOrigin, changeSpacing, colorWeights, newOrigin, newSpacing);
+  importZeissMontage = filterFactory->createImportZeissMontageFilter(configFilePath, dcPrefix, amName, daName, metadataAMName, importAllMetadata, convertToGrayscale, changeOrigin, changeSpacing,
+                                                                     colorWeights, newOrigin, newSpacing);
 
   if(!importZeissMontage)
   {
@@ -652,27 +635,27 @@ void IMFViewer_UI::importZeissMontage(ImportMontageWizard* montageWizard)
 
   pipeline->pushBack(importZeissMontage);
 
-  if(m_DisplayMontage || m_DisplayOutline)
+  importZeissMontage->preflight();
+  DataContainerArray::Pointer dca = importZeissMontage->getDataContainerArray();
+  QStringList dcNames = dca->getDataContainerNames();
+  int rowCount = importZeissMontage->property("RowCount").toInt();
+  int colCount = importZeissMontage->property("ColumnCount").toInt();
+  IntVec3Type montageSize = {colCount, rowCount, 1};
+  double tileOverlap = 0.0;
+
+  bool changeOverlap = dialog->getOverrideTileOverlap();
+  if(changeOverlap)
   {
-    importZeissMontage->preflight();
-    DataContainerArray::Pointer dca = importZeissMontage->getDataContainerArray();
-    QStringList dcNames = dca->getDataContainerNames();
-    int rowCount = importZeissMontage->property("RowCount").toInt();
-    int colCount = importZeissMontage->property("ColumnCount").toInt();
-    IntVec3Type montageSize = {colCount, rowCount, 1};
-    double tileOverlap = 0.0;
+    tileOverlap = dialog->getTileOverlap();
+  }
 
-    bool changeOverlap = montageWizard->field(ImportMontage::Zeiss::FieldNames::ChangeTileOverlap).toBool();
-    if(changeOverlap)
-    {
-      tileOverlap = montageWizard->field(ImportMontage::Zeiss::FieldNames::TileOverlap).toDouble();
-    }
-
-    AbstractFilter::Pointer itkRegistrationFilter = filterFactory->createPCMTileRegistrationFilter(montageSize, dcNames, cellAttrMatrixName, attributeArrayName);
+  if(m_DisplayType != AbstractImportMontageDialog::DisplayType::SideBySide)
+  {
+    AbstractFilter::Pointer itkRegistrationFilter = filterFactory->createPCMTileRegistrationFilter(montageSize, dcNames, amName, daName);
     pipeline->pushBack(itkRegistrationFilter);
 
     DataArrayPath montagePath("MontageDC", "MontageAM", "MontageData");
-    AbstractFilter::Pointer itkStitchingFilter = filterFactory->createTileStitchingFilter(montageSize, dcNames, cellAttrMatrixName, attributeArrayName, montagePath, tileOverlap);
+    AbstractFilter::Pointer itkStitchingFilter = filterFactory->createTileStitchingFilter(montageSize, dcNames, amName, daName, montagePath, tileOverlap);
     pipeline->pushBack(itkStitchingFilter);
   }
 
@@ -739,7 +722,7 @@ void IMFViewer_UI::handleMontageResults(FilterPipeline::Pointer pipeline, int er
     }
 
     // If Display Montage was selected, remove non-stitched image data containers
-    if(m_DisplayMontage)
+    if(m_DisplayType == AbstractImportMontageDialog::DisplayType::Montage)
     {
       for(DataContainer::Pointer dc : dca->getDataContainers())
       {
@@ -834,23 +817,25 @@ void IMFViewer_UI::executePipeline()
 // -----------------------------------------------------------------------------
 void IMFViewer_UI::importPipeline(ExecutePipelineWizard* executePipelineWizard)
 {
-  m_DisplayMontage = executePipelineWizard->field(ImportMontage::FieldNames::DisplayMontage).toBool();
-  m_DisplayOutline = executePipelineWizard->field(ImportMontage::FieldNames::DisplayOutlineOnly).toBool();
+  bool displayMontage = executePipelineWizard->field(ExecutePipeline::FieldNames::DisplayMontage).toBool();
+  bool displayOutline = executePipelineWizard->field(ExecutePipeline::FieldNames::DisplayOutlineOnly).toBool();
 
   VSMainWidgetBase* baseWidget = dynamic_cast<VSMainWidgetBase*>(m_Ui->vsWidget);
   VSFilterViewModel* filterViewModel = baseWidget->getActiveViewWidget()->getFilterViewModel();
-  if(m_DisplayMontage)
+  if(displayMontage)
   {
-  filterViewModel->setDisplayType(ImportMontageWizard::DisplayType::Montage);
+    m_DisplayType = AbstractImportMontageDialog::DisplayType::Montage;
   }
-  else if(m_DisplayOutline)
+  else if(displayOutline)
   {
-  filterViewModel->setDisplayType(ImportMontageWizard::DisplayType::Outline);
+    m_DisplayType = AbstractImportMontageDialog::DisplayType::Outline;
   }
   else
   {
-  filterViewModel->setDisplayType(ImportMontageWizard::DisplayType::SideBySide);
+    m_DisplayType = AbstractImportMontageDialog::DisplayType::SideBySide;
   }
+
+  filterViewModel->setDisplayType(m_DisplayType);
 
   QString filePath = executePipelineWizard->field(ExecutePipeline::FieldNames::PipelineFile)
     .toString();
@@ -990,7 +975,7 @@ void IMFViewer_UI::performMontage(PerformMontageWizard* performMontageWizard)
   std::pair<int, int> rowColPair;
   bool validSIMPL = false;
 
-  m_DisplayMontage = true;
+  m_DisplayType = AbstractImportMontageDialog::DisplayType::Montage;
   bool stitchingOnly = performMontageWizard->field(PerformMontage::FieldNames::StitchingOnly).toBool();
 
   QString montageName = performMontageWizard->field(PerformMontage::FieldNames::MontageName).toString();
@@ -1000,7 +985,7 @@ void IMFViewer_UI::performMontage(PerformMontageWizard* performMontageWizard)
 
   VSFilterViewModel* filterViewModel = baseWidget->getActiveViewWidget()->getFilterViewModel();
 
-  filterViewModel->setDisplayType(ImportMontageWizard::DisplayType::Montage);
+  filterViewModel->setDisplayType(AbstractImportMontageDialog::DisplayType::Montage);
 
   QStringList selectedFilterNames;
   VSAbstractFilter::FilterListType selectedFilters = baseWidget->getActiveViewWidget()
@@ -1552,10 +1537,28 @@ void IMFViewer_UI::createMenu()
   connect(importImagesAction, &QAction::triggered, [=] { IMFViewer_UI::importImages(); });
   fileMenu->addAction(importImagesAction);
 
-  QAction* importMontageAction = new QAction("Import Montage");
-  importMontageAction->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_M));
-  connect(importMontageAction, &QAction::triggered, this, &IMFViewer_UI::importMontage);
-  fileMenu->addAction(importMontageAction);
+  QMenu* importMontageMenu = new QMenu("Import Montage");
+  fileMenu->addMenu(importMontageMenu);
+
+  QAction* d3dMontageAction = new QAction("DREAM3D");
+  connect(d3dMontageAction, &QAction::triggered, this, &IMFViewer_UI::importDREAM3DMontage);
+  importMontageMenu->addAction(d3dMontageAction);
+
+  QAction* fijiMontageAction = new QAction("Fiji");
+  connect(fijiMontageAction, &QAction::triggered, this, qOverload<>(&IMFViewer_UI::importFijiMontage));
+  importMontageMenu->addAction(fijiMontageAction);
+
+  QAction* genericMontageAction = new QAction("Generic");
+  connect(genericMontageAction, &QAction::triggered, this, &IMFViewer_UI::importGenericMontage);
+  importMontageMenu->addAction(genericMontageAction);
+
+  QAction* robometMontageAction = new QAction("Robomet");
+  connect(robometMontageAction, &QAction::triggered, this, &IMFViewer_UI::importRobometMontage);
+  importMontageMenu->addAction(robometMontageAction);
+
+  QAction* zeissMontageAction = new QAction("Zeiss");
+  connect(zeissMontageAction, &QAction::triggered, this, &IMFViewer_UI::importZeissMontage);
+  importMontageMenu->addAction(zeissMontageAction);
 
   QAction* executePipelineAction = new QAction("Execute Pipeline");
   executePipelineAction->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_E));
