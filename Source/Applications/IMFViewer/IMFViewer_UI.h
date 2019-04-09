@@ -41,7 +41,7 @@
 #include "SIMPLib/DataContainers/DataContainerArray.h"
 #include "SIMPLib/Filtering/FilterPipeline.h"
 
-#include "SIMPLVtkLib/Dialogs/AbstractMontageDialog.h"
+#include "SIMPLVtkLib/Dialogs/AbstractImportMontageDialog.h"
 #include "SIMPLVtkLib/Dialogs/FijiListWidget.h"
 #include "SIMPLVtkLib/QtWidgets/VSQueueWidget.h"
 #include "SIMPLVtkLib/Visualization/VisualFilters/VSAbstractFilter.h"
@@ -233,7 +233,7 @@ private:
   QActionGroup* m_ThemeActionGroup = nullptr;
 
   QString m_OpenDialogLastDirectory = "";
-  AbstractMontageDialog::DisplayType m_DisplayType = AbstractMontageDialog::DisplayType::NotSpecified;
+  AbstractImportMontageDialog::DisplayType m_DisplayType = AbstractImportMontageDialog::DisplayType::NotSpecified;
 
   std::vector<FilterPipeline::Pointer> m_Pipelines;
   DataContainerArray::Pointer m_dataContainerArray;

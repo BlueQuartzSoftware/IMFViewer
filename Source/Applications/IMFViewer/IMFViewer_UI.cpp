@@ -373,7 +373,7 @@ void IMFViewer_UI::importDREAM3DMontage()
     QString amName = dialog->getAttributeMatrixName();
     QString daName = dialog->getDataArrayName();
 
-    if(m_DisplayType != AbstractMontageDialog::DisplayType::SideBySide)
+    if(m_DisplayType != AbstractImportMontageDialog::DisplayType::SideBySide)
     {
       AbstractFilter::Pointer itkRegistrationFilter = filterFactory->createPCMTileRegistrationFilter(montageSize, dcNames, amName, daName);
       pipeline->pushBack(itkRegistrationFilter);
@@ -477,7 +477,7 @@ void IMFViewer_UI::importFijiMontage(const QString& montageName, FijiListInfo_t 
     tileOverlap = 0.0;
   }
 
-  if(m_DisplayType != AbstractMontageDialog::DisplayType::SideBySide)
+  if(m_DisplayType != AbstractImportMontageDialog::DisplayType::SideBySide)
   {
     AbstractFilter::Pointer itkRegistrationFilter = filterFactory->createPCMTileRegistrationFilter(montageSize, dcNames, amName, daName);
     pipeline->pushBack(itkRegistrationFilter);
@@ -552,7 +552,7 @@ void IMFViewer_UI::importRobometMontage()
       tileOverlap = dialog->getTileOverlap();
     }
 
-    if(m_DisplayType != AbstractMontageDialog::DisplayType::SideBySide)
+    if(m_DisplayType != AbstractImportMontageDialog::DisplayType::SideBySide)
     {
       AbstractFilter::Pointer itkRegistrationFilter = filterFactory->createPCMTileRegistrationFilter(montageSize, dcNames, amName, daName);
       pipeline->pushBack(itkRegistrationFilter);
@@ -649,7 +649,7 @@ void IMFViewer_UI::importZeissMontage()
     tileOverlap = dialog->getTileOverlap();
   }
 
-  if(m_DisplayType != AbstractMontageDialog::DisplayType::SideBySide)
+  if(m_DisplayType != AbstractImportMontageDialog::DisplayType::SideBySide)
   {
     AbstractFilter::Pointer itkRegistrationFilter = filterFactory->createPCMTileRegistrationFilter(montageSize, dcNames, amName, daName);
     pipeline->pushBack(itkRegistrationFilter);
@@ -722,7 +722,7 @@ void IMFViewer_UI::handleMontageResults(FilterPipeline::Pointer pipeline, int er
     }
 
     // If Display Montage was selected, remove non-stitched image data containers
-    if(m_DisplayType == AbstractMontageDialog::DisplayType::Montage)
+    if(m_DisplayType == AbstractImportMontageDialog::DisplayType::Montage)
     {
       for(DataContainer::Pointer dc : dca->getDataContainers())
       {
@@ -824,15 +824,15 @@ void IMFViewer_UI::importPipeline(ExecutePipelineWizard* executePipelineWizard)
   VSFilterViewModel* filterViewModel = baseWidget->getActiveViewWidget()->getFilterViewModel();
   if(displayMontage)
   {
-    m_DisplayType = AbstractMontageDialog::DisplayType::Montage;
+    m_DisplayType = AbstractImportMontageDialog::DisplayType::Montage;
   }
   else if(displayOutline)
   {
-    m_DisplayType = AbstractMontageDialog::DisplayType::Outline;
+    m_DisplayType = AbstractImportMontageDialog::DisplayType::Outline;
   }
   else
   {
-    m_DisplayType = AbstractMontageDialog::DisplayType::SideBySide;
+    m_DisplayType = AbstractImportMontageDialog::DisplayType::SideBySide;
   }
 
   filterViewModel->setDisplayType(m_DisplayType);
@@ -975,7 +975,7 @@ void IMFViewer_UI::performMontage(PerformMontageWizard* performMontageWizard)
   std::pair<int, int> rowColPair;
   bool validSIMPL = false;
 
-  m_DisplayType = AbstractMontageDialog::DisplayType::Montage;
+  m_DisplayType = AbstractImportMontageDialog::DisplayType::Montage;
   bool stitchingOnly = performMontageWizard->field(PerformMontage::FieldNames::StitchingOnly).toBool();
 
   QString montageName = performMontageWizard->field(PerformMontage::FieldNames::MontageName).toString();
@@ -985,7 +985,7 @@ void IMFViewer_UI::performMontage(PerformMontageWizard* performMontageWizard)
 
   VSFilterViewModel* filterViewModel = baseWidget->getActiveViewWidget()->getFilterViewModel();
 
-  filterViewModel->setDisplayType(AbstractMontageDialog::DisplayType::Montage);
+  filterViewModel->setDisplayType(AbstractImportMontageDialog::DisplayType::Montage);
 
   QStringList selectedFilterNames;
   VSAbstractFilter::FilterListType selectedFilters = baseWidget->getActiveViewWidget()
