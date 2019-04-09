@@ -41,6 +41,8 @@
 #include "SIMPLib/DataContainers/DataContainerArray.h"
 #include "SIMPLib/Filtering/FilterPipeline.h"
 
+#include "SIMPLVtkLib/Dialogs/AbstractMontageDialog.h"
+#include "SIMPLVtkLib/Dialogs/FijiListWidget.h"
 #include "SIMPLVtkLib/QtWidgets/VSQueueWidget.h"
 #include "SIMPLVtkLib/Visualization/VisualFilters/VSAbstractFilter.h"
 
@@ -167,12 +169,6 @@ protected slots:
   void importPipeline(ExecutePipelineWizard* executePipelineWizard);
 
   /**
-   * @brief importMontage
-   * @return
-   */
-  void importMontage();
-
-  /**
    * @brief executePipeline
    */
   void executePipeline();
@@ -237,9 +233,7 @@ private:
   QActionGroup* m_ThemeActionGroup = nullptr;
 
   QString m_OpenDialogLastDirectory = "";
-
-  bool m_DisplayMontage = false;
-  bool m_DisplayOutline = false;
+  AbstractMontageDialog::DisplayType m_DisplayType = AbstractMontageDialog::DisplayType::NotSpecified;
 
   std::vector<FilterPipeline::Pointer> m_Pipelines;
   DataContainerArray::Pointer m_dataContainerArray;
@@ -264,33 +258,46 @@ private:
 
   /**
    * @brief importGenericMontage
-   * @param montageWizard
    */
-  void importGenericMontage(ImportMontageWizard* montageWizard);
+  void importGenericMontage();
 
   /**
    * @brief importDREAM3DMontage
-   * @param montageWizard
    */
-  void importDREAM3DMontage(ImportMontageWizard* montageWizard);
+  void importDREAM3DMontage();
 
   /**
    * @brief importFijiMontage
-   * @param montageWizard
    */
-  void importFijiMontage(ImportMontageWizard* montageWizard);
+  void importFijiMontage();
+
+  typedef std::tuple<float, float, float> SpacingTuple;
+  typedef std::tuple<float, float, float> OriginTuple;
+  typedef std::tuple<float, float, float> ColorWeightingTuple;
+
+  /**
+   * @brief importFijiMontage
+   * @param montageName
+   * @param fijiListInfo
+   * @param overrideTileOverlap
+   * @param tileOverlap
+   * @param overrideSpacing
+   * @param spacing
+   * @param overrideOrigin
+   * @param origin
+   */
+  void importFijiMontage(const QString& montageName, FijiListInfo_t fijiListInfo, bool overrideTileOverlap, int tileOverlap, bool overrideSpacing, SpacingTuple spacing, bool overrideOrigin,
+                         OriginTuple origin);
 
   /**
    * @brief importRobometMontage
-   * @param montageWizard
    */
-  void importRobometMontage(ImportMontageWizard* montageWizard);
+  void importRobometMontage();
 
   /**
    * @brief importZeissMontage
-   * @param montageWizard
    */
-  void importZeissMontage(ImportMontageWizard* montageWizard);
+  void importZeissMontage();
 
   /**
    * @brief runPipeline
