@@ -1215,22 +1215,22 @@ void IMFViewer_UI::processStatusMessage(const QString& statusMessage)
 // -----------------------------------------------------------------------------
 void IMFViewer_UI::updateRecentFileList(const QString& file)
 {
-  // Clear the Recent Items Menu
-  m_RecentFilesMenu->clear();
+  //  // Clear the Recent Items Menu
+  //  m_RecentFilesMenu->clear();
 
-  // Get the list from the static object
-  QStringList files = QtSRecentFileList::Instance()->fileList();
-  foreach(QString file, files)
-  {
-    QAction* action = m_RecentFilesMenu->addAction(QtSRecentFileList::Instance()->parentAndFileName(file));
-    action->setData(file);
-    action->setVisible(true);
-    connect(action, SIGNAL(triggered()), this, SLOT(openRecentFile()));
-  }
+  //  // Get the list from the static object
+  //  QStringList files = QtSRecentFileList::Instance()->fileList();
+  //  foreach(QString file, files)
+  //  {
+  //    QAction* action = m_RecentFilesMenu->addAction(QtSRecentFileList::Instance()->parentAndFileName(file));
+  //    action->setData(file);
+  //    action->setVisible(true);
+  //    connect(action, SIGNAL(triggered()), this, SLOT(openRecentFile()));
+  //  }
 
-  m_RecentFilesMenu->addSeparator();
+  //  m_RecentFilesMenu->addSeparator();
 
-  m_RecentFilesMenu->addAction(m_ClearRecentsAction);
+  //  m_RecentFilesMenu->addAction(m_ClearRecentsAction);
 }
 
 // -----------------------------------------------------------------------------
@@ -1586,24 +1586,24 @@ void IMFViewer_UI::createMenu()
 
   fileMenu->addSeparator();
 
-  m_RecentFilesMenu = new QMenu("Recent Sessions", this);
-  fileMenu->addMenu(m_RecentFilesMenu);
+  //  m_RecentFilesMenu = new QMenu("Recent Sessions", this);
+  //  fileMenu->addMenu(m_RecentFilesMenu);
 
-  m_ClearRecentsAction = new QAction("Clear Recent Sessions", this);
-  connect(m_ClearRecentsAction, &QAction::triggered, [=] {
-    // Clear the Recent Items Menu
-    m_RecentFilesMenu->clear();
-    m_RecentFilesMenu->addSeparator();
-    m_RecentFilesMenu->addAction(m_ClearRecentsAction);
+  //  m_ClearRecentsAction = new QAction("Clear Recent Sessions", this);
+  //  connect(m_ClearRecentsAction, &QAction::triggered, [=] {
+  //    // Clear the Recent Items Menu
+  //    m_RecentFilesMenu->clear();
+  //    m_RecentFilesMenu->addSeparator();
+  //    m_RecentFilesMenu->addAction(m_ClearRecentsAction);
 
-    // Clear the actual list
-    QtSRecentFileList* recents = QtSRecentFileList::Instance();
-    recents->clear();
+  //    // Clear the actual list
+  //    QtSRecentFileList* recents = QtSRecentFileList::Instance();
+  //    recents->clear();
 
-    // Write out the empty list
-    QSharedPointer<QtSSettings> prefs = QSharedPointer<QtSSettings>(new QtSSettings());
-    recents->writeList(prefs.data());
-  });
+  //    // Write out the empty list
+  //    QSharedPointer<QtSSettings> prefs = QSharedPointer<QtSSettings>(new QtSSettings());
+  //    recents->writeList(prefs.data());
+  //  });
 
   m_MenuBar->addMenu(fileMenu);
 
