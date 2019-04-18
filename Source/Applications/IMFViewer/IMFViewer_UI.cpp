@@ -373,7 +373,7 @@ void IMFViewer_UI::importDREAM3DMontage()
     QString amName = dialog->getAttributeMatrixName();
     QString daName = dialog->getDataArrayName();
 
-    if(m_DisplayType != AbstractImportMontageDialog::DisplayType::SideBySide)
+    if(m_DisplayType != AbstractImportMontageDialog::DisplayType::SideBySide && m_DisplayType != AbstractImportMontageDialog::DisplayType::Outline)
     {
       AbstractFilter::Pointer itkRegistrationFilter = filterFactory->createPCMTileRegistrationFilter(montageSize, dcNames, amName, daName);
       pipeline->pushBack(itkRegistrationFilter);
@@ -477,7 +477,7 @@ void IMFViewer_UI::importFijiMontage(const QString& montageName, FijiListInfo_t 
     tileOverlap = 0.0;
   }
 
-  if(m_DisplayType != AbstractImportMontageDialog::DisplayType::SideBySide)
+  if(m_DisplayType != AbstractImportMontageDialog::DisplayType::SideBySide && m_DisplayType != AbstractImportMontageDialog::DisplayType::Outline)
   {
     AbstractFilter::Pointer itkRegistrationFilter = filterFactory->createPCMTileRegistrationFilter(montageSize, dcNames, amName, daName);
     pipeline->pushBack(itkRegistrationFilter);
@@ -552,7 +552,7 @@ void IMFViewer_UI::importRobometMontage()
       tileOverlap = dialog->getTileOverlap();
     }
 
-    if(m_DisplayType != AbstractImportMontageDialog::DisplayType::SideBySide)
+    if(m_DisplayType != AbstractImportMontageDialog::DisplayType::SideBySide && m_DisplayType != AbstractImportMontageDialog::DisplayType::Outline)
     {
       AbstractFilter::Pointer itkRegistrationFilter = filterFactory->createPCMTileRegistrationFilter(montageSize, dcNames, amName, daName);
       pipeline->pushBack(itkRegistrationFilter);
@@ -649,7 +649,7 @@ void IMFViewer_UI::importZeissMontage()
     tileOverlap = dialog->getTileOverlap();
   }
 
-  if(m_DisplayType != AbstractImportMontageDialog::DisplayType::SideBySide)
+  if(m_DisplayType != AbstractImportMontageDialog::DisplayType::SideBySide && m_DisplayType != AbstractImportMontageDialog::DisplayType::Outline)
   {
     AbstractFilter::Pointer itkRegistrationFilter = filterFactory->createPCMTileRegistrationFilter(montageSize, dcNames, amName, daName);
     pipeline->pushBack(itkRegistrationFilter);
