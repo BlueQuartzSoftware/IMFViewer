@@ -263,7 +263,7 @@ void IMFViewer_UI::importGenericMontage()
 
   // Generate tile configuration file.
   TileConfigFileGenerator tileConfigFileGenerator(inputFileInfo, dialog->getMontageType(), dialog->getMontageOrder(), numOfCols, numOfRows, dialog->getTileOverlap(), tileConfigFile);
-  tileConfigFileGenerator.buildTileConfigFile();
+  tileConfigFileGenerator.generateTileConfigFile();
 
   QString fijiFilePath(inputFileInfo.InputPath);
   fijiFilePath.append(QDir::separator());
@@ -276,10 +276,9 @@ void IMFViewer_UI::importGenericMontage()
   int tileOverlap = dialog->getTileOverlap();
   bool overrideSpacing = dialog->getOverrideSpacing();
   SpacingTuple spacing = dialog->getSpacing();
-  bool overrideOrigin = dialog->getOverrideOrigin();
   OriginTuple origin = dialog->getOrigin();
 
-  importFijiMontage(montageName, fijiListInfo, true, tileOverlap, overrideSpacing, spacing, overrideOrigin, origin);
+  importFijiMontage(montageName, fijiListInfo, true, tileOverlap, overrideSpacing, spacing, true, origin);
 }
 
 // -----------------------------------------------------------------------------
@@ -453,7 +452,6 @@ void IMFViewer_UI::importFijiMontage(const QString& montageName, FijiListInfo_t 
   {
     FloatVec3Type newSpacing = {std::get<0>(spacing), std::get<1>(spacing), std::get<2>(spacing)};
     FloatVec3Type newOrigin = {std::get<0>(origin), std::get<1>(origin), std::get<2>(origin)};
-    QVariant var;
 
     // For each data container, add a new filter
     for(QString dcName : dcNames)
@@ -642,12 +640,6 @@ void IMFViewer_UI::importZeissMontage()
   int colCount = importZeissMontage->property("ColumnCount").toInt();
   IntVec3Type montageSize = {colCount, rowCount, 1};
   double tileOverlap = 0.0;
-
-  bool changeOverlap = dialog->getOverrideTileOverlap();
-  if(changeOverlap)
-  {
-    tileOverlap = dialog->getTileOverlap();
-  }
 
   if(m_DisplayType != AbstractImportMontageDialog::DisplayType::SideBySide && m_DisplayType != AbstractImportMontageDialog::DisplayType::Outline)
   {
