@@ -63,6 +63,7 @@
 #include "SIMPLVtkLib/Dialogs/ImportGenericMontageDialog.h"
 #include "SIMPLVtkLib/Dialogs/ImportRobometMontageDialog.h"
 #include "SIMPLVtkLib/Dialogs/ImportZeissMontageDialog.h"
+#include "SIMPLVtkLib/Dialogs/PerformMontageDialog.h"
 #include "SIMPLVtkLib/Dialogs/Utilities/TileConfigFileGenerator.h"
 #include "SIMPLVtkLib/QtWidgets/VSDatasetImporter.h"
 #include "SIMPLVtkLib/QtWidgets/VSFilterFactory.h"
@@ -76,9 +77,7 @@
 #include "SIMPLVtkLib/Wizards/ExecutePipeline/ExecutePipelineConstants.h"
 #include "SIMPLVtkLib/Wizards/ExecutePipeline/ExecutePipelineWizard.h"
 #include "SIMPLVtkLib/Wizards/ExecutePipeline/PipelineWorker.h"
-#include "SIMPLVtkLib/Wizards/PerformMontage/DatasetListWidget.h"
-#include "SIMPLVtkLib/Wizards/PerformMontage/PerformMontageConstants.h"
-#include "SIMPLVtkLib/Wizards/PerformMontage/PerformMontageWizard.h"
+#include "SIMPLVtkLib/Dialogs/DatasetListWidget.h"
 
 #include "BrandedStrings.h"
 
@@ -888,22 +887,14 @@ void IMFViewer_UI::importPipeline(ExecutePipelineWizard* executePipelineWizard)
 // -----------------------------------------------------------------------------
 void IMFViewer_UI::performMontage()
 {
-  PerformMontageWizard* performMontageWizard = new PerformMontageWizard(m_Ui->vsWidget);
-  int result = performMontageWizard->exec();
+  PerformMontageDialog::Pointer performMontageDialog = PerformMontageDialog::New(m_Ui->vsWidget);
+  int result = performMontageDialog->exec();
 
-  if(result == QDialog::Accepted)
+  if(result == QDialog::Rejected)
   {
-    performMontage(performMontageWizard);
+    return;
   }
 
-  delete performMontageWizard;
-}
-
-// -----------------------------------------------------------------------------
-//
-// -----------------------------------------------------------------------------
-void IMFViewer_UI::performMontage(PerformMontageWizard* performMontageWizard)
-{
   FilterPipeline::Pointer pipeline = FilterPipeline::New();
   VSFilterFactory::Pointer filterFactory = VSFilterFactory::New();
   DataContainerArray::Pointer dca = DataContainerArray::New();
@@ -913,9 +904,9 @@ void IMFViewer_UI::performMontage(PerformMontageWizard* performMontageWizard)
   bool validSIMPL = false;
 
   m_DisplayType = AbstractImportMontageDialog::DisplayType::Montage;
-  bool stitchingOnly = performMontageWizard->field(PerformMontage::FieldNames::StitchingOnly).toBool();
+  bool stitchingOnly = performMontageDialog->getStitchingOnly();
 
-  QString montageName = performMontageWizard->field(PerformMontage::FieldNames::MontageName).toString();
+  QString montageName = performMontageDialog->getMontageName();
   pipeline->setName(montageName);
 
   VSMainWidgetBase* baseWidget = dynamic_cast<VSMainWidgetBase*>(m_Ui->vsWidget);
@@ -1023,7 +1014,7 @@ void IMFViewer_UI::performMontage(PerformMontageWizard* performMontageWizard)
   }
   else
   {
-	DatasetListInfo_t selectedFilter = performMontageWizard->field(PerformMontage::FieldNames::SelectedDataset).value<DatasetListInfo_t>();
+	DatasetListInfo_t selectedFilter = performMontageDialog->getDatasetListInfo();
 	QStringList selectedFilterNames = selectedFilter.DatasetNames;
 
 	// Construct Data Container Array with selected Dataset
@@ -1074,32 +1065,7 @@ void IMFViewer_UI::performMontage(PerformMontageWizard* performMontageWizard)
 	  rowColPair = buildCustomDCA(dca, montageDatasets);
 	}
 	QStringList dcNames = dca->getDataContainerNames();
-
-	bool changeSpacing = performMontageWizard->field(PerformMontage::FieldNames::ChangeSpacing).toBool();
-	bool changeOrigin = false;
-	if(changeSpacing)
-	{
-	  float spacingX = performMontageWizard->field(PerformMontage::FieldNames::SpacingX).toFloat();
-	  float spacingY = performMontageWizard->field(PerformMontage::FieldNames::SpacingY).toFloat();
-	  float spacingZ = performMontageWizard->field(PerformMontage::FieldNames::SpacingZ).toFloat();
-	  FloatVec3Type newSpacing = { spacingX, spacingY, spacingZ };
-	  QVariant var;
-
-	  // For each data container, add a new filter
-	  for(QString dcName : dcNames)
-	  {
-		AbstractFilter::Pointer setOriginResolutionFilter = filterFactory->createSetOriginResolutionFilter(dcName, changeSpacing,
-		  changeOrigin, newSpacing, { 0, 0, 0 });
-
-		if(!setOriginResolutionFilter)
-		{
-		  // Error!
-		}
-
-		pipeline->pushBack(setOriginResolutionFilter);
-	  }
-	}
-
+    	
 	IntVec3Type montageSize = { rowColPair.second, rowColPair.first, 1 };
 
 	if(!stitchingOnly)
@@ -1113,11 +1079,10 @@ void IMFViewer_UI::performMontage(PerformMontageWizard* performMontageWizard)
 	pipeline->pushBack(itkStitchingFilter);
 
 	// Check if output to file was requested
-	bool saveToFile = performMontageWizard->field(PerformMontage::FieldNames::SaveToFile).toBool();
+    bool saveToFile = performMontageDialog->getSaveToFile();
 	if(saveToFile)
 	{
-	  QString outputFilePath = performMontageWizard
-		->field(PerformMontage::FieldNames::OutputFilePath).toString();
+	  QString outputFilePath = performMontageDialog->getOutputPath();
 	  QString dcName = "MontageDC";
 	  QString amName = "MontageAM";
 	  QString dataArrayName = "MontageData";
