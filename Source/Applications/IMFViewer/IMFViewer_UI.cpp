@@ -669,8 +669,7 @@ void IMFViewer_UI::handleMontageResults(FilterPipeline::Pointer pipeline, int er
           ImageGeom::Pointer imageGeom = dc->getGeometryAs<ImageGeom>();
           if(imageGeom)
           {
-            FloatVec3Type origin;
-            imageGeom->getOrigin(origin);
+            FloatVec3Type origin = imageGeom->getOrigin();
             origin[2] += slice;
             imageGeom->setOrigin(origin);
           }
