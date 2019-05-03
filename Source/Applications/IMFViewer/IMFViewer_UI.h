@@ -174,15 +174,9 @@ protected slots:
   void executePipeline();
 
   /**
-   * @brief importMontage
+   * @brief performMontage
    */
   void performMontage();
-
-  /**
-   * @brief performMontage
-   * @param performMontageWizard
-   */
-  void performMontage(PerformMontageWizard* performMontageWizard);
 
   /**
    * @brief openRecentFile

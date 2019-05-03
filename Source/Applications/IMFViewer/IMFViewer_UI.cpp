@@ -63,6 +63,7 @@
 #include "SIMPLVtkLib/Dialogs/ImportGenericMontageDialog.h"
 #include "SIMPLVtkLib/Dialogs/ImportRobometMontageDialog.h"
 #include "SIMPLVtkLib/Dialogs/ImportZeissMontageDialog.h"
+#include "SIMPLVtkLib/Dialogs/PerformMontageDialog.h"
 #include "SIMPLVtkLib/Dialogs/Utilities/TileConfigFileGenerator.h"
 #include "SIMPLVtkLib/QtWidgets/VSDatasetImporter.h"
 #include "SIMPLVtkLib/QtWidgets/VSFilterFactory.h"
@@ -76,9 +77,7 @@
 #include "SIMPLVtkLib/Wizards/ExecutePipeline/ExecutePipelineConstants.h"
 #include "SIMPLVtkLib/Wizards/ExecutePipeline/ExecutePipelineWizard.h"
 #include "SIMPLVtkLib/Wizards/ExecutePipeline/PipelineWorker.h"
-#include "SIMPLVtkLib/Wizards/PerformMontage/DatasetListWidget.h"
-#include "SIMPLVtkLib/Wizards/PerformMontage/PerformMontageConstants.h"
-#include "SIMPLVtkLib/Wizards/PerformMontage/PerformMontageWizard.h"
+#include "SIMPLVtkLib/Dialogs/DatasetListWidget.h"
 
 #include "BrandedStrings.h"
 
@@ -185,7 +184,9 @@ void IMFViewer_UI::importData()
   }
   else if(mimeType.inherits("image/png") || mimeType.inherits("image/tiff") || mimeType.inherits("image/jpeg") || mimeType.inherits("image/bmp"))
   {
-    importData(filePath);
+    QStringList filePaths;
+    filePaths.push_back(filePath);
+    importImages(filePaths);
   }
   else
   {
@@ -888,22 +889,14 @@ void IMFViewer_UI::importPipeline(ExecutePipelineWizard* executePipelineWizard)
 // -----------------------------------------------------------------------------
 void IMFViewer_UI::performMontage()
 {
-  PerformMontageWizard* performMontageWizard = new PerformMontageWizard(m_Ui->vsWidget);
-  int result = performMontageWizard->exec();
+  PerformMontageDialog::Pointer performMontageDialog = PerformMontageDialog::New(m_Ui->vsWidget);
+  int result = performMontageDialog->exec();
 
-  if(result == QDialog::Accepted)
+  if(result == QDialog::Rejected)
   {
-    performMontage(performMontageWizard);
+    return;
   }
 
-  delete performMontageWizard;
-}
-
-// -----------------------------------------------------------------------------
-//
-// -----------------------------------------------------------------------------
-void IMFViewer_UI::performMontage(PerformMontageWizard* performMontageWizard)
-{
   FilterPipeline::Pointer pipeline = FilterPipeline::New();
   VSFilterFactory::Pointer filterFactory = VSFilterFactory::New();
   DataContainerArray::Pointer dca = DataContainerArray::New();
@@ -913,9 +906,9 @@ void IMFViewer_UI::performMontage(PerformMontageWizard* performMontageWizard)
   bool validSIMPL = false;
 
   m_DisplayType = AbstractImportMontageDialog::DisplayType::Montage;
-  bool stitchingOnly = performMontageWizard->field(PerformMontage::FieldNames::StitchingOnly).toBool();
+  bool stitchingOnly = performMontageDialog->getStitchingOnly();
 
-  QString montageName = performMontageWizard->field(PerformMontage::FieldNames::MontageName).toString();
+  QString montageName = performMontageDialog->getMontageName();
   pipeline->setName(montageName);
 
   VSMainWidgetBase* baseWidget = dynamic_cast<VSMainWidgetBase*>(m_Ui->vsWidget);
@@ -925,215 +918,76 @@ void IMFViewer_UI::performMontage(PerformMontageWizard* performMontageWizard)
   filterViewModel->setDisplayType(AbstractImportMontageDialog::DisplayType::Montage);
 
   QStringList selectedFilterNames;
-  VSAbstractFilter::FilterListType selectedFilters = baseWidget->getActiveViewWidget()
-	->getSelectedFilters();
+  VSAbstractFilter::FilterListType selectedFilters = baseWidget->getActiveViewWidget()->getSelectedFilters();
+  if(selectedFilters.size() < 2)
+  {
+    return;
+  }
   VSAbstractFilter* firstFilter = selectedFilters.front();
   QString amName;
   QString daName;
-  bool isSIMPL = dynamic_cast<VSSIMPLDataContainerFilter*>(firstFilter) ||
-	(!firstFilter->getChildren().empty() &&
-	  dynamic_cast<VSSIMPLDataContainerFilter*>(firstFilter->getChildren().front()));
-  bool datasetImageSource = !isSIMPL && (dynamic_cast<VSDataSetFilter*>(firstFilter) ||
-	dynamic_cast<VSDataSetFilter*>(firstFilter->getChildren().front()));
-  if(datasetImageSource)
+
+  for(VSAbstractFilter* selectedFilter : selectedFilters)
   {
-	amName = "CellData";
-	daName = "ImageData";
-	for(VSAbstractFilter* selectedFilter : selectedFilters)
-	{
-	  if(dynamic_cast<VSFileNameFilter*>(selectedFilter))
-	  {
-		selectedFilterNames.push_back(selectedFilter->getFilterName());
-		filenameFilters.push_back(selectedFilter);
-	  }
-	  else if(dynamic_cast<VSDataSetFilter*>(selectedFilter))
-	  {
-		if(dynamic_cast<VSFileNameFilter*>(selectedFilter->getParentFilter()))
-		{
-		  QString parentFilterName = selectedFilter->getParentFilter()->getFilterName();
-		  if(!selectedFilterNames.contains(parentFilterName))
-		  {
-			selectedFilterNames.push_back(parentFilterName);
-			filenameFilters.push_back(selectedFilter->getParentFilter());
-		  }
-		}
-	  }
-	}
-	if(selectedFilterNames.isEmpty())
-	{
-	  QMessageBox::critical(this, "Invalid Filter Type",
-		tr("The filter must be an image filter."),
-		QMessageBox::StandardButton::Ok);
-	  return;
-	}
-	else
-	{
-	  // Sort filename filters by x and y
-	  rowColPair = buildCustomDCA(dca, filenameFilters);
-	  QStringList dcNames = dca->getDataContainerNames();
-
-	  // Add image readers with the filenames
-	  for(VSAbstractFilter* filter : filenameFilters)
-	  {
-		VSFileNameFilter* filenameFilter = dynamic_cast<VSFileNameFilter*>(filter);
-		double* pos = filenameFilter->getChildren().front()->getTransform()->getLocalPosition();
-		QString filePath = filenameFilter->getFilePath();
-		QFileInfo fi(filePath);
-		QString fileName = fi.fileName();
-		QString dcName;
-		for(QString name : dcNames)
-		{
-		  if(name.contains(fileName))
-		  {
-			dcName = name;
-		  }
-		}
-		if(dcName.isEmpty())
-		{
-		  // Error!
-		  continue;
-		}
-
-		AbstractFilter::Pointer imageReaderFilter = filterFactory->createImageFileReaderFilter(filePath, dcName);
-		if(!imageReaderFilter)
-		{
-		  // Error!
-		  continue;
-		}
-		else
-		{
-		  pipeline->pushBack(imageReaderFilter);
-		  float originX = pos[0];
-		  float originY = pos[1];
-		  float originZ = 1.0f;
-		  FloatVec3Type newOrigin = { originX, originY, originZ };
-      AbstractFilter::Pointer setOriginResolutionFilter = filterFactory->createSetOriginResolutionFilter(dcName, false, true,
-                                                                                                         FloatVec3Type(), newOrigin);
-
-		  if(!setOriginResolutionFilter)
-		  {
-			// Error!
-			continue;
-		  }
-
-		  pipeline->pushBack(setOriginResolutionFilter);
-		}
-	  }
-	}
-  }
-  else
-  {
-	DatasetListInfo_t selectedFilter = performMontageWizard->field(PerformMontage::FieldNames::SelectedDataset).value<DatasetListInfo_t>();
-	QStringList selectedFilterNames = selectedFilter.DatasetNames;
-
-	// Construct Data Container Array with selected Dataset
-	VSAbstractFilter::FilterListType datasets = baseWidget->getController()->getBaseFilters();
-	for(VSAbstractFilter* dataset : datasets)
-	{
-	  if(selectedFilterNames.contains(dataset->getFilterName()))
-	  {
-		// Add contents to data container array
-		VSAbstractFilter::FilterListType children = dataset->getChildren();
-		for(VSAbstractFilter* childFilter : children)
-		{
-		  bool isSIMPL = dynamic_cast<VSSIMPLDataContainerFilter*>(childFilter);
-		  if(isSIMPL)
-		  {
-			VSSIMPLDataContainerFilter* dcFilter = dynamic_cast<VSSIMPLDataContainerFilter*>(childFilter);
-			if(dcFilter != nullptr)
-			{
-			  validSIMPL = true;
-			  DataContainer::Pointer dataContainer = dcFilter
-				->getWrappedDataContainer()->m_DataContainer;
-			  if(dataContainer != DataContainer::NullPointer())
-			  {
-				for(AttributeMatrix::Pointer am : dataContainer->getAttributeMatrices())
-				{
-				  QVector<size_t> tupleDims = am->getTupleDimensions();
-				  if(tupleDims.size() >= 2)
-				  {
-					amName = am->getName();
-					daName = am->getAttributeArrayNames().first();
-					break;
-				  }
-				}
-			  }
-			  montageDatasets.push_back(childFilter);
-			}
-		  }
-		}
-	  }
-	}
+    // Add contents to data container array
+    bool isSIMPL = dynamic_cast<VSSIMPLDataContainerFilter*>(selectedFilter);
+    if(isSIMPL)
+    {
+      VSSIMPLDataContainerFilter* dcFilter = dynamic_cast<VSSIMPLDataContainerFilter*>(selectedFilter);
+      if(dcFilter != nullptr)
+      {
+        validSIMPL = true;
+        DataContainer::Pointer dataContainer = dcFilter->getWrappedDataContainer()->m_DataContainer;
+        if(dataContainer != DataContainer::NullPointer())
+        {
+          for(AttributeMatrix::Pointer am : dataContainer->getAttributeMatrices())
+          {
+            QVector<size_t> tupleDims = am->getTupleDimensions();
+            if(tupleDims.size() >= 2)
+            {
+              amName = am->getName();
+              daName = am->getAttributeArrayNames().first();
+              break;
+            }
+          }
+        }
+        montageDatasets.push_back(selectedFilter);
+      }
+    }
   }
 
-  if(validSIMPL || datasetImageSource)
+  if(validSIMPL)
   {
-	// Build the data container array
-	if(!datasetImageSource)
-	{
-	  rowColPair = buildCustomDCA(dca, montageDatasets);
-	}
-	QStringList dcNames = dca->getDataContainerNames();
+    // Build the data container array
+    rowColPair = buildCustomDCA(dca, montageDatasets);
 
-	bool changeSpacing = performMontageWizard->field(PerformMontage::FieldNames::ChangeSpacing).toBool();
-	bool changeOrigin = false;
-	if(changeSpacing)
-	{
-	  float spacingX = performMontageWizard->field(PerformMontage::FieldNames::SpacingX).toFloat();
-	  float spacingY = performMontageWizard->field(PerformMontage::FieldNames::SpacingY).toFloat();
-	  float spacingZ = performMontageWizard->field(PerformMontage::FieldNames::SpacingZ).toFloat();
-	  FloatVec3Type newSpacing = { spacingX, spacingY, spacingZ };
-	  QVariant var;
+    QStringList dcNames = dca->getDataContainerNames();
 
-	  // For each data container, add a new filter
-	  for(QString dcName : dcNames)
-	  {
-		AbstractFilter::Pointer setOriginResolutionFilter = filterFactory->createSetOriginResolutionFilter(dcName, changeSpacing,
-		  changeOrigin, newSpacing, { 0, 0, 0 });
+    IntVec3Type montageSize = {rowColPair.second, rowColPair.first, 1};
 
-		if(!setOriginResolutionFilter)
-		{
-		  // Error!
-		}
+    if(!stitchingOnly)
+    {
+      AbstractFilter::Pointer itkRegistrationFilter = filterFactory->createPCMTileRegistrationFilter(montageSize, dcNames, amName, daName);
+      pipeline->pushBack(itkRegistrationFilter);
+    }
 
-		pipeline->pushBack(setOriginResolutionFilter);
-	  }
-	}
+    DataArrayPath montagePath("MontageDC", "MontageAM", "MontageData");
+    AbstractFilter::Pointer itkStitchingFilter = filterFactory->createTileStitchingFilter(montageSize, dcNames, amName, daName, montagePath);
+    pipeline->pushBack(itkStitchingFilter);
 
-	IntVec3Type montageSize = { rowColPair.second, rowColPair.first, 1 };
+    // Check if output to file was requested
+    bool saveToFile = performMontageDialog->getSaveToFile();
+    if(saveToFile)
+    {
+      QString outputFilePath = performMontageDialog->getOutputPath();
+      QString dcName = "MontageDC";
+      QString amName = "MontageAM";
+      QString dataArrayName = "MontageData";
+      AbstractFilter::Pointer itkImageWriterFilter = filterFactory->createImageFileWriterFilter(outputFilePath, dcName, amName, dataArrayName);
+      pipeline->pushBack(itkImageWriterFilter);
+    }
 
-	if(!stitchingOnly)
-	{
-	  AbstractFilter::Pointer itkRegistrationFilter = filterFactory->createPCMTileRegistrationFilter(montageSize, dcNames, amName, daName);
-	  pipeline->pushBack(itkRegistrationFilter);
-	}
-
-	DataArrayPath montagePath("MontageDC", "MontageAM", "MontageData");
-  AbstractFilter::Pointer itkStitchingFilter = filterFactory->createTileStitchingFilter(montageSize, dcNames, amName, daName, montagePath);
-	pipeline->pushBack(itkStitchingFilter);
-
-	// Check if output to file was requested
-	bool saveToFile = performMontageWizard->field(PerformMontage::FieldNames::SaveToFile).toBool();
-	if(saveToFile)
-	{
-	  QString outputFilePath = performMontageWizard
-		->field(PerformMontage::FieldNames::OutputFilePath).toString();
-	  QString dcName = "MontageDC";
-	  QString amName = "MontageAM";
-	  QString dataArrayName = "MontageData";
-	  AbstractFilter::Pointer itkImageWriterFilter = filterFactory->createImageFileWriterFilter(outputFilePath,
-		dcName, amName, dataArrayName);
-	  pipeline->pushBack(itkImageWriterFilter);
-	}
-
-	if(!datasetImageSource)
-	{
-	  executePipeline(pipeline, dca);
-	}
-	else
-	{
-	  addPipelineToQueue(pipeline);
-	}
+    executePipeline(pipeline, dca);
   }
 }
 
@@ -1502,6 +1356,7 @@ void IMFViewer_UI::createMenu()
 
   QAction* performMontageAction = new QAction("Perform Montage");
   performMontageAction->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_P));
+  performMontageAction->setEnabled(false);
   connect(performMontageAction, &QAction::triggered, this, static_cast<void (IMFViewer_UI::*)(void)>(&IMFViewer_UI::performMontage));
   fileMenu->addAction(performMontageAction);
 
@@ -1632,6 +1487,18 @@ void IMFViewer_UI::listenSelectionChanged(VSAbstractFilter::FilterListType filte
 		{
 		  fileAction->setEnabled(isSIMPL || isPipeline || isDream3dFile);
 		}
+        else if(fileAction->text() == "Perform Montage")
+        {
+          int validImageCount = 0;
+          for(VSAbstractFilter* filter : filters)
+          {
+            if(dynamic_cast<VSSIMPLDataContainerFilter*>(filter))
+            {
+              validImageCount++;
+            }
+          }
+          fileAction->setEnabled(validImageCount >= 2);
+        }
 	  }
 	  break;
 	}
@@ -1655,7 +1522,7 @@ std::pair<int, int> IMFViewer_UI::buildCustomDCA(DataContainerArray::Pointer dca
 	}
 	double firstX = firstTransform->getLocalPosition()[0];
 	double secondX = secondTransform->getLocalPosition()[0];
-	bool secondXGreaterThanFirstX = floor(1.001 * firstX) < secondX;
+	bool secondXGreaterThanFirstX = floor(1.05 * firstX) < secondX;
 	return secondXGreaterThanFirstX;
   });
   montageDatasets.sort([](VSAbstractFilter* first, VSAbstractFilter* second)
@@ -1669,7 +1536,7 @@ std::pair<int, int> IMFViewer_UI::buildCustomDCA(DataContainerArray::Pointer dca
 	}
 	double firstY = firstTransform->getLocalPosition()[1];
 	double secondY = secondTransform->getLocalPosition()[1];
-	bool secondYGreaterThanFirstY = floor(1.001 * firstY) < secondY;
+	bool secondYGreaterThanFirstY = floor(1.05 * firstY) < secondY;
 	return secondYGreaterThanFirstY;
   });
 
