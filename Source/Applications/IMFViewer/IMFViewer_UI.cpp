@@ -39,6 +39,7 @@
 #include <QDesktopServices>
 #include <vtkImageData.h>
 
+#include <QtCore/QDir>
 #include <QtCore/QFileInfo>
 #include <QtCore/QMimeDatabase>
 
@@ -154,59 +155,7 @@ void IMFViewer_UI::importData()
 {
   QString filter = tr("DREAM3D File (*.dream3d);;VTK File (*.vtk *.vti *.vtp *.vtr *.vts *.vtu);;"
                       "STL File (*.stl);;Image File (*.png *.tiff *.jpeg *.bmp);;All Files (*.*)");
-  QString filePath = QFileDialog::getOpenFileName(this, tr("Select a data file"), m_OpenDialogLastDirectory, filter);
-
-  if(filePath.isEmpty())
-  {
-    return;
-  }
-
-  m_OpenDialogLastDirectory = filePath;
-
-  QFileInfo fi(filePath);
-  QString ext = fi.completeSuffix();
-  QMimeDatabase db;
-  QMimeType mimeType = db.mimeTypeForFile(filePath, QMimeDatabase::MatchContent);
-
-  VSMainWidgetBase* baseWidget = dynamic_cast<VSMainWidgetBase*>(m_Ui->vsWidget);
-
-  if(ext == "dream3d")
-  {
-    baseWidget->launchHDF5SelectionDialog(filePath);
-  }
-  else if(ext == "vtk" || ext == "vti" || ext == "vtp" || ext == "vtr" || ext == "vts" || ext == "vtu")
-  {
-    importData(filePath);
-  }
-  else if(ext == "stl")
-  {
-    importData(filePath);
-  }
-  else if(mimeType.inherits("image/png") || mimeType.inherits("image/tiff") || mimeType.inherits("image/jpeg") || mimeType.inherits("image/bmp"))
-  {
-    QStringList filePaths;
-    filePaths.push_back(filePath);
-    importImages(filePaths);
-  }
-  else
-  {
-    QMessageBox::critical(this, "Invalid File Type",
-                          tr("IMF Viewer failed to detect the proper data file type from the given input file '%1'.  "
-                             "Supported file types are DREAM3D, VTK, STL and Image files.")
-                              .arg(filePath),
-                          QMessageBox::StandardButton::Ok);
-    return;
-  }
-}
-
-// -----------------------------------------------------------------------------
-//
-// -----------------------------------------------------------------------------
-void IMFViewer_UI::importImages()
-{
-  QString filter = tr("Image File (*.png *.tiff *.tif *.jpeg *.jpg *.bmp);;All Files (*.*)");
-  QStringList filePaths = QFileDialog::getOpenFileNames(this, tr("Select an image file"),
-    m_OpenDialogLastDirectory, filter);
+  QStringList filePaths = QFileDialog::getOpenFileNames(this, tr("Select a data file"), m_OpenDialogLastDirectory, filter);
 
   if(filePaths.isEmpty())
   {
@@ -215,25 +164,44 @@ void IMFViewer_UI::importImages()
 
   m_OpenDialogLastDirectory = filePaths[0];
 
+  QStringList imagePaths;
   for(QString filePath : filePaths)
   {
-	QFileInfo fi(filePath);
-	QString ext = fi.completeSuffix();
-	QMimeDatabase db;
-	QMimeType mimeType = db.mimeTypeForFile(filePath, QMimeDatabase::MatchContent);
+    QFileInfo fi(filePath);
+    QString ext = fi.completeSuffix();
+    QMimeDatabase db;
+    QMimeType mimeType = db.mimeTypeForFile(filePath, QMimeDatabase::MatchContent);
 
-	if(!(mimeType.inherits("image/png") || mimeType.inherits("image/tiff") ||
-	  mimeType.inherits("image/jpeg") || mimeType.inherits("image/bmp")))
-	{
-	  QMessageBox::critical(this, "Invalid File Type",
-		tr("IMF Viewer failed to detect a valid image file type for the one of the file paths provided.")
-		.arg(filePath),
-		QMessageBox::StandardButton::Ok);
-	  return;
-	}
+    VSMainWidgetBase* baseWidget = dynamic_cast<VSMainWidgetBase*>(m_Ui->vsWidget);
+
+    if(ext == "dream3d")
+    {
+      baseWidget->launchHDF5SelectionDialog(filePath);
+    }
+    else if(ext == "vtk" || ext == "vti" || ext == "vtp" || ext == "vtr" || ext == "vts" || ext == "vtu")
+    {
+      importData(filePath);
+    }
+    else if(ext == "stl")
+    {
+      importData(filePath);
+    }
+    else if(mimeType.inherits("image/png") || mimeType.inherits("image/tiff") || mimeType.inherits("image/jpeg") || mimeType.inherits("image/bmp"))
+    {
+      imagePaths.push_back(filePath);
+    }
+    else
+    {
+      QMessageBox::critical(this, "Invalid File Type",
+                            tr("IMF Viewer failed to detect the proper data file type from the given input file '%1'.  "
+                               "Supported file types are DREAM3D, VTK, STL and Image files.")
+                                .arg(filePath),
+                            QMessageBox::StandardButton::Ok);
+      return;
+    }
   }
 
-  importImages(filePaths);
+  importImages(imagePaths);
 }
 
 // -----------------------------------------------------------------------------
@@ -710,16 +678,22 @@ void IMFViewer_UI::importData(const QString& filePath)
 // -----------------------------------------------------------------------------
 void IMFViewer_UI::importImages(const QStringList& filePaths)
 {
+  if (filePaths.size() <= 0)
+  {
+    return;
+  }
+
   VSFilterFactory::Pointer filterFactory = VSFilterFactory::New();
 
   FilterPipeline::Pointer pipeline = FilterPipeline::New();
   QFileInfo fi(filePaths[0]);
-  pipeline->setName(fi.fileName());
+  pipeline->setName(fi.dir().dirName());
     
   for(int i = 0; i < filePaths.size(); i++)
   {
-	QString filePath = filePaths[i];
-	QString dcName = tr("ImageDataContainer_%1").arg(i);
+  QString filePath = filePaths[i];
+  fi.setFile(filePath);
+  QString dcName = fi.fileName();
 	AbstractFilter::Pointer imageReaderFilter = filterFactory->createImageFileReaderFilter(filePath, dcName);
 	if(!imageReaderFilter)
 	{
@@ -1320,11 +1294,6 @@ void IMFViewer_UI::createMenu()
   importDataAction->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_D));
   connect(importDataAction, &QAction::triggered, [=] { IMFViewer_UI::importData(); });
   fileMenu->addAction(importDataAction);
-
-  QAction* importImagesAction = new QAction("Import Images");
-  importImagesAction->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_I));
-  connect(importImagesAction, &QAction::triggered, [=] { IMFViewer_UI::importImages(); });
-  fileMenu->addAction(importImagesAction);
 
   QMenu* importMontageMenu = new QMenu("Import Montage");
   fileMenu->addMenu(importMontageMenu);
