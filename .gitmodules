@@ -14,7 +14,3 @@
 	path = Source/Plugins/ITKImageProcessing
 	url = ssh://git@github.com/bluequartzsoftware/ITKImageProcessing.git
 	branch = feature/OSD_GUI
-[submodule "Source/External_Projects/ZeissImport"]
-	path = Source/Plugins/ZeissImport
-	url = ssh://git@github.com/bluequartzsoftware/ZeissImport.git
-	branch = develop
