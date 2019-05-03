@@ -1522,7 +1522,7 @@ std::pair<int, int> IMFViewer_UI::buildCustomDCA(DataContainerArray::Pointer dca
 	}
 	double firstX = firstTransform->getLocalPosition()[0];
 	double secondX = secondTransform->getLocalPosition()[0];
-	bool secondXGreaterThanFirstX = floor(1.001 * firstX) < secondX;
+	bool secondXGreaterThanFirstX = floor(1.05 * firstX) < secondX;
 	return secondXGreaterThanFirstX;
   });
   montageDatasets.sort([](VSAbstractFilter* first, VSAbstractFilter* second)
@@ -1536,7 +1536,7 @@ std::pair<int, int> IMFViewer_UI::buildCustomDCA(DataContainerArray::Pointer dca
 	}
 	double firstY = firstTransform->getLocalPosition()[1];
 	double secondY = secondTransform->getLocalPosition()[1];
-	bool secondYGreaterThanFirstY = floor(1.001 * firstY) < secondY;
+	bool secondYGreaterThanFirstY = floor(1.05 * firstY) < secondY;
 	return secondYGreaterThanFirstY;
   });
 
