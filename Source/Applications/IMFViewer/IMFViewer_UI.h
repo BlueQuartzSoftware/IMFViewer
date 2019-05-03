@@ -279,15 +279,13 @@ private:
    * @brief importFijiMontage
    * @param montageName
    * @param fijiListInfo
-   * @param overrideTileOverlap
-   * @param tileOverlap
    * @param overrideSpacing
    * @param spacing
    * @param overrideOrigin
    * @param origin
    */
-  void importFijiMontage(const QString& montageName, FijiListInfo_t fijiListInfo, bool overrideTileOverlap, int tileOverlap, bool overrideSpacing, SpacingTuple spacing, bool overrideOrigin,
-                         OriginTuple origin);
+  void importFijiMontage(const QString& montageName, FijiListInfo_t fijiListInfo, bool overrideSpacing, FloatVec3Type spacing, bool overrideOrigin,
+                         FloatVec3Type origin);
 
   /**
    * @brief importRobometMontage

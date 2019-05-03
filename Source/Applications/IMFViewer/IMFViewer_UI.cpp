@@ -278,7 +278,7 @@ void IMFViewer_UI::importGenericMontage()
   SpacingTuple spacing = dialog->getSpacing();
   OriginTuple origin = dialog->getOrigin();
 
-  importFijiMontage(montageName, fijiListInfo, true, tileOverlap, overrideSpacing, spacing, true, origin);
+  importFijiMontage(montageName, fijiListInfo, overrideSpacing, spacing, true, origin);
 }
 
 // -----------------------------------------------------------------------------
@@ -336,38 +336,11 @@ void IMFViewer_UI::importDREAM3DMontage()
 
     QStringList dcNames = m_dataContainerArray->getDataContainerNames();
 
-    // Change spacing and/or origin (if selected)
-    bool changeSpacing = dialog->getOverrideSpacing();
-    bool changeOrigin = dialog->getOverrideOrigin();
-    if(changeSpacing || changeOrigin)
-    {
-      SpacingTuple spacing = dialog->getSpacing();
-      FloatVec3Type newSpacing = {std::get<0>(spacing), std::get<1>(spacing), std::get<2>(spacing)};
-
-      OriginTuple origin = dialog->getOrigin();
-      FloatVec3Type newOrigin = {std::get<0>(origin), std::get<1>(origin), std::get<2>(origin)};
-
-      // For each data container, add a new filter
-      for(QString dcName : dcNames)
-      {
-        AbstractFilter::Pointer setOriginResolutionFilter = filterFactory->createSetOriginResolutionFilter(dcName, changeSpacing, changeOrigin, newSpacing, newOrigin);
-
-        if(!setOriginResolutionFilter)
-        {
-          // Error!
-        }
-
-        pipeline->pushBack(setOriginResolutionFilter);
-      }
-    }
-
     std::tuple<int, int> montageDims = dialog->getMontageDimensions();
     int rowCount = std::get<0>(montageDims);
     int colCount = std::get<1>(montageDims);
 
     IntVec3Type montageSize = {colCount, rowCount, 1};
-
-    double tileOverlap = dialog->getTileOverlap();
 
     QString amName = dialog->getAttributeMatrixName();
     QString daName = dialog->getDataArrayName();
@@ -378,7 +351,7 @@ void IMFViewer_UI::importDREAM3DMontage()
       pipeline->pushBack(itkRegistrationFilter);
 
       DataArrayPath montagePath("MontageDC", "MontageAM", "MontageData");
-      AbstractFilter::Pointer itkStitchingFilter = filterFactory->createTileStitchingFilter(montageSize, dcNames, amName, daName, montagePath, tileOverlap);
+      AbstractFilter::Pointer itkStitchingFilter = filterFactory->createTileStitchingFilter(montageSize, dcNames, amName, daName, montagePath);
       pipeline->pushBack(itkStitchingFilter);
     }
 
@@ -409,21 +382,19 @@ void IMFViewer_UI::importFijiMontage()
 
   QString montageName = dialog->getMontageName();
   FijiListInfo_t fijiListInfo = dialog->getFijiListInfo();
-  bool overrideTileOverlap = dialog->getOverrideTileOverlap();
-  int tileOverlap = dialog->getTileOverlap();
   bool overrideSpacing = dialog->getOverrideSpacing();
-  SpacingTuple spacing = dialog->getSpacing();
+  FloatVec3Type spacing = dialog->getSpacing();
   bool overrideOrigin = dialog->getOverrideOrigin();
-  OriginTuple origin = dialog->getOrigin();
+  FloatVec3Type origin = dialog->getOrigin();
 
-  importFijiMontage(montageName, fijiListInfo, overrideTileOverlap, tileOverlap, overrideSpacing, spacing, overrideOrigin, origin);
+  importFijiMontage(montageName, fijiListInfo, overrideSpacing, spacing, overrideOrigin, origin);
 }
 
 // -----------------------------------------------------------------------------
 //
 // -----------------------------------------------------------------------------
-void IMFViewer_UI::importFijiMontage(const QString& montageName, FijiListInfo_t fijiListInfo, bool overrideTileOverlap, int tileOverlap, bool overrideSpacing, SpacingTuple spacing,
-                                     bool overrideOrigin, OriginTuple origin)
+void IMFViewer_UI::importFijiMontage(const QString& montageName, FijiListInfo_t fijiListInfo, bool overrideSpacing, FloatVec3Type spacing,
+                                     bool overrideOrigin, FloatVec3Type origin)
 {
   VSFilterFactory::Pointer filterFactory = VSFilterFactory::New();
 
@@ -434,7 +405,8 @@ void IMFViewer_UI::importFijiMontage(const QString& montageName, FijiListInfo_t 
   QString dcPrefix = "UntitledMontage_";
   QString amName = "Cell Attribute Matrix";
   QString daName = "Image Data";
-  AbstractFilter::Pointer importFijiMontageFilter = filterFactory->createImportFijiMontageFilter(fijiConfigFilePath, dcPrefix, amName, daName);
+  AbstractFilter::Pointer importFijiMontageFilter = filterFactory->createImportFijiMontageFilter(fijiConfigFilePath, dcPrefix, amName, daName,
+                                                                                                 overrideOrigin, overrideSpacing, origin.data(), spacing.data());
   if(!importFijiMontageFilter)
   {
     // Error!
@@ -447,33 +419,10 @@ void IMFViewer_UI::importFijiMontage(const QString& montageName, FijiListInfo_t 
   DataContainerArray::Pointer dca = importFijiMontageFilter->getDataContainerArray();
   QStringList dcNames = dca->getDataContainerNames();
 
-  // Change spacing and/or origin (if selected)
-  if(overrideSpacing || overrideOrigin)
-  {
-    FloatVec3Type newSpacing = {std::get<0>(spacing), std::get<1>(spacing), std::get<2>(spacing)};
-    FloatVec3Type newOrigin = {std::get<0>(origin), std::get<1>(origin), std::get<2>(origin)};
-
-    // For each data container, add a new filter
-    for(QString dcName : dcNames)
-    {
-      AbstractFilter::Pointer setOriginResolutionFilter = filterFactory->createSetOriginResolutionFilter(dcName, overrideSpacing, overrideOrigin, newSpacing, newOrigin);
-      if(!setOriginResolutionFilter)
-      {
-        // Error!
-      }
-
-      pipeline->pushBack(setOriginResolutionFilter);
-    }
-  }
-
   int rowCount = importFijiMontageFilter->property("RowCount").toInt();
   int colCount = importFijiMontageFilter->property("ColumnCount").toInt();
 
   IntVec3Type montageSize = {colCount, rowCount, 1};
-  if(!overrideTileOverlap)
-  {
-    tileOverlap = 0.0;
-  }
 
   if(m_DisplayType != AbstractImportMontageDialog::DisplayType::SideBySide && m_DisplayType != AbstractImportMontageDialog::DisplayType::Outline)
   {
@@ -481,7 +430,7 @@ void IMFViewer_UI::importFijiMontage(const QString& montageName, FijiListInfo_t 
     pipeline->pushBack(itkRegistrationFilter);
 
     DataArrayPath montagePath("MontageDC", "MontageAM", "MontageData");
-    AbstractFilter::Pointer itkStitchingFilter = filterFactory->createTileStitchingFilter(montageSize, dcNames, amName, daName, montagePath, tileOverlap);
+    AbstractFilter::Pointer itkStitchingFilter = filterFactory->createTileStitchingFilter(montageSize, dcNames, amName, daName, montagePath);
     pipeline->pushBack(itkStitchingFilter);
   }
 
@@ -508,6 +457,10 @@ void IMFViewer_UI::importRobometMontage()
 
   VSFilterFactory::Pointer filterFactory = VSFilterFactory::New();
 
+  bool overrideSpacing = dialog->getOverrideSpacing();
+  FloatVec3Type spacing = dialog->getSpacing();
+  bool overrideOrigin = dialog->getOverrideOrigin();
+  FloatVec3Type origin = dialog->getOrigin();
   RobometListInfo_t rbmListInfo = dialog->getRobometListInfo();
   int sliceMin = rbmListInfo.SliceMin;
   int sliceMax = rbmListInfo.SliceMax;
@@ -527,7 +480,8 @@ void IMFViewer_UI::importRobometMontage()
     QString imagePrefix = rbmListInfo.ImagePrefix;
     QString imageFileExtension = rbmListInfo.ImageExtension;
 
-    AbstractFilter::Pointer importRoboMetMontageFilter = filterFactory->createImportRobometMontageFilter(robometFilePath, dcPrefix, amName, daName, slice, imagePrefix, imageFileExtension);
+    AbstractFilter::Pointer importRoboMetMontageFilter = filterFactory->createImportRobometMontageFilter(robometFilePath, dcPrefix, amName, daName, slice, imagePrefix, imageFileExtension,
+                                                                                                         overrideOrigin, overrideSpacing, origin.data(), spacing.data());
     if(!importRoboMetMontageFilter)
     {
       // Error!
@@ -542,13 +496,6 @@ void IMFViewer_UI::importRobometMontage()
     int rowCount = rbmListInfo.NumberOfRows;
     int colCount = rbmListInfo.NumberOfColumns;
     IntVec3Type montageSize = {colCount, rowCount, 1};
-    double tileOverlap = 0.0;
-
-    bool changeOverlap = dialog->getOverrideTileOverlap();
-    if(changeOverlap)
-    {
-      tileOverlap = dialog->getTileOverlap();
-    }
 
     if(m_DisplayType != AbstractImportMontageDialog::DisplayType::SideBySide && m_DisplayType != AbstractImportMontageDialog::DisplayType::Outline)
     {
@@ -556,7 +503,7 @@ void IMFViewer_UI::importRobometMontage()
       pipeline->pushBack(itkRegistrationFilter);
 
       DataArrayPath montagePath("MontageDC", "MontageAM", "MontageData");
-      AbstractFilter::Pointer itkStitchingFilter = filterFactory->createTileStitchingFilter(montageSize, dcNames, amName, daName, montagePath, tileOverlap);
+      AbstractFilter::Pointer itkStitchingFilter = filterFactory->createTileStitchingFilter(montageSize, dcNames, amName, daName, montagePath);
       pipeline->pushBack(itkStitchingFilter);
     }
 
@@ -639,7 +586,6 @@ void IMFViewer_UI::importZeissMontage()
   int rowCount = importZeissMontage->property("RowCount").toInt();
   int colCount = importZeissMontage->property("ColumnCount").toInt();
   IntVec3Type montageSize = {colCount, rowCount, 1};
-  double tileOverlap = 0.0;
 
   if(m_DisplayType != AbstractImportMontageDialog::DisplayType::SideBySide && m_DisplayType != AbstractImportMontageDialog::DisplayType::Outline)
   {
@@ -647,7 +593,7 @@ void IMFViewer_UI::importZeissMontage()
     pipeline->pushBack(itkRegistrationFilter);
 
     DataArrayPath montagePath("MontageDC", "MontageAM", "MontageData");
-    AbstractFilter::Pointer itkStitchingFilter = filterFactory->createTileStitchingFilter(montageSize, dcNames, amName, daName, montagePath, tileOverlap);
+    AbstractFilter::Pointer itkStitchingFilter = filterFactory->createTileStitchingFilter(montageSize, dcNames, amName, daName, montagePath);
     pipeline->pushBack(itkStitchingFilter);
   }
 
@@ -1062,8 +1008,8 @@ void IMFViewer_UI::performMontage(PerformMontageWizard* performMontageWizard)
 		  float originY = pos[1];
 		  float originZ = 1.0f;
 		  FloatVec3Type newOrigin = { originX, originY, originZ };
-		  AbstractFilter::Pointer setOriginResolutionFilter = filterFactory->createSetOriginResolutionFilter(dcName, false, true,
-			newOrigin, newOrigin);
+      AbstractFilter::Pointer setOriginResolutionFilter = filterFactory->createSetOriginResolutionFilter(dcName, false, true,
+                                                                                                         FloatVec3Type(), newOrigin);
 
 		  if(!setOriginResolutionFilter)
 		  {
@@ -1157,8 +1103,6 @@ void IMFViewer_UI::performMontage(PerformMontageWizard* performMontageWizard)
 
 	IntVec3Type montageSize = { rowColPair.second, rowColPair.first, 1 };
 
-//	double tileOverlap = 15.0;
-
 	if(!stitchingOnly)
 	{
 	  AbstractFilter::Pointer itkRegistrationFilter = filterFactory->createPCMTileRegistrationFilter(montageSize, dcNames, amName, daName);
@@ -1166,7 +1110,7 @@ void IMFViewer_UI::performMontage(PerformMontageWizard* performMontageWizard)
 	}
 
 	DataArrayPath montagePath("MontageDC", "MontageAM", "MontageData");
-	AbstractFilter::Pointer itkStitchingFilter = filterFactory->createTileStitchingFilter(montageSize, dcNames, amName, daName, montagePath, 15.0);
+  AbstractFilter::Pointer itkStitchingFilter = filterFactory->createTileStitchingFilter(montageSize, dcNames, amName, daName, montagePath);
 	pipeline->pushBack(itkStitchingFilter);
 
 	// Check if output to file was requested
