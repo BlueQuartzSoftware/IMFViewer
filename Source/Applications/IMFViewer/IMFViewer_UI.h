@@ -153,11 +153,6 @@ protected slots:
 
   /**
    * @brief importImages
-   */
-  void importImages();
-
-  /**
-   * @brief importImages
    * @param filePaths
    */
   void importImages(const QStringList& filePaths);
