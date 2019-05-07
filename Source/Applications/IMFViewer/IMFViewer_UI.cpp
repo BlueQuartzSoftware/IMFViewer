@@ -246,8 +246,9 @@ void IMFViewer_UI::importGenericMontage()
   bool overrideSpacing = dialog->getOverrideSpacing();
   SpacingTuple spacing = dialog->getSpacing();
   OriginTuple origin = dialog->getOrigin();
+  bool usePixelCoordinates = dialog->usePixelCoordinates();
 
-  importFijiMontage(montageName, fijiListInfo, overrideSpacing, spacing, true, origin);
+  importFijiMontage(montageName, fijiListInfo, overrideSpacing, spacing, true, origin, usePixelCoordinates);
 }
 
 // -----------------------------------------------------------------------------
@@ -355,15 +356,16 @@ void IMFViewer_UI::importFijiMontage()
   FloatVec3Type spacing = dialog->getSpacing();
   bool overrideOrigin = dialog->getOverrideOrigin();
   FloatVec3Type origin = dialog->getOrigin();
+  bool usePixelCoordinates = dialog->usePixelCoordinates();
 
-  importFijiMontage(montageName, fijiListInfo, overrideSpacing, spacing, overrideOrigin, origin);
+  importFijiMontage(montageName, fijiListInfo, overrideSpacing, spacing, overrideOrigin, origin, usePixelCoordinates);
 }
 
 // -----------------------------------------------------------------------------
 //
 // -----------------------------------------------------------------------------
 void IMFViewer_UI::importFijiMontage(const QString& montageName, FijiListInfo_t fijiListInfo, bool overrideSpacing, FloatVec3Type spacing,
-                                     bool overrideOrigin, FloatVec3Type origin)
+                                     bool overrideOrigin, FloatVec3Type origin, bool usePixelCoordinates)
 {
   VSFilterFactory::Pointer filterFactory = VSFilterFactory::New();
 
@@ -375,7 +377,7 @@ void IMFViewer_UI::importFijiMontage(const QString& montageName, FijiListInfo_t 
   QString amName = "Cell Attribute Matrix";
   QString daName = "Image Data";
   AbstractFilter::Pointer importFijiMontageFilter = filterFactory->createImportFijiMontageFilter(fijiConfigFilePath, dcPrefix, amName, daName,
-                                                                                                 overrideOrigin, overrideSpacing, origin.data(), spacing.data());
+                                                                                                 overrideOrigin, origin.data(), usePixelCoordinates, overrideSpacing, spacing.data());
   if(!importFijiMontageFilter)
   {
     // Error!
@@ -430,6 +432,7 @@ void IMFViewer_UI::importRobometMontage()
   FloatVec3Type spacing = dialog->getSpacing();
   bool overrideOrigin = dialog->getOverrideOrigin();
   FloatVec3Type origin = dialog->getOrigin();
+  bool usePixelCoords = dialog->usePixelCoordinates();
   RobometListInfo_t rbmListInfo = dialog->getRobometListInfo();
   int sliceMin = rbmListInfo.SliceMin;
   int sliceMax = rbmListInfo.SliceMax;
@@ -450,7 +453,7 @@ void IMFViewer_UI::importRobometMontage()
     QString imageFileExtension = rbmListInfo.ImageExtension;
 
     AbstractFilter::Pointer importRoboMetMontageFilter = filterFactory->createImportRobometMontageFilter(robometFilePath, dcPrefix, amName, daName, slice, imagePrefix, imageFileExtension,
-                                                                                                         overrideOrigin, overrideSpacing, origin.data(), spacing.data());
+                                                                                                         overrideOrigin, origin.data(), usePixelCoords, overrideSpacing, spacing.data());
     if(!importRoboMetMontageFilter)
     {
       // Error!
@@ -519,28 +522,13 @@ void IMFViewer_UI::importZeissMontage()
   float newSpacing[3];
   float newOrigin[3];
 
-  if(changeSpacing || changeOrigin)
-  {
-    SpacingTuple spacing = dialog->getSpacing();
+  FloatVec3Type spacing = dialog->getSpacing();
+  FloatVec3Type origin = dialog->getOrigin();
+  FloatVec3Type colorWeighting = dialog->getColorWeighting();
+  bool usePixelCoords = dialog->usePixelCoordinates();
 
-    newSpacing[0] = std::get<0>(spacing);
-    newSpacing[1] = std::get<1>(spacing);
-    newSpacing[2] = std::get<2>(spacing);
-
-    OriginTuple origin = dialog->getOrigin();
-    newOrigin[0] = std::get<0>(origin);
-    newOrigin[1] = std::get<1>(origin);
-    newOrigin[2] = std::get<2>(origin);
-  }
-  if(convertToGrayscale)
-  {
-    ColorWeightingTuple colorWeighting = dialog->getColorWeighting();
-    colorWeights[0] = std::get<0>(colorWeighting);
-    colorWeights[1] = std::get<1>(colorWeighting);
-    colorWeights[2] = std::get<2>(colorWeighting);
-  }
-  importZeissMontage = filterFactory->createImportZeissMontageFilter(configFilePath, dcPrefix, amName, daName, metadataAMName, importAllMetadata, convertToGrayscale, changeOrigin, changeSpacing,
-                                                                     colorWeights, newOrigin, newSpacing);
+  importZeissMontage = filterFactory->createImportZeissMontageFilter(configFilePath, dcPrefix, amName, daName, metadataAMName, importAllMetadata, convertToGrayscale, colorWeighting, changeOrigin,
+                                                                     origin, usePixelCoords, changeSpacing, spacing);
 
   if(!importZeissMontage)
   {
