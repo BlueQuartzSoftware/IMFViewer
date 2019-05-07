@@ -272,9 +272,10 @@ private:
    * @param spacing
    * @param overrideOrigin
    * @param origin
+   * @param usePixelCoordinates
    */
   void importFijiMontage(const QString& montageName, FijiListInfo_t fijiListInfo, bool overrideSpacing, FloatVec3Type spacing, bool overrideOrigin,
-                         FloatVec3Type origin);
+                         FloatVec3Type origin, bool usePixelCoordinates);
 
   /**
    * @brief importRobometMontage
