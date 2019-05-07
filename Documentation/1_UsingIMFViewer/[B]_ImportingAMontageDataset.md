@@ -12,6 +12,8 @@ IMFViewer has 5 options for importing a montage:
 
 In **IMF Viewer**, the **File** menu option contains a submenu for **Import Montage**. In this submenu, there are 5 options for importing montages. These options are discussed below.
 
+[Special Note for Fiji montages using TIF files](#fijitif)
+
 ---
 
 <a name="dream3d">
@@ -62,3 +64,15 @@ The **Robomet** montage allows the user to import image geometry from a Robomet 
 ![Zeiss Import Montage](Images/Import-Zeiss-Montage.png)
 
 The **Zeiss** allows the user to import image geometry from a Zeiss configuration file. To select a Zeiss configuration file, click the **Select** button and use the dialog to find it. The **File List** widget shows the referenced files from the Zeiss configuration file and shows whether they have been found. Additional options include converting the images to grayscale and overriding the origin and/or spacing of the image geometry. The **Data Display Type** option sets the visualization representation and determine whether to run a montaging process. The options are **Outline Only**, **Individual Tiles**, and **Stitched Montage**. When the desired values have been set, click **Import** to load the dataset into **IMF Viewer**.
+
+---
+
+<a name="fijitif">
+## Special Note for Fiji montages using TIF files ##
+</a>
+
+When importing a montage using Fiji configuration files that reference TIF files, there may be issues with spacing. Similar issues may arise from using the **Generic** montage. The undesirable results are shown below.
+
+![Fiji Spacing Issue](Images/Fiji-Spacing-Issue.png)
+
+To resolve this, you can set the Override Spacing to (1, 1, 1) in the **Import Fiji Montage** dialog box. This will address the issue with Fiji montages using TIF files. 
