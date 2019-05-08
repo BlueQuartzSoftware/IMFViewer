@@ -247,7 +247,7 @@ void IMFViewer_UI::importGenericMontage()
   SpacingTuple spacing = dialog->getSpacing();
   OriginTuple origin = dialog->getOrigin();
   bool usePixelCoordinates = dialog->usePixelCoordinates();
-  QString lengthUnit = dialog->getLengthUnit();
+  int32_t lengthUnit = dialog->getLengthUnit();
 
   importFijiMontage(montageName, fijiListInfo, overrideSpacing, spacing, true, origin, usePixelCoordinates, lengthUnit);
 }
@@ -358,7 +358,7 @@ void IMFViewer_UI::importFijiMontage()
   bool overrideOrigin = dialog->getOverrideOrigin();
   FloatVec3Type origin = dialog->getOrigin();
   bool usePixelCoordinates = dialog->usePixelCoordinates();
-  QString lengthUnit = dialog->getLengthUnit();
+  int32_t lengthUnit = dialog->getLengthUnit();
 
   importFijiMontage(montageName, fijiListInfo, overrideSpacing, spacing, overrideOrigin, origin, usePixelCoordinates, lengthUnit);
 }
@@ -367,7 +367,7 @@ void IMFViewer_UI::importFijiMontage()
 //
 // -----------------------------------------------------------------------------
 void IMFViewer_UI::importFijiMontage(const QString& montageName, FijiListInfo_t fijiListInfo, bool overrideSpacing, FloatVec3Type spacing, bool overrideOrigin, FloatVec3Type origin,
-                                     bool usePixelCoordinates, QString lengthUnit)
+                                     bool usePixelCoordinates, int32_t lengthUnit)
 {
   VSFilterFactory::Pointer filterFactory = VSFilterFactory::New();
 
@@ -438,7 +438,7 @@ void IMFViewer_UI::importRobometMontage()
   RobometListInfo_t rbmListInfo = dialog->getRobometListInfo();
   int sliceMin = rbmListInfo.SliceMin;
   int sliceMax = rbmListInfo.SliceMax;
-  QString lengthUnit = dialog->getLengthUnit();
+  int32_t lengthUnit = dialog->getLengthUnit();
 
   for(int slice = sliceMin; slice <= sliceMax; slice++)
   {
