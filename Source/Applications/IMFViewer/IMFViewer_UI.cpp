@@ -1075,6 +1075,15 @@ void IMFViewer_UI::saveImage()
 // -----------------------------------------------------------------------------
 void IMFViewer_UI::saveDream3d()
 {
+  VSController* controller = m_Ui->vsWidget->getController();
+  VSMainWidgetBase* baseWidget = dynamic_cast<VSMainWidgetBase*>(m_Ui->vsWidget);
+  VSAbstractFilter::FilterListType selectedFilters = baseWidget->getActiveViewWidget()->getSelectedFilters();
+  if(selectedFilters.empty())
+  {
+    QMessageBox::critical(this, "No Filters Selected", tr("A filter must be selected."), QMessageBox::StandardButton::Ok);
+    return;
+  }
+
   QString filter = tr("DREAM3D File (*.dream3d)");
   QString filePath = QFileDialog::getSaveFileName(this, "Save As DREAM3D File",
 	m_OpenDialogLastDirectory, filter);
@@ -1084,10 +1093,6 @@ void IMFViewer_UI::saveDream3d()
   }
 
   m_OpenDialogLastDirectory = filePath;
-  VSController* controller = m_Ui->vsWidget->getController();
-  VSMainWidgetBase* baseWidget = dynamic_cast<VSMainWidgetBase*>(m_Ui->vsWidget);
-//  VSFilterViewModel* filterViewModel = baseWidget->getActiveViewWidget()->getFilterViewModel();
-  VSAbstractFilter::FilterListType selectedFilters = baseWidget->getActiveViewWidget()->getSelectedFilters();
 
   bool success = controller->saveAsDREAM3D(filePath, selectedFilters.front());
 
@@ -1419,31 +1424,26 @@ QMenu* IMFViewer_UI::createThemeMenu(QActionGroup* actionGroup, QWidget* parent)
 // -----------------------------------------------------------------------------
 void IMFViewer_UI::listenSelectionChanged(VSAbstractFilter::FilterListType filters)
 {
-  if(filters.empty())
-  {
-	return;
-  }
-  bool isSIMPL = dynamic_cast<VSSIMPLDataContainerFilter*>(filters.front());
-  bool isPipeline = dynamic_cast<VSPipelineFilter*>(filters.front());
-  bool isDream3dFile = dynamic_cast<VSFileNameFilter*>(filters.front()) &&
-	filters.front()->getChildCount() > 0 &&
-	dynamic_cast<VSSIMPLDataContainerFilter*>(filters.front()->getChildren().front());
+  bool isSIMPL = !filters.empty() && dynamic_cast<VSSIMPLDataContainerFilter*>(filters.front());
+  bool isPipeline = !filters.empty() && dynamic_cast<VSPipelineFilter*>(filters.front());
+  bool isDream3dFile =
+      !filters.empty() && dynamic_cast<VSFileNameFilter*>(filters.front()) && filters.front()->getChildCount() > 0 && dynamic_cast<VSSIMPLDataContainerFilter*>(filters.front()->getChildren().front());
   QList<QAction*> actions = m_MenuBar->actions();
   for(QAction* action : actions)
   {
-	if(action->text() == "File")
-	{
-	  QList<QAction*> fileActions = action->menu()->actions();
-	  for(QAction* fileAction : fileActions)
-	  {
-		if(fileAction->text() == "Save Image")
-		{
-		  fileAction->setEnabled(isSIMPL);
-		}
-		else if(fileAction->text() == "Save As DREAM3D File")
-		{
-		  fileAction->setEnabled(isSIMPL || isPipeline || isDream3dFile);
-		}
+    if(action->text() == "File")
+    {
+      QList<QAction*> fileActions = action->menu()->actions();
+      for(QAction* fileAction : fileActions)
+      {
+        if(fileAction->text() == "Save Image")
+        {
+          fileAction->setEnabled(isSIMPL);
+        }
+        else if(fileAction->text() == "Save As DREAM3D File")
+        {
+          fileAction->setEnabled(isSIMPL || isPipeline || isDream3dFile);
+        }
         else if(fileAction->text() == "Perform Montage")
         {
           int validImageCount = 0;
@@ -1456,9 +1456,9 @@ void IMFViewer_UI::listenSelectionChanged(VSAbstractFilter::FilterListType filte
           }
           fileAction->setEnabled(validImageCount >= 2);
         }
-	  }
-	  break;
-	}
+      }
+      break;
+    }
   }
 }
 
