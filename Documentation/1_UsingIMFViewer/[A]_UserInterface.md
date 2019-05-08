@@ -1,11 +1,12 @@
 # Overview of the User Interface #
 
-IMFViewer has 4 main sections of its user interface:
+IMFViewer has 5 main sections of its user interface:
 
 1. [Filter View](#filterview)
 2. [Filter Information Widget](#filterinfowidget)
 3. [Visualization Widget](#vizwidget)
 4. [Import Queue](#importqueue)
+5. [Menu Options](#menu)
 
 ![Overview of the IMFViewer User Interface](Images/OverView-IMFViewer.png)
 
@@ -44,3 +45,11 @@ The **Visualization Widget** shows the data in a visual representation based on 
 </a>
 
 The **Import Queue** shows datasets in the process of being loaded. These can include imported montages and executed pipelines as well as regular loaded files. After the dataset is completely loaded, it is removed from the **Import Queue**. Items in the queue can be paused or cleared.
+
+---
+
+<a name="menu">
+## Menu Options ##
+</a>
+
+The **File Menu** includes menu options for importing data, importing montages, executing DREAM3D pipelines, performing montages, and saving images or DREAM3D files. To save an image, a valid filter must be selected that contains image geometry. To save a DREAM3D file, the selected filter(s) must be a DREAM3D pipeline or data container array. The **View Menu** allows the user to hide the **Import Queue**. The **Filters Menu** has options for clip, slice, crop, threshold, mask, or text filters.
