@@ -1468,7 +1468,40 @@ void IMFViewer_UI::listenSelectionChanged(VSAbstractFilter::FilterListType filte
 std::pair<int, int> IMFViewer_UI::buildCustomDCA(DataContainerArray::Pointer dca,
   VSAbstractFilter::FilterListType montageDatasets)
 {
-  montageDatasets.sort([](VSAbstractFilter* first, VSAbstractFilter* second)
+  // Get the minimum X and minimum Y coordinates to use as a 'base'
+  // This is useful to handle edge cases where the position values are large
+  double minX = 0.0;
+  double minY = 0.0;
+  bool firstDataset = true;
+  std::list<VSAbstractFilter*>::const_iterator iterator;
+  for(iterator = montageDatasets.begin(); iterator != montageDatasets.end(); ++iterator)
+  {
+    VSAbstractFilter* montageDataset = *iterator;
+    double* pos = montageDataset->getTransform()->getLocalPosition();
+    if(dynamic_cast<VSFileNameFilter*>(montageDataset))
+    {
+      pos = montageDataset->getChildren().front()->getTransform()->getLocalPosition();
+    }
+    if(firstDataset)
+    {
+      minX = pos[0];
+      minY = pos[1];
+      firstDataset = false;
+    }
+    else
+    {
+      if(pos[0] < minX)
+      {
+        minX = pos[0];
+      }
+      if(pos[1] < minY)
+      {
+        minY = pos[1];
+      }
+    }
+  }
+
+  montageDatasets.sort([minX](VSAbstractFilter* first, VSAbstractFilter* second)
   {
 	VSTransform* firstTransform = first->getTransform();
 	VSTransform* secondTransform = second->getTransform();
@@ -1477,12 +1510,12 @@ std::pair<int, int> IMFViewer_UI::buildCustomDCA(DataContainerArray::Pointer dca
 	  firstTransform = first->getChildren().front()->getTransform();
 	  secondTransform = second->getChildren().front()->getTransform();
 	}
-	double firstX = firstTransform->getLocalPosition()[0];
-	double secondX = secondTransform->getLocalPosition()[0];
+	int firstX = firstTransform->getLocalPosition()[0] - minX;
+    int secondX = secondTransform->getLocalPosition()[0] - minX;
 	bool secondXGreaterThanFirstX = floor(1.05 * firstX) < secondX;
 	return secondXGreaterThanFirstX;
   });
-  montageDatasets.sort([](VSAbstractFilter* first, VSAbstractFilter* second)
+  montageDatasets.sort([minY](VSAbstractFilter* first, VSAbstractFilter* second)
   {
 	VSTransform* firstTransform = first->getTransform();
 	VSTransform* secondTransform = second->getTransform();
@@ -1491,8 +1524,8 @@ std::pair<int, int> IMFViewer_UI::buildCustomDCA(DataContainerArray::Pointer dca
 	  firstTransform = first->getChildren().front()->getTransform();
 	  secondTransform = second->getChildren().front()->getTransform();
 	}
-	double firstY = firstTransform->getLocalPosition()[1];
-	double secondY = secondTransform->getLocalPosition()[1];
+    int firstY = firstTransform->getLocalPosition()[1] - minY;
+    int secondY = secondTransform->getLocalPosition()[1] - minY;
 	bool secondYGreaterThanFirstY = floor(1.05 * firstY) < secondY;
 	return secondYGreaterThanFirstY;
   });
@@ -1501,11 +1534,10 @@ std::pair<int, int> IMFViewer_UI::buildCustomDCA(DataContainerArray::Pointer dca
   int col = 0;
   int numRows = 0;
   int numCols = 0;
-  bool firstDataset = true;
+  firstDataset = true;
   double prevX;
   double prevY;
 
-  std::list<VSAbstractFilter*>::const_iterator iterator;
   for(iterator = montageDatasets.begin(); iterator != montageDatasets.end(); ++iterator)
   {
 	VSAbstractFilter* montageDataset = *iterator;
