@@ -247,8 +247,9 @@ void IMFViewer_UI::importGenericMontage()
   SpacingTuple spacing = dialog->getSpacing();
   OriginTuple origin = dialog->getOrigin();
   bool usePixelCoordinates = dialog->usePixelCoordinates();
+  int32_t lengthUnit = dialog->getLengthUnit();
 
-  importFijiMontage(montageName, fijiListInfo, overrideSpacing, spacing, true, origin, usePixelCoordinates);
+  importFijiMontage(montageName, fijiListInfo, overrideSpacing, spacing, true, origin, usePixelCoordinates, lengthUnit);
 }
 
 // -----------------------------------------------------------------------------
@@ -357,15 +358,16 @@ void IMFViewer_UI::importFijiMontage()
   bool overrideOrigin = dialog->getOverrideOrigin();
   FloatVec3Type origin = dialog->getOrigin();
   bool usePixelCoordinates = dialog->usePixelCoordinates();
+  int32_t lengthUnit = dialog->getLengthUnit();
 
-  importFijiMontage(montageName, fijiListInfo, overrideSpacing, spacing, overrideOrigin, origin, usePixelCoordinates);
+  importFijiMontage(montageName, fijiListInfo, overrideSpacing, spacing, overrideOrigin, origin, usePixelCoordinates, lengthUnit);
 }
 
 // -----------------------------------------------------------------------------
 //
 // -----------------------------------------------------------------------------
-void IMFViewer_UI::importFijiMontage(const QString& montageName, FijiListInfo_t fijiListInfo, bool overrideSpacing, FloatVec3Type spacing,
-                                     bool overrideOrigin, FloatVec3Type origin, bool usePixelCoordinates)
+void IMFViewer_UI::importFijiMontage(const QString& montageName, FijiListInfo_t fijiListInfo, bool overrideSpacing, FloatVec3Type spacing, bool overrideOrigin, FloatVec3Type origin,
+                                     bool usePixelCoordinates, int32_t lengthUnit)
 {
   VSFilterFactory::Pointer filterFactory = VSFilterFactory::New();
 
@@ -376,8 +378,8 @@ void IMFViewer_UI::importFijiMontage(const QString& montageName, FijiListInfo_t 
   QString dcPrefix = "UntitledMontage_";
   QString amName = "Cell Attribute Matrix";
   QString daName = "Image Data";
-  AbstractFilter::Pointer importFijiMontageFilter = filterFactory->createImportFijiMontageFilter(fijiConfigFilePath, dcPrefix, amName, daName,
-                                                                                                 overrideOrigin, origin.data(), usePixelCoordinates, overrideSpacing, spacing.data());
+  AbstractFilter::Pointer importFijiMontageFilter =
+      filterFactory->createImportFijiMontageFilter(fijiConfigFilePath, dcPrefix, amName, daName, overrideOrigin, origin.data(), usePixelCoordinates, overrideSpacing, spacing.data(), lengthUnit);
   if(!importFijiMontageFilter)
   {
     // Error!
@@ -436,6 +438,7 @@ void IMFViewer_UI::importRobometMontage()
   RobometListInfo_t rbmListInfo = dialog->getRobometListInfo();
   int sliceMin = rbmListInfo.SliceMin;
   int sliceMax = rbmListInfo.SliceMax;
+  int32_t lengthUnit = dialog->getLengthUnit();
 
   for(int slice = sliceMin; slice <= sliceMax; slice++)
   {
@@ -453,7 +456,7 @@ void IMFViewer_UI::importRobometMontage()
     QString imageFileExtension = rbmListInfo.ImageExtension;
 
     AbstractFilter::Pointer importRoboMetMontageFilter = filterFactory->createImportRobometMontageFilter(robometFilePath, dcPrefix, amName, daName, slice, imagePrefix, imageFileExtension,
-                                                                                                         overrideOrigin, origin.data(), usePixelCoords, overrideSpacing, spacing.data());
+                                                                                                         overrideOrigin, origin.data(), usePixelCoords, overrideSpacing, spacing.data(), lengthUnit);
     if(!importRoboMetMontageFilter)
     {
       // Error!
