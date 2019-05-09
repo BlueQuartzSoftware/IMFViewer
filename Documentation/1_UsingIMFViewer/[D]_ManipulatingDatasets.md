@@ -17,6 +17,8 @@ The user can manipulate datasets using the user interface, context menu via righ
 
 The options available in the user interface are contingent upon the dataset's underlying type. If it is 3D data, there are additional options for changing the representation (Outline, Surface, etc.), visualized data array and component, subsampling, and color mapping. For 2D and 3D data, there are options to adjust the **Alpha** (transparency) value as well as the **Local Transform**. If the user wants to revert the transform to its default, there is a **Reset** button in the **Local Transform** section to do so.
 
+The **Color Mapping** widget is only fully enabled for 3D data and grayscale images. 
+
 ---
 
 <a name="context">
