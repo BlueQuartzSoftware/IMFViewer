@@ -907,7 +907,7 @@ void IMFViewer_UI::performMontage()
         {
           for(AttributeMatrix::Pointer am : dataContainer->getAttributeMatrices())
           {
-            QVector<size_t> tupleDims = am->getTupleDimensions();
+            std::vector<size_t> tupleDims = am->getTupleDimensions();
             if(tupleDims.size() >= 2)
             {
               amName = am->getName();
