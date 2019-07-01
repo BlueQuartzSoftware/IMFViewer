@@ -397,11 +397,14 @@ void IMFViewer_UI::importFijiMontage(const QString& montageName, FijiListInfo_t 
   int rowCount = importFijiMontageFilter->property("RowCount").toInt();
   int colCount = importFijiMontageFilter->property("ColumnCount").toInt();
 
+  IntVec3Type montageStart = {0, 0, 1};
+  IntVec3Type montageEnd = {colCount - 1, rowCount - 1, 1};
   IntVec3Type montageSize = {colCount, rowCount, 1};
 
   if(m_DisplayType != AbstractImportMontageDialog::DisplayType::SideBySide && m_DisplayType != AbstractImportMontageDialog::DisplayType::Outline)
   {
-    AbstractFilter::Pointer itkRegistrationFilter = filterFactory->createPCMTileRegistrationFilter(montageSize, dcNames, amName, daName);
+    QString dcPrefix = dcPath.getDataContainerName() + "_";
+    AbstractFilter::Pointer itkRegistrationFilter = filterFactory->createPCMTileRegistrationFilter(montageStart, montageEnd, dcPrefix, amName, daName);
     pipeline->pushBack(itkRegistrationFilter);
 
     DataArrayPath montagePath("MontageDC", "MontageAM", "MontageData");
