@@ -60,8 +60,8 @@ class IMFViewer_UI : public QMainWindow
   Q_OBJECT
 
 public:
-  IMFViewer_UI(QWidget* parent = 0);
-  ~IMFViewer_UI();
+  IMFViewer_UI(QWidget* parent = nullptr);
+  ~IMFViewer_UI() override;
 
   /**
    * @brief Saves this session to a file
@@ -202,7 +202,7 @@ protected slots:
    * @param pipeline
    * @param err
    */
-  void handleMontageResults(FilterPipeline::Pointer pipeline, int err);
+  void handleMontageResults(const FilterPipeline::Pointer &pipeline, int err);
 
   /**
    * @brief listenSelectionChanged
@@ -225,7 +225,6 @@ private:
   AbstractImportMontageDialog::DisplayType m_DisplayType = AbstractImportMontageDialog::DisplayType::NotSpecified;
 
   std::vector<FilterPipeline::Pointer> m_Pipelines;
-  DataContainerArray::Pointer m_dataContainerArray;
 
   QThread* m_PipelineWorkerThread = nullptr;
   PipelineWorker* m_PipelineWorker = nullptr;
@@ -260,9 +259,9 @@ private:
    */
   void importFijiMontage();
 
-  typedef std::tuple<float, float, float> SpacingTuple;
-  typedef std::tuple<float, float, float> OriginTuple;
-  typedef std::tuple<float, float, float> ColorWeightingTuple;
+  using SpacingTuple = std::tuple<float, float, float>;
+  using OriginTuple = std::tuple<float, float, float>;
+  using ColorWeightingTuple = std::tuple<float, float, float>;
 
   /**
    * @brief importFijiMontage
@@ -272,10 +271,8 @@ private:
    * @param spacing
    * @param overrideOrigin
    * @param origin
-   * @param usePixelCoordinates
    */
-  void importFijiMontage(const QString& montageName, FijiListInfo_t fijiListInfo, bool overrideSpacing, FloatVec3Type spacing, bool overrideOrigin, FloatVec3Type origin, bool usePixelCoordinates,
-                         int32_t lengthUnit);
+  void importFijiMontage(const QString& montageName, FijiListInfo_t fijiListInfo, bool overrideSpacing, FloatVec3Type spacing, bool overrideOrigin, FloatVec3Type origin);
 
   /**
    * @brief importRobometMontage
@@ -291,21 +288,20 @@ private:
    * @brief runPipeline
    * @param pipeline
    */
-  void addPipelineToQueue(FilterPipeline::Pointer pipeline);
+  void addPipelineToQueue(const FilterPipeline::Pointer &pipeline);
 
   /**
    * @brief executePipeline
    * @param pipeline
    */
-  void executePipeline(FilterPipeline::Pointer pipeline, DataContainerArray::Pointer);
+  void executePipeline(const FilterPipeline::Pointer &pipeline, const DataContainerArray::Pointer &dca);
 
   /**
   * @brief Build a custom data container array for montaging
   * @param dataContainerArray
   * @param montageDatasets
   */
-  std::pair<int, int> buildCustomDCA(DataContainerArray::Pointer dca,
-	VSAbstractFilter::FilterListType montageDatasets);
+  std::pair<int, int> buildCustomDCA(const DataContainerArray::Pointer &dca, VSAbstractFilter::FilterListType montageDatasets);
 
   IMFViewer_UI(const IMFViewer_UI&);   // Copy Constructor Not Implemented
   void operator=(const IMFViewer_UI&); // Operator '=' Not Implemented
