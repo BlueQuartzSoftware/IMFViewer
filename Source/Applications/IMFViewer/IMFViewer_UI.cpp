@@ -501,7 +501,8 @@ void IMFViewer_UI::importZeissMontage()
   ZeissListInfo_t zeissListInfo = dialog->getZeissListInfo();
 
   QString configFilePath = zeissListInfo.ZeissFilePath;
-  DataArrayPath dcPath("UntitledMontage_", "", "");
+  QString dcPrefix = "UntitledMontage_";
+  DataArrayPath dcPath("UntitledMontage", "", "");
   QString amName = "Cell Attribute Matrix";
   QString daName = "Image Data";
   QString metadataAMName = "Metadata Attribute Matrix";
@@ -529,12 +530,15 @@ void IMFViewer_UI::importZeissMontage()
   QStringList dcNames = dca->getDataContainerNames();
   int rowCount = importZeissMontage->property("RowCount").toInt();
   int colCount = importZeissMontage->property("ColumnCount").toInt();
+
+  IntVec3Type montageStart = {0, 0, 1};
+  IntVec3Type montageEnd = {colCount-1, rowCount-1, 1};
   IntVec3Type montageSize = {colCount, rowCount, 1};
 
   if(m_DisplayType != AbstractImportMontageDialog::DisplayType::SideBySide && m_DisplayType != AbstractImportMontageDialog::DisplayType::Outline)
   {
-//    AbstractFilter::Pointer itkRegistrationFilter = filterFactory->createPCMTileRegistrationFilter(montageSize, dcNames, amName, daName);
-//    pipeline->pushBack(itkRegistrationFilter);
+    AbstractFilter::Pointer itkRegistrationFilter = filterFactory->createPCMTileRegistrationFilter(montageStart, montageEnd, dcPrefix, amName, daName);
+    pipeline->pushBack(itkRegistrationFilter);
 
     DataArrayPath montagePath("MontageDC", "MontageAM", "MontageData");
     AbstractFilter::Pointer itkStitchingFilter = filterFactory->createTileStitchingFilter(montageSize, dcNames, amName, daName, montagePath);
