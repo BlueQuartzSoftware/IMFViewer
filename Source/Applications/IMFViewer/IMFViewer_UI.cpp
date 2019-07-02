@@ -275,68 +275,53 @@ void IMFViewer_UI::importDREAM3DMontage()
 
   QString dataFilePath = dialog->getDataFilePath();
 
+  QString dcPrefix = dialog->getDataContainerPrefix();
+
+  IntVec3Type montageStart = dialog->getMontageStart();
+  IntVec3Type montageEnd = dialog->getMontageEnd();
+  IntVec3Type montageSize = dialog->getMontageSize();
+
+  QStringList dcNames;
+  for(int32_t row = montageStart[1]; row <= montageEnd[1]; row++)
+  {
+    for(int32_t col = montageStart[0]; col <= montageEnd[0]; col++)
+    {
+      dcNames.push_back(MontageUtilities::GenerateDataContainerName(dcPrefix, montageStart, montageEnd, row, col));
+    }
+  }
+
   SIMPLH5DataReader reader;
-  bool success = reader.openFile(dataFilePath);
-  if(success)
+  connect(&reader, &SIMPLH5DataReader::errorGenerated,
+          [=](const QString& title, const QString& msg, const int& code) { QMessageBox::critical(this, title, msg, QMessageBox::StandardButton::Ok, QMessageBox::StandardButton::Ok); });
+
+  DataContainerArrayProxy dream3dProxy = MontageUtilities::CreateMontageProxy(reader, dataFilePath, dcNames);
+  if (dream3dProxy == DataContainerArrayProxy())
   {
-    connect(&reader, &SIMPLH5DataReader::errorGenerated,
-            [=](const QString& title, const QString& msg, const int& code) { QMessageBox::critical(this, title, msg, QMessageBox::StandardButton::Ok, QMessageBox::StandardButton::Ok); });
-
-    QString dcPrefix = dialog->getDataContainerPrefix();
-    std::tuple<int, int> montageDims = dialog->getMontageDimensions();
-    int rowCount = std::get<0>(montageDims);
-    int colCount = std::get<1>(montageDims);
-
-    IntVec3Type montageStart = {0, 0, 1};
-    IntVec3Type montageSize = {colCount, rowCount, 1};
-
-    QStringList dcNames;
-    for(int32_t row = montageStart[1]; row <= montageSize[1]; row++)
-    {
-      for(int32_t col = montageStart[0]; col <= montageSize[0]; col++)
-      {
-        dcNames.push_back(MontageUtilities::GenerateDataContainerName(dcPrefix, montageStart, montageSize, row, col));
-      }
-    }
-
-    DataContainerArrayProxy dream3dProxy = dialog->getProxy();
-
-    DataContainerArray::Pointer dca = reader.readSIMPLDataUsingProxy(dream3dProxy, false);
-    if(dca.get() == nullptr)
-    {
-      reader.closeFile();
-      return;
-    }
-
-    reader.closeFile();
-
-    AbstractFilter::Pointer dataContainerReader = filterFactory->createDataContainerReaderFilter(dataFilePath, dream3dProxy);
-    if(!dataContainerReader)
-    {
-      // Error!
-    }
-
-    pipeline->pushBack(dataContainerReader);
-
-    QString amName = dialog->getAttributeMatrixName();
-    QString daName = dialog->getDataArrayName();
-
-    if(m_DisplayType != AbstractImportMontageDialog::DisplayType::SideBySide && m_DisplayType != AbstractImportMontageDialog::DisplayType::Outline)
-    {
-      AbstractFilter::Pointer itkRegistrationFilter = filterFactory->createPCMTileRegistrationFilter(montageStart, montageSize, dcPrefix, amName, daName);
-      pipeline->pushBack(itkRegistrationFilter);
-
-      DataArrayPath montagePath("MontageDC", "MontageAM", "MontageData");
-      AbstractFilter::Pointer itkStitchingFilter = filterFactory->createTileStitchingFilter(montageSize, dcNames, amName, daName, montagePath);
-      pipeline->pushBack(itkStitchingFilter);
-    }
-
-    addPipelineToQueue(pipeline);
+    return;
   }
-  else
+
+  AbstractFilter::Pointer dataContainerReader = filterFactory->createDataContainerReaderFilter(dataFilePath, dream3dProxy);
+  if(!dataContainerReader)
   {
-    QMessageBox::critical(this, "Import DREAM3D Montage", tr("Unable to open file '%1'. Aborting.").arg(dataFilePath), QMessageBox::StandardButton::Ok, QMessageBox::StandardButton::Ok);
+    // Error!
   }
+
+  pipeline->pushBack(dataContainerReader);
+
+  QString amName = dialog->getAttributeMatrixName();
+  QString daName = dialog->getDataArrayName();
+
+  if(m_DisplayType != AbstractImportMontageDialog::DisplayType::SideBySide && m_DisplayType != AbstractImportMontageDialog::DisplayType::Outline)
+  {
+    AbstractFilter::Pointer itkRegistrationFilter = filterFactory->createPCMTileRegistrationFilter(montageStart, montageEnd, dcPrefix, amName, daName);
+    pipeline->pushBack(itkRegistrationFilter);
+
+    DataArrayPath montagePath("MontageDC", "MontageAM", "MontageData");
+    AbstractFilter::Pointer itkStitchingFilter = filterFactory->createTileStitchingFilter(montageSize, dcNames, amName, daName, montagePath);
+    pipeline->pushBack(itkStitchingFilter);
+  }
+
+  addPipelineToQueue(pipeline);
 }
 
 // -----------------------------------------------------------------------------
@@ -477,8 +462,8 @@ void IMFViewer_UI::importRobometMontage()
 
     if(m_DisplayType != AbstractImportMontageDialog::DisplayType::SideBySide && m_DisplayType != AbstractImportMontageDialog::DisplayType::Outline)
     {
-      AbstractFilter::Pointer itkRegistrationFilter = filterFactory->createPCMTileRegistrationFilter(montageSize, dcNames, amName, daName);
-      pipeline->pushBack(itkRegistrationFilter);
+//      AbstractFilter::Pointer itkRegistrationFilter = filterFactory->createPCMTileRegistrationFilter(montageSize, dcNames, amName, daName);
+//      pipeline->pushBack(itkRegistrationFilter);
 
       DataArrayPath montagePath("MontageDC", "MontageAM", "MontageData");
       AbstractFilter::Pointer itkStitchingFilter = filterFactory->createTileStitchingFilter(montageSize, dcNames, amName, daName, montagePath);
@@ -548,8 +533,8 @@ void IMFViewer_UI::importZeissMontage()
 
   if(m_DisplayType != AbstractImportMontageDialog::DisplayType::SideBySide && m_DisplayType != AbstractImportMontageDialog::DisplayType::Outline)
   {
-    AbstractFilter::Pointer itkRegistrationFilter = filterFactory->createPCMTileRegistrationFilter(montageSize, dcNames, amName, daName);
-    pipeline->pushBack(itkRegistrationFilter);
+//    AbstractFilter::Pointer itkRegistrationFilter = filterFactory->createPCMTileRegistrationFilter(montageSize, dcNames, amName, daName);
+//    pipeline->pushBack(itkRegistrationFilter);
 
     DataArrayPath montagePath("MontageDC", "MontageAM", "MontageData");
     AbstractFilter::Pointer itkStitchingFilter = filterFactory->createTileStitchingFilter(montageSize, dcNames, amName, daName, montagePath);
@@ -930,8 +915,8 @@ void IMFViewer_UI::performMontage()
 
     if(!stitchingOnly)
     {
-      AbstractFilter::Pointer itkRegistrationFilter = filterFactory->createPCMTileRegistrationFilter(montageSize, dcNames, amName, daName);
-      pipeline->pushBack(itkRegistrationFilter);
+//      AbstractFilter::Pointer itkRegistrationFilter = filterFactory->createPCMTileRegistrationFilter(montageSize, dcNames, amName, daName);
+//      pipeline->pushBack(itkRegistrationFilter);
     }
 
     DataArrayPath montagePath("MontageDC", "MontageAM", "MontageData");
