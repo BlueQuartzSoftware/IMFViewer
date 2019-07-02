@@ -112,5 +112,6 @@ BuildQtAppBundle(
     QT5_MODULES   ${Qt5_COMPONENTS}
     COMPONENT     Applications
     INSTALL_DEST  ${DEST_DIR}
+    PLUGIN_LIST_FILE ${CMP_PLUGIN_LIST_FILE}
 )
 
