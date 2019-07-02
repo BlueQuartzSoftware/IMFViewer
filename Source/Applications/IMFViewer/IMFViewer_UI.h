@@ -272,7 +272,7 @@ private:
    * @param overrideOrigin
    * @param origin
    */
-  void importFijiMontage(const QString& montageName, FijiListInfo_t fijiListInfo, bool overrideSpacing, FloatVec3Type spacing, bool overrideOrigin, FloatVec3Type origin);
+  void importFijiMontage(const QString& montageName, FijiListInfo_t fijiListInfo, bool overrideSpacing, FloatVec3Type spacing, bool overrideOrigin, FloatVec3Type origin, int32_t lengthUnit);
 
   /**
    * @brief importRobometMontage
