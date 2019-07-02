@@ -441,6 +441,10 @@ void IMFViewer_UI::importRobometMontage()
     QString amName = "Cell Attribute Matrix";
     QString daName = "Image Data";
     QString imagePrefix = rbmListInfo.ImagePrefix;
+    if(!imagePrefix.endsWith("_"))
+    {
+      imagePrefix.append("_");
+    }
     QString imageFileExtension = rbmListInfo.ImageExtension;
 
     AbstractFilter::Pointer importRoboMetMontageFilter = filterFactory->createImportRobometMontageFilter(robometFilePath, dcPath, amName, daName, slice, imagePrefix, imageFileExtension,
@@ -456,14 +460,19 @@ void IMFViewer_UI::importRobometMontage()
     DataContainerArray::Pointer dca = importRoboMetMontageFilter->getDataContainerArray();
     QStringList dcNames = dca->getDataContainerNames();
 
-    int rowCount = rbmListInfo.NumberOfRows;
-    int colCount = rbmListInfo.NumberOfColumns;
-    IntVec3Type montageSize = {colCount, rowCount, 1};
+    int montageStartCol = rbmListInfo.MontageStartCol;
+    int montageStartRow = rbmListInfo.MontageStartRow;
+    int montageEndCol = rbmListInfo.MontageEndCol;
+    int montageEndRow = rbmListInfo.MontageEndRow;
+    IntVec3Type montageStart = {montageStartCol, montageStartRow, 1};
+    IntVec3Type montageEnd = {montageEndCol, montageEndRow, 1};
+    IntVec3Type montageSize = {montageEndCol - montageStartCol + 1, montageEndRow - montageStartRow + 1, 1};
 
     if(m_DisplayType != AbstractImportMontageDialog::DisplayType::SideBySide && m_DisplayType != AbstractImportMontageDialog::DisplayType::Outline)
     {
-//      AbstractFilter::Pointer itkRegistrationFilter = filterFactory->createPCMTileRegistrationFilter(montageSize, dcNames, amName, daName);
-//      pipeline->pushBack(itkRegistrationFilter);
+      QString dcPrefix = dcPath.getDataContainerName() + "_";
+      AbstractFilter::Pointer itkRegistrationFilter = filterFactory->createPCMTileRegistrationFilter(montageStart, montageEnd, dcPrefix, amName, daName);
+      pipeline->pushBack(itkRegistrationFilter);
 
       DataArrayPath montagePath("MontageDC", "MontageAM", "MontageData");
       AbstractFilter::Pointer itkStitchingFilter = filterFactory->createTileStitchingFilter(montageSize, dcNames, amName, daName, montagePath);
