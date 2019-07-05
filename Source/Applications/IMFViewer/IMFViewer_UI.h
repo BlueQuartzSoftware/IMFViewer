@@ -285,6 +285,11 @@ private:
   void importZeissMontage();
 
   /**
+   * @brief importZeissZenMontage
+   */
+  void importZeissZenMontage();
+
+  /**
    * @brief runPipeline
    * @param pipeline
    */

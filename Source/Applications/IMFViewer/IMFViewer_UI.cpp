@@ -65,6 +65,7 @@
 #include "SIMPLVtkLib/Dialogs/ImportGenericMontageDialog.h"
 #include "SIMPLVtkLib/Dialogs/ImportRobometMontageDialog.h"
 #include "SIMPLVtkLib/Dialogs/ImportZeissMontageDialog.h"
+#include "SIMPLVtkLib/Dialogs/ImportZeissZenMontageDialog.h"
 #include "SIMPLVtkLib/Dialogs/PerformMontageDialog.h"
 #include "SIMPLVtkLib/Dialogs/Utilities/TileConfigFileGenerator.h"
 #include "SIMPLVtkLib/QtWidgets/VSDatasetImporter.h"
@@ -75,6 +76,7 @@
 
 #include "SIMPLVtkLib/Dialogs/RobometListWidget.h"
 #include "SIMPLVtkLib/Dialogs/ZeissListWidget.h"
+#include "SIMPLVtkLib/Dialogs/ZeissZenListWidget.h"
 #include "SIMPLVtkLib/Visualization/VisualFilters/VSTransform.h"
 #include "SIMPLVtkLib/Wizards/ExecutePipeline/ExecutePipelineConstants.h"
 #include "SIMPLVtkLib/Wizards/ExecutePipeline/ExecutePipelineWizard.h"
@@ -551,6 +553,76 @@ void IMFViewer_UI::importZeissMontage()
   {
     AbstractFilter::Pointer itkRegistrationFilter = filterFactory->createPCMTileRegistrationFilter(montageStart, montageEnd, dcPrefix, amName, daName);
     pipeline->pushBack(itkRegistrationFilter);
+
+    DataArrayPath montagePath("MontageDC", "MontageAM", "MontageData");
+    AbstractFilter::Pointer itkStitchingFilter = filterFactory->createTileStitchingFilter(montageSize, dcNames, amName, daName, montagePath);
+    pipeline->pushBack(itkStitchingFilter);
+  }
+
+  addPipelineToQueue(pipeline);
+}
+
+// -----------------------------------------------------------------------------
+//
+// -----------------------------------------------------------------------------
+void IMFViewer_UI::importZeissZenMontage()
+{
+  ImportZeissZenMontageDialog::Pointer dialog = ImportZeissZenMontageDialog::New(this);
+  int ret = dialog->exec();
+  if(ret == QDialog::Rejected)
+  {
+    return;
+  }
+
+  VSMainWidgetBase* baseWidget = dynamic_cast<VSMainWidgetBase*>(m_Ui->vsWidget);
+  VSFilterViewModel* filterViewModel = baseWidget->getActiveViewWidget()->getFilterViewModel();
+  m_DisplayType = dialog->getDisplayType();
+  filterViewModel->setDisplayType(m_DisplayType);
+
+  FilterPipeline::Pointer pipeline = FilterPipeline::New();
+  AbstractFilter::Pointer importZeissMontage;
+  QString montageName = dialog->getMontageName();
+  pipeline->setName(montageName);
+
+  VSFilterFactory::Pointer filterFactory = VSFilterFactory::New();
+
+  ZeissZenListInfo_t zeissListInfo = dialog->getZeissZenListInfo();
+
+  QString configFilePath = zeissListInfo.ZeissFilePath;
+  QString dcPrefix = "UntitledMontage_";
+  DataArrayPath dcPath("UntitledMontage", "", "");
+  QString amName = "Cell Attribute Matrix";
+  QString daName = "Image Data";
+  bool convertToGrayscale = dialog->getConvertToGrayscale();
+  bool changeOrigin = dialog->getOverrideOrigin();
+
+  FloatVec3Type origin = dialog->getOrigin();
+  FloatVec3Type colorWeighting = dialog->getColorWeighting();
+
+  importZeissMontage = filterFactory->createImportZeissZenMontageFilter(configFilePath, dcPath, amName, daName, convertToGrayscale, colorWeighting, changeOrigin, origin);
+
+  if(!importZeissMontage)
+  {
+    // Error!
+  }
+
+  pipeline->pushBack(importZeissMontage);
+
+  importZeissMontage->preflight();
+  DataContainerArray::Pointer dca = importZeissMontage->getDataContainerArray();
+  QStringList dcNames = dca->getDataContainerNames();
+  int rowCount = importZeissMontage->property("RowCount").toInt();
+  int colCount = importZeissMontage->property("ColumnCount").toInt();
+
+  IntVec3Type montageStart = {0, 0, 1};
+  IntVec3Type montageEnd = {colCount - 1, rowCount - 1, 1};
+  IntVec3Type montageSize = {colCount, rowCount, 1};
+
+  if(m_DisplayType != AbstractImportMontageDialog::DisplayType::SideBySide && m_DisplayType != AbstractImportMontageDialog::DisplayType::Outline)
+  {
+    // ITK Registration filter needs updated to latest API
+    //AbstractFilter::Pointer itkRegistrationFilter = filterFactory->createPCMTileRegistrationFilter(montageStart, montageEnd, dcPrefix, amName, daName);
+    //pipeline->pushBack(itkRegistrationFilter);
 
     DataArrayPath montagePath("MontageDC", "MontageAM", "MontageData");
     AbstractFilter::Pointer itkStitchingFilter = filterFactory->createTileStitchingFilter(montageSize, dcNames, amName, daName, montagePath);
@@ -1305,9 +1377,13 @@ void IMFViewer_UI::createMenu()
   connect(robometMontageAction, &QAction::triggered, this, &IMFViewer_UI::importRobometMontage);
   importMontageMenu->addAction(robometMontageAction);
 
-  QAction* zeissMontageAction = new QAction("Zeiss");
+  QAction* zeissMontageAction = new QAction("Zeiss XML");
   connect(zeissMontageAction, &QAction::triggered, this, &IMFViewer_UI::importZeissMontage);
   importMontageMenu->addAction(zeissMontageAction);
+
+  QAction* zeissZenMontageAction = new QAction("Zeiss Zen");
+  connect(zeissZenMontageAction, &QAction::triggered, this, &IMFViewer_UI::importZeissZenMontage);
+  importMontageMenu->addAction(zeissZenMontageAction);
 
   QAction* executePipelineAction = new QAction("Execute Pipeline");
   executePipelineAction->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_E));
