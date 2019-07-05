@@ -248,8 +248,6 @@ void IMFViewer_UI::importGenericMontage()
   SpacingTuple spacing = dialog->getSpacing();
   OriginTuple origin = dialog->getOrigin();
   int32_t lengthUnit = dialog->getLengthUnit();
-  IntVec3Type montageStart = {0, 0, 1};
-  IntVec3Type montageEnd = {numOfCols - 1, numOfRows - 1, 1};
 
   importFijiMontage(montageName, fijiListInfo, overrideSpacing, spacing, true, origin, montageStart, montageEnd, lengthUnit);
 }
