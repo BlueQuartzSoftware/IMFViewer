@@ -248,8 +248,10 @@ void IMFViewer_UI::importGenericMontage()
   OriginTuple origin = dialog->getOrigin();
   bool usePixelCoordinates = dialog->usePixelCoordinates();
   int32_t lengthUnit = dialog->getLengthUnit();
+  IntVec3Type montageStart = {0, 0, 1};
+  IntVec3Type montageEnd = {numOfCols - 1, numOfRows - 1, 1};
 
-  importFijiMontage(montageName, fijiListInfo, overrideSpacing, spacing, true, origin, usePixelCoordinates, lengthUnit);
+  importFijiMontage(montageName, fijiListInfo, overrideSpacing, spacing, true, origin, montageStart, montageEnd, usePixelCoordinates, lengthUnit);
 }
 
 // -----------------------------------------------------------------------------
@@ -360,13 +362,17 @@ void IMFViewer_UI::importFijiMontage()
   bool usePixelCoordinates = dialog->usePixelCoordinates();
   int32_t lengthUnit = dialog->getLengthUnit();
 
-  importFijiMontage(montageName, fijiListInfo, overrideSpacing, spacing, overrideOrigin, origin, usePixelCoordinates, lengthUnit);
+  IntVec3Type montageStart = dialog->getMontageStart();
+  IntVec3Type montageEnd = dialog->getMontageEnd();
+
+  importFijiMontage(montageName, fijiListInfo, overrideSpacing, spacing, overrideOrigin, origin, montageStart, montageEnd, usePixelCoordinates, lengthUnit);
 }
 
 // -----------------------------------------------------------------------------
 //
 // -----------------------------------------------------------------------------
 void IMFViewer_UI::importFijiMontage(const QString& montageName, FijiListInfo_t fijiListInfo, bool overrideSpacing, FloatVec3Type spacing, bool overrideOrigin, FloatVec3Type origin,
+                                     IntVec3Type montageStart, IntVec3Type montageEnd,
                                      bool usePixelCoordinates, int32_t lengthUnit)
 {
   VSFilterFactory::Pointer filterFactory = VSFilterFactory::New();
@@ -375,11 +381,11 @@ void IMFViewer_UI::importFijiMontage(const QString& montageName, FijiListInfo_t 
   pipeline->setName(montageName);
 
   QString fijiConfigFilePath = fijiListInfo.FijiFilePath;
-  QString dcPrefix = "UntitledMontage_";
+  DataArrayPath dcPath("UntitledMontage_", "", "");
   QString amName = "Cell Attribute Matrix";
   QString daName = "Image Data";
   AbstractFilter::Pointer importFijiMontageFilter =
-      filterFactory->createImportFijiMontageFilter(fijiConfigFilePath, dcPrefix, amName, daName, overrideOrigin, origin.data(), usePixelCoordinates, overrideSpacing, spacing.data(), lengthUnit);
+      filterFactory->createImportFijiMontageFilter(fijiConfigFilePath, dcPath, amName, daName, overrideOrigin, origin.data(), montageStart, montageEnd, overrideSpacing, spacing.data(), lengthUnit);
   if(!importFijiMontageFilter)
   {
     // Error!
@@ -392,15 +398,25 @@ void IMFViewer_UI::importFijiMontage(const QString& montageName, FijiListInfo_t 
   DataContainerArray::Pointer dca = importFijiMontageFilter->getDataContainerArray();
   QStringList dcNames = dca->getDataContainerNames();
 
-  int rowCount = importFijiMontageFilter->property("RowCount").toInt();
-  int colCount = importFijiMontageFilter->property("ColumnCount").toInt();
+  int rowCount;
+  int colCount;
+  if(montageEnd.getX() == 0 && montageEnd.getY() == 0)
+  {
+    rowCount = importFijiMontageFilter->property("RowCount").toInt();
+    colCount = importFijiMontageFilter->property("ColumnCount").toInt();
+  }
+  else
+  {
+    rowCount = montageEnd.getY() - montageStart.getY() + 1;
+    colCount = montageEnd.getX() - montageStart.getX() + 1;
+  }
 
   IntVec3Type montageSize = {colCount, rowCount, 1};
 
   if(m_DisplayType != AbstractImportMontageDialog::DisplayType::SideBySide && m_DisplayType != AbstractImportMontageDialog::DisplayType::Outline)
   {
-    AbstractFilter::Pointer itkRegistrationFilter = filterFactory->createPCMTileRegistrationFilter(montageSize, dcNames, amName, daName);
-    pipeline->pushBack(itkRegistrationFilter);
+    //AbstractFilter::Pointer itkRegistrationFilter = filterFactory->createPCMTileRegistrationFilter(montageSize, dcNames, amName, daName);
+    //pipeline->pushBack(itkRegistrationFilter);
 
     DataArrayPath montagePath("MontageDC", "MontageAM", "MontageData");
     AbstractFilter::Pointer itkStitchingFilter = filterFactory->createTileStitchingFilter(montageSize, dcNames, amName, daName, montagePath);
