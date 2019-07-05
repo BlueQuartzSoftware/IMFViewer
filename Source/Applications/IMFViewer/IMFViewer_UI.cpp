@@ -224,9 +224,10 @@ void IMFViewer_UI::importGenericMontage()
 
   QString tileConfigFile = "TileConfiguration.txt";
 
-  std::tuple<int, int> montageDims = dialog->getMontageDimensions();
-  int numOfRows = std::get<0>(montageDims);
-  int numOfCols = std::get<1>(montageDims);
+  IntVec3Type montageStart = dialog->getMontageStart();
+  IntVec3Type montageEnd = dialog->getMontageEnd();
+  int numOfRows = montageEnd.getY() - montageStart.getY() + 1;
+  int numOfCols = montageEnd.getX() - montageStart.getX() + 1;
 
   // Get input file names
   FileListInfo_t inputFileInfo = dialog->getFileListInfo();
@@ -247,8 +248,10 @@ void IMFViewer_UI::importGenericMontage()
   SpacingTuple spacing = dialog->getSpacing();
   OriginTuple origin = dialog->getOrigin();
   int32_t lengthUnit = dialog->getLengthUnit();
+  IntVec3Type montageStart = {0, 0, 1};
+  IntVec3Type montageEnd = {numOfCols - 1, numOfRows - 1, 1};
 
-  importFijiMontage(montageName, fijiListInfo, overrideSpacing, spacing, true, origin, lengthUnit);
+  importFijiMontage(montageName, fijiListInfo, overrideSpacing, spacing, true, origin, montageStart, montageEnd, lengthUnit);
 }
 
 // -----------------------------------------------------------------------------
@@ -352,13 +355,17 @@ void IMFViewer_UI::importFijiMontage()
   FloatVec3Type origin = dialog->getOrigin();
   int32_t lengthUnit = dialog->getLengthUnit();
 
-  importFijiMontage(montageName, fijiListInfo, overrideSpacing, spacing, overrideOrigin, origin, lengthUnit);
+  IntVec3Type montageStart = dialog->getMontageStart();
+  IntVec3Type montageEnd = dialog->getMontageEnd();
+
+  importFijiMontage(montageName, fijiListInfo, overrideSpacing, spacing, overrideOrigin, origin, montageStart, montageEnd, lengthUnit);
 }
 
 // -----------------------------------------------------------------------------
 //
 // -----------------------------------------------------------------------------
-void IMFViewer_UI::importFijiMontage(const QString& montageName, FijiListInfo_t fijiListInfo, bool overrideSpacing, FloatVec3Type spacing, bool overrideOrigin, FloatVec3Type origin, int32_t lengthUnit)
+void IMFViewer_UI::importFijiMontage(const QString& montageName, FijiListInfo_t fijiListInfo, bool overrideSpacing, FloatVec3Type spacing, bool overrideOrigin, FloatVec3Type origin,
+                                     IntVec3Type montageStart, IntVec3Type montageEnd, int32_t lengthUnit)
 {
   VSFilterFactory::Pointer filterFactory = VSFilterFactory::New();
 
@@ -370,7 +377,7 @@ void IMFViewer_UI::importFijiMontage(const QString& montageName, FijiListInfo_t 
   QString amName = "Cell Attribute Matrix";
   QString daName = "Image Data";
   AbstractFilter::Pointer importFijiMontageFilter =
-      filterFactory->createImportFijiMontageFilter(fijiConfigFilePath, dcPath, amName, daName, overrideOrigin, origin.data(), overrideSpacing, spacing.data(), lengthUnit);
+      filterFactory->createImportFijiMontageFilter(fijiConfigFilePath, dcPath, amName, daName, overrideOrigin, origin.data(), montageStart, montageEnd, overrideSpacing, spacing.data(), lengthUnit);
   if(!importFijiMontageFilter)
   {
     // Error!
@@ -383,8 +390,18 @@ void IMFViewer_UI::importFijiMontage(const QString& montageName, FijiListInfo_t 
   DataContainerArray::Pointer dca = importFijiMontageFilter->getDataContainerArray();
   QStringList dcNames = dca->getDataContainerNames();
 
-  int rowCount = importFijiMontageFilter->property("RowCount").toInt();
-  int colCount = importFijiMontageFilter->property("ColumnCount").toInt();
+  int rowCount;
+  int colCount;
+  if(montageEnd.getX() == 0 && montageEnd.getY() == 0)
+  {
+    rowCount = importFijiMontageFilter->property("RowCount").toInt();
+    colCount = importFijiMontageFilter->property("ColumnCount").toInt();
+  }
+  else
+  {
+    rowCount = montageEnd.getY() - montageStart.getY() + 1;
+    colCount = montageEnd.getX() - montageStart.getX() + 1;
+  }
 
   IntVec3Type montageStart = {0, 0, 1};
   IntVec3Type montageEnd = {colCount - 1, rowCount - 1, 1};
@@ -527,10 +544,12 @@ void IMFViewer_UI::importZeissMontage()
 
   FloatVec3Type spacing = dialog->getSpacing();
   FloatVec3Type origin = dialog->getOrigin();
+  IntVec3Type montageStart = dialog->getMontageStart();
+  IntVec3Type montageEnd = dialog->getMontageEnd();
   FloatVec3Type colorWeighting = dialog->getColorWeighting();
 
   importZeissMontage = filterFactory->createImportZeissMontageFilter(configFilePath, dcPath, amName, daName, metadataAMName, importAllMetadata, convertToGrayscale, colorWeighting, changeOrigin,
-                                                                     origin, changeSpacing, spacing);
+                                                                     origin, montageStart, montageEnd, changeSpacing, spacing);
 
   if(!importZeissMontage)
   {
