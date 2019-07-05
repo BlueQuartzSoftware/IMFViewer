@@ -223,9 +223,10 @@ void IMFViewer_UI::importGenericMontage()
 
   QString tileConfigFile = "TileConfiguration.txt";
 
-  std::tuple<int, int> montageDims = dialog->getMontageDimensions();
-  int numOfRows = std::get<0>(montageDims);
-  int numOfCols = std::get<1>(montageDims);
+  IntVec3Type montageStart = dialog->getMontageStart();
+  IntVec3Type montageEnd = dialog->getMontageEnd();
+  int numOfRows = montageEnd.getY() - montageStart.getY() + 1;
+  int numOfCols = montageEnd.getX() - montageStart.getX() + 1;
 
   // Get input file names
   FileListInfo_t inputFileInfo = dialog->getFileListInfo();
@@ -248,8 +249,6 @@ void IMFViewer_UI::importGenericMontage()
   OriginTuple origin = dialog->getOrigin();
   bool usePixelCoordinates = dialog->usePixelCoordinates();
   int32_t lengthUnit = dialog->getLengthUnit();
-  IntVec3Type montageStart = {0, 0, 1};
-  IntVec3Type montageEnd = {numOfCols - 1, numOfRows - 1, 1};
 
   importFijiMontage(montageName, fijiListInfo, overrideSpacing, spacing, true, origin, montageStart, montageEnd, usePixelCoordinates, lengthUnit);
 }
