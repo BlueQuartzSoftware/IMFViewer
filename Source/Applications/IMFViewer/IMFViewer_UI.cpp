@@ -559,12 +559,21 @@ void IMFViewer_UI::importZeissMontage()
   importZeissMontage->preflight();
   DataContainerArray::Pointer dca = importZeissMontage->getDataContainerArray();
   QStringList dcNames = dca->getDataContainerNames();
-  int rowCount = importZeissMontage->property("RowCount").toInt();
-  int colCount = importZeissMontage->property("ColumnCount").toInt();
+  int rowCount;
+  int colCount;
+  if(montageEnd.getX() == 0 && montageEnd.getY() == 0)
+  {
+    int rowCount = importZeissMontage->property("RowCount").toInt();
+    int colCount = importZeissMontage->property("ColumnCount").toInt();
+  }
+  else
+  {
+    rowCount = montageEnd.getY() - montageStart.getY() + 1;
+    colCount = montageEnd.getX() - montageStart.getX() + 1;
+  }
 
-  IntVec3Type montageStart = {0, 0, 1};
-  IntVec3Type montageEnd = {colCount-1, rowCount-1, 1};
   IntVec3Type montageSize = {colCount, rowCount, 1};
+
 
   if(m_DisplayType != AbstractImportMontageDialog::DisplayType::SideBySide && m_DisplayType != AbstractImportMontageDialog::DisplayType::Outline)
   {
