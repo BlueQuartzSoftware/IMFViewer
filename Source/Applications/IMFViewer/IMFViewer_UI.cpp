@@ -542,11 +542,13 @@ void IMFViewer_UI::importZeissMontage()
 
   FloatVec3Type spacing = dialog->getSpacing();
   FloatVec3Type origin = dialog->getOrigin();
+  IntVec3Type montageStart = dialog->getMontageStart();
+  IntVec3Type montageEnd = dialog->getMontageEnd();
   FloatVec3Type colorWeighting = dialog->getColorWeighting();
   bool usePixelCoords = dialog->usePixelCoordinates();
 
   importZeissMontage = filterFactory->createImportZeissMontageFilter(configFilePath, dcPrefix, amName, daName, metadataAMName, importAllMetadata, convertToGrayscale, colorWeighting, changeOrigin,
-                                                                     origin, usePixelCoords, changeSpacing, spacing);
+                                                                     origin, montageStart, montageEnd, usePixelCoords, changeSpacing, spacing);
 
   if(!importZeissMontage)
   {
@@ -558,9 +560,22 @@ void IMFViewer_UI::importZeissMontage()
   importZeissMontage->preflight();
   DataContainerArray::Pointer dca = importZeissMontage->getDataContainerArray();
   QStringList dcNames = dca->getDataContainerNames();
-  int rowCount = importZeissMontage->property("RowCount").toInt();
-  int colCount = importZeissMontage->property("ColumnCount").toInt();
+
+  int rowCount;
+  int colCount;
+  if(montageEnd.getX() == 0 && montageEnd.getY() == 0)
+  {
+    int rowCount = importZeissMontage->property("RowCount").toInt();
+    int colCount = importZeissMontage->property("ColumnCount").toInt();
+  }
+  else
+  {
+    rowCount = montageEnd.getY() - montageStart.getY() + 1;
+    colCount = montageEnd.getX() - montageStart.getX() + 1;
+  }
+
   IntVec3Type montageSize = {colCount, rowCount, 1};
+
 
   if(m_DisplayType != AbstractImportMontageDialog::DisplayType::SideBySide && m_DisplayType != AbstractImportMontageDialog::DisplayType::Outline)
   {
