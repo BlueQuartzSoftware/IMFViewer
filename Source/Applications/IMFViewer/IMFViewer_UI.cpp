@@ -385,8 +385,8 @@ void IMFViewer_UI::importFijiMontage(const QString& montageName, FijiListInfo_t 
 
   // Set Image Data Containers
   importFijiMontageFilter->preflight();
-  DataContainerArray::Pointer dca = importFijiMontageFilter->getDataContainerArray();
-  QStringList dcNames = dca->getDataContainerNames();
+  QStringList dcNames;
+  QString dcPrefix = dcPath.getDataContainerName() + "_";
 
   int rowCount;
   int colCount;
@@ -394,18 +394,26 @@ void IMFViewer_UI::importFijiMontage(const QString& montageName, FijiListInfo_t 
   {
     rowCount = importFijiMontageFilter->property("RowCount").toInt();
     colCount = importFijiMontageFilter->property("ColumnCount").toInt();
+    DataContainerArray::Pointer dca = importFijiMontageFilter->getDataContainerArray();
+    dcNames = dca->getDataContainerNames();
   }
   else
   {
     rowCount = montageEnd.getY() - montageStart.getY() + 1;
     colCount = montageEnd.getX() - montageStart.getX() + 1;
+    for(int32_t row = montageStart[1]; row <= montageEnd[1]; row++)
+    {
+      for(int32_t col = montageStart[0]; col <= montageEnd[0]; col++)
+      {
+        dcNames.push_back(MontageUtilities::GenerateDataContainerName(dcPrefix, montageStart, montageEnd, row, col));
+      }
+    }
   }
 
   IntVec3Type montageSize = {colCount, rowCount, 1};
 
   if(m_DisplayType != AbstractImportMontageDialog::DisplayType::SideBySide && m_DisplayType != AbstractImportMontageDialog::DisplayType::Outline)
   {
-    QString dcPrefix = dcPath.getDataContainerName() + "_";
     AbstractFilter::Pointer itkRegistrationFilter = filterFactory->createPCMTileRegistrationFilter(montageStart, montageEnd, dcPrefix, amName, daName);
     pipeline->pushBack(itkRegistrationFilter);
 
@@ -554,20 +562,30 @@ void IMFViewer_UI::importZeissMontage()
 
   pipeline->pushBack(importZeissMontage);
 
+  // Set Image Data Containers
   importZeissMontage->preflight();
-  DataContainerArray::Pointer dca = importZeissMontage->getDataContainerArray();
-  QStringList dcNames = dca->getDataContainerNames();
+  QStringList dcNames;
+
   int rowCount;
   int colCount;
   if(montageEnd.getX() == 0 && montageEnd.getY() == 0)
   {
     rowCount = importZeissMontage->property("RowCount").toInt();
     colCount = importZeissMontage->property("ColumnCount").toInt();
+    DataContainerArray::Pointer dca = importZeissMontage->getDataContainerArray();
+    dcNames = dca->getDataContainerNames();
   }
   else
   {
     rowCount = montageEnd.getY() - montageStart.getY() + 1;
     colCount = montageEnd.getX() - montageStart.getX() + 1;
+    for(int32_t row = montageStart[1]; row <= montageEnd[1]; row++)
+    {
+      for(int32_t col = montageStart[0]; col <= montageEnd[0]; col++)
+      {
+        dcNames.push_back(MontageUtilities::GenerateDataContainerName(dcPrefix, montageStart, montageEnd, row, col));
+      }
+    }
   }
 
   IntVec3Type montageSize = {colCount, rowCount, 1};
