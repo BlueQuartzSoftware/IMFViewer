@@ -138,7 +138,6 @@ if("${SIMPLVtkLibProj_SOURCE_DIR}" STREQUAL "")
   message(STATUS "SIMPLVtkLibProj_SOURCE_DIR: ${SIMPLVtkLibProj_SOURCE_DIR}")
 endif()
 
-
 # -----------------------------------------------------------------------
 # Setup a Global property that is used to gather Documentation Information
 # into a single known location
@@ -171,15 +170,22 @@ endif()
 set_property(GLOBAL PROPERTY CMP_PROJECT_INSTALL_HEADERS "0")
 
 # -----------------------------------------------------------------------
+# This needs to be set here because it is used in the next section....
+set(EXE_DEBUG_EXTENSION "_debug")
+if( "${IMFViewer_APPLICATION_NAME}" STREQUAL "")
+  set(IMFViewer_APPLICATION_NAME "IMFViewer")
+endif()
+
+# -----------------------------------------------------------------------
 # Set a Global Prefix where everthing is going to get intalled. For OS X we are
 # going to try to install everything into the .app package
 # -----------------------------------------------------------------------
 set_property(GLOBAL PROPERTY DREAM3D_PACKAGE_DEST_PREFIX ".")
 if(APPLE)
   if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-    set_property(GLOBAL PROPERTY DREAM3D_PACKAGE_DEST_PREFIX "${SIMPLView_APPLICATION_NAME}${EXE_DEBUG_EXTENSION}.app/Contents/")
+    set_property(GLOBAL PROPERTY DREAM3D_PACKAGE_DEST_PREFIX "${IMFViewer_APPLICATION_NAME}${EXE_DEBUG_EXTENSION}.app/Contents/")
   else()
-    set_property(GLOBAL PROPERTY DREAM3D_PACKAGE_DEST_PREFIX "${SIMPLView_APPLICATION_NAME}.app/Contents/")
+    set_property(GLOBAL PROPERTY DREAM3D_PACKAGE_DEST_PREFIX "${IMFViewer_APPLICATION_NAME}.app/Contents/")
   endif()
 endif()
 get_property(DREAM3D_PACKAGE_DEST_PREFIX GLOBAL PROPERTY DREAM3D_PACKAGE_DEST_PREFIX)
@@ -194,14 +200,9 @@ if(SIMPL_BUILD_TESTING)
     include( CTest )
 endif()
 
-
-
 # --------------------------------------------------------------------
 # This is set to "1" so that our test files are deleted at the end of the tests
 set(DREAM3D_REMOVE_TEST_FILES "1")
-
-
-
 
 #Enable use of Solution Folders
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
@@ -217,6 +218,12 @@ set(IMFViewerProj_SUPPORT_DIR ${PROJECT_SOURCE_DIR}/Support)
 set(CMP_CONFIGURED_FILES_SOURCE_DIR ${CMP_SOURCE_DIR}/ConfiguredFiles)
 
 INCLUDE (${CMP_SOURCE_DIR}/cmpCMakeMacros.cmake )
+
+
+# -----------------------------------------------------------------------
+# Generate a set of Version Cpp/H files that will be used by SIMPLView to
+# get and display the proper version numbers.
+set(PROJECT_NAME IMFViewerProj)
 
 set(CMP_ENABLE_PLUGINS "1")
 set(CMP_PLUGIN_LIST_FILE "${SIMPLPluginList}")
