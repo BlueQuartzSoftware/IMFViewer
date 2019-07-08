@@ -561,8 +561,8 @@ void IMFViewer_UI::importZeissMontage()
   int colCount;
   if(montageEnd.getX() == 0 && montageEnd.getY() == 0)
   {
-    int rowCount = importZeissMontage->property("RowCount").toInt();
-    int colCount = importZeissMontage->property("ColumnCount").toInt();
+    rowCount = importZeissMontage->property("RowCount").toInt();
+    colCount = importZeissMontage->property("ColumnCount").toInt();
   }
   else
   {
