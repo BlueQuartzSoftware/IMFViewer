@@ -271,6 +271,8 @@ private:
    * @param spacing
    * @param overrideOrigin
    * @param origin
+   * @param montageStart
+   * @param montageEnd
    */
   void importFijiMontage(const QString& montageName, FijiListInfo_t fijiListInfo, bool overrideSpacing, FloatVec3Type spacing, bool overrideOrigin, FloatVec3Type origin, IntVec3Type montageStart,
                          IntVec3Type montageEnd, int32_t lengthUnit);

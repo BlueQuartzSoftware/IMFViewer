@@ -401,8 +401,6 @@ void IMFViewer_UI::importFijiMontage(const QString& montageName, FijiListInfo_t 
     colCount = montageEnd.getX() - montageStart.getX() + 1;
   }
 
-  IntVec3Type montageStart = {0, 0, 1};
-  IntVec3Type montageEnd = {colCount - 1, rowCount - 1, 1};
   IntVec3Type montageSize = {colCount, rowCount, 1};
 
   if(m_DisplayType != AbstractImportMontageDialog::DisplayType::SideBySide && m_DisplayType != AbstractImportMontageDialog::DisplayType::Outline)
