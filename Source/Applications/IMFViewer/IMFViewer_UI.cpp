@@ -589,8 +589,7 @@ void IMFViewer_UI::importZeissMontage()
   }
 
   IntVec3Type montageSize = {colCount, rowCount, 1};
-
-
+  
   if(m_DisplayType != AbstractImportMontageDialog::DisplayType::SideBySide && m_DisplayType != AbstractImportMontageDialog::DisplayType::Outline)
   {
     AbstractFilter::Pointer itkRegistrationFilter = filterFactory->createPCMTileRegistrationFilter(montageStart, montageEnd, dcPrefix, amName, daName);
@@ -638,6 +637,8 @@ void IMFViewer_UI::importZeissZenMontage()
   bool convertToGrayscale = dialog->getConvertToGrayscale();
   bool changeOrigin = dialog->getOverrideOrigin();
 
+  IntVec3Type montageStart = dialog->getMontageStart();
+  IntVec3Type montageEnd = dialog->getMontageEnd();
   FloatVec3Type origin = dialog->getOrigin();
   FloatVec3Type colorWeighting = dialog->getColorWeighting();
 
@@ -650,14 +651,32 @@ void IMFViewer_UI::importZeissZenMontage()
 
   pipeline->pushBack(importZeissMontage);
 
+  // Set Image Data Containers
   importZeissMontage->preflight();
-  DataContainerArray::Pointer dca = importZeissMontage->getDataContainerArray();
-  QStringList dcNames = dca->getDataContainerNames();
-  int rowCount = importZeissMontage->property("RowCount").toInt();
-  int colCount = importZeissMontage->property("ColumnCount").toInt();
+  QStringList dcNames;
 
-  IntVec3Type montageStart = {0, 0, 1};
-  IntVec3Type montageEnd = {colCount - 1, rowCount - 1, 1};
+  int rowCount;
+  int colCount;
+  if(montageEnd.getX() == 0 && montageEnd.getY() == 0)
+  {
+    rowCount = importZeissMontage->property("RowCount").toInt();
+    colCount = importZeissMontage->property("ColumnCount").toInt();
+    DataContainerArray::Pointer dca = importZeissMontage->getDataContainerArray();
+    dcNames = dca->getDataContainerNames();
+  }
+  else
+  {
+    rowCount = montageEnd.getY() - montageStart.getY() + 1;
+    colCount = montageEnd.getX() - montageStart.getX() + 1;
+    for(int32_t row = montageStart[1]; row <= montageEnd[1]; row++)
+    {
+      for(int32_t col = montageStart[0]; col <= montageEnd[0]; col++)
+      {
+        dcNames.push_back(MontageUtilities::GenerateDataContainerName(dcPrefix, montageStart, montageEnd, row, col));
+      }
+    }
+  }
+
   IntVec3Type montageSize = {colCount, rowCount, 1};
 
   if(m_DisplayType != AbstractImportMontageDialog::DisplayType::SideBySide && m_DisplayType != AbstractImportMontageDialog::DisplayType::Outline)
