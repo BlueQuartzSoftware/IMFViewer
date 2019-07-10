@@ -321,7 +321,7 @@ void IMFViewer_UI::importDREAM3DMontage()
     pipeline->pushBack(itkRegistrationFilter);
 
     DataArrayPath montagePath("MontageDC", "MontageAM", "MontageData");
-    AbstractFilter::Pointer itkStitchingFilter = filterFactory->createTileStitchingFilter(montageSize, dcNames, amName, daName, montagePath);
+    AbstractFilter::Pointer itkStitchingFilter = filterFactory->createTileStitchingFilter(montageStart, montageEnd, dcNames, amName, daName, montagePath);
     pipeline->pushBack(itkStitchingFilter);
   }
 
@@ -418,7 +418,7 @@ void IMFViewer_UI::importFijiMontage(const QString& montageName, FijiListInfo_t 
     pipeline->pushBack(itkRegistrationFilter);
 
     DataArrayPath montagePath("MontageDC", "MontageAM", "MontageData");
-    AbstractFilter::Pointer itkStitchingFilter = filterFactory->createTileStitchingFilter(montageSize, dcNames, amName, daName, montagePath);
+    AbstractFilter::Pointer itkStitchingFilter = filterFactory->createTileStitchingFilter(montageStart, montageEnd, dcNames, amName, daName, montagePath);
     pipeline->pushBack(itkStitchingFilter);
   }
 
@@ -501,7 +501,7 @@ void IMFViewer_UI::importRobometMontage()
       pipeline->pushBack(itkRegistrationFilter);
 
       DataArrayPath montagePath("MontageDC", "MontageAM", "MontageData");
-      AbstractFilter::Pointer itkStitchingFilter = filterFactory->createTileStitchingFilter(montageSize, dcNames, amName, daName, montagePath);
+      AbstractFilter::Pointer itkStitchingFilter = filterFactory->createTileStitchingFilter(montageStart, montageEnd, dcNames, amName, daName, montagePath);
       pipeline->pushBack(itkStitchingFilter);
     }
 
@@ -596,7 +596,7 @@ void IMFViewer_UI::importZeissMontage()
     pipeline->pushBack(itkRegistrationFilter);
 
     DataArrayPath montagePath("MontageDC", "MontageAM", "MontageData");
-    AbstractFilter::Pointer itkStitchingFilter = filterFactory->createTileStitchingFilter(montageSize, dcNames, amName, daName, montagePath);
+    AbstractFilter::Pointer itkStitchingFilter = filterFactory->createTileStitchingFilter(montageStart, montageEnd, dcNames, amName, daName, montagePath);
     pipeline->pushBack(itkStitchingFilter);
   }
 
@@ -685,7 +685,7 @@ void IMFViewer_UI::importZeissZenMontage()
     pipeline->pushBack(itkRegistrationFilter);
 
     DataArrayPath montagePath("MontageDC", "MontageAM", "MontageData");
-    AbstractFilter::Pointer itkStitchingFilter = filterFactory->createTileStitchingFilter(montageSize, dcNames, amName, daName, montagePath);
+    AbstractFilter::Pointer itkStitchingFilter = filterFactory->createTileStitchingFilter(montageStart, montageEnd, dcNames, amName, daName, montagePath);
     pipeline->pushBack(itkStitchingFilter);
   }
 
@@ -1056,16 +1056,20 @@ void IMFViewer_UI::performMontage()
 
     QStringList dcNames = dca->getDataContainerNames();
 
-    IntVec3Type montageSize = {rowColPair.second, rowColPair.first, 1};
+    IntVec2Type montageSize = {rowColPair.second, rowColPair.first};
+    IntVec2Type montageStart = {0, 0};
+    IntVec2Type montageEnd = {montageSize[0] - 1, montageSize[1] - 1};
 
     if(!stitchingOnly)
     {
-      //      AbstractFilter::Pointer itkRegistrationFilter = filterFactory->createPCMTileRegistrationFilter(montageSize, dcNames, amName, daName);
-      //      pipeline->pushBack(itkRegistrationFilter);
+      QString dcPrefix = MontageUtilities::FindDataContainerPrefix(dcNames);
+
+      AbstractFilter::Pointer itkRegistrationFilter = filterFactory->createPCMTileRegistrationFilter(montageStart, montageEnd, dcPrefix, amName, daName);
+      pipeline->pushBack(itkRegistrationFilter);
     }
 
     DataArrayPath montagePath("MontageDC", "MontageAM", "MontageData");
-    AbstractFilter::Pointer itkStitchingFilter = filterFactory->createTileStitchingFilter(montageSize, dcNames, amName, daName, montagePath);
+    AbstractFilter::Pointer itkStitchingFilter = filterFactory->createTileStitchingFilter(montageStart, montageEnd, dcNames, amName, daName, montagePath);
     pipeline->pushBack(itkStitchingFilter);
 
     // Check if output to file was requested
@@ -1707,7 +1711,7 @@ std::pair<int, int> IMFViewer_UI::buildCustomDCA(const DataContainerArray::Point
       dataContainer = dcFilter->getWrappedDataContainer()->m_DataContainer;
       QString dataContainerName = dataContainer->getName();
       int indexOfUnderscore = dataContainerName.lastIndexOf("_");
-      dataContainerPrefix = dataContainerName.left(indexOfUnderscore - 1);
+      dataContainerPrefix = dataContainerName.left(indexOfUnderscore);
     }
     else if(filenameFilter != nullptr)
     {
