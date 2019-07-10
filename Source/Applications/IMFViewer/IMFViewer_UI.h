@@ -202,7 +202,7 @@ protected slots:
    * @param pipeline
    * @param err
    */
-  void handleMontageResults(const FilterPipeline::Pointer &pipeline, int err);
+  void handleMontageResults(const FilterPipeline::Pointer& pipeline, int err);
 
   /**
    * @brief listenSelectionChanged
@@ -274,8 +274,8 @@ private:
    * @param montageStart
    * @param montageEnd
    */
-  void importFijiMontage(const QString& montageName, FijiListInfo_t fijiListInfo, bool overrideSpacing, FloatVec3Type spacing, bool overrideOrigin, FloatVec3Type origin, IntVec3Type montageStart,
-                         IntVec3Type montageEnd, int32_t lengthUnit);
+  void importFijiMontage(const QString& montageName, FijiListInfo_t fijiListInfo, bool overrideSpacing, FloatVec3Type spacing, bool overrideOrigin, FloatVec3Type origin, IntVec2Type montageStart,
+                         IntVec2Type montageEnd, int32_t lengthUnit);
 
   /**
    * @brief importRobometMontage
@@ -296,20 +296,20 @@ private:
    * @brief runPipeline
    * @param pipeline
    */
-  void addPipelineToQueue(const FilterPipeline::Pointer &pipeline);
+  void addPipelineToQueue(const FilterPipeline::Pointer& pipeline);
 
   /**
    * @brief executePipeline
    * @param pipeline
    */
-  void executePipeline(const FilterPipeline::Pointer &pipeline, const DataContainerArray::Pointer &dca);
+  void executePipeline(const FilterPipeline::Pointer& pipeline, const DataContainerArray::Pointer& dca);
 
   /**
-  * @brief Build a custom data container array for montaging
-  * @param dataContainerArray
-  * @param montageDatasets
-  */
-  std::pair<int, int> buildCustomDCA(const DataContainerArray::Pointer &dca, VSAbstractFilter::FilterListType montageDatasets);
+   * @brief Build a custom data container array for montaging
+   * @param dataContainerArray
+   * @param montageDatasets
+   */
+  std::pair<int, int> buildCustomDCA(const DataContainerArray::Pointer& dca, VSAbstractFilter::FilterListType montageDatasets);
 
   IMFViewer_UI(const IMFViewer_UI&);   // Copy Constructor Not Implemented
   void operator=(const IMFViewer_UI&); // Operator '=' Not Implemented
