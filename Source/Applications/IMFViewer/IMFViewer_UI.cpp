@@ -290,7 +290,7 @@ void IMFViewer_UI::importDREAM3DMontage()
   {
     for(int32_t col = montageStart[0]; col <= montageEnd[0]; col++)
     {
-      dcNames.push_back(MontageUtilities::GenerateDataContainerName(dcPrefix, montageStart, montageEnd, row, col));
+      dcNames.push_back(MontageUtilities::GenerateDataContainerName(dcPrefix, montageEnd, row, col));
     }
   }
 
@@ -405,7 +405,7 @@ void IMFViewer_UI::importFijiMontage(const QString& montageName, FijiListInfo_t 
     {
       for(int32_t col = montageStart[0]; col <= montageEnd[0]; col++)
       {
-        dcNames.push_back(MontageUtilities::GenerateDataContainerName(dcPrefix, montageStart, montageEnd, row, col));
+        dcNames.push_back(MontageUtilities::GenerateDataContainerName(dcPrefix, montageEnd, row, col));
       }
     }
   }
@@ -583,7 +583,7 @@ void IMFViewer_UI::importZeissMontage()
     {
       for(int32_t col = montageStart[0]; col <= montageEnd[0]; col++)
       {
-        dcNames.push_back(MontageUtilities::GenerateDataContainerName(dcPrefix, montageStart, montageEnd, row, col));
+        dcNames.push_back(MontageUtilities::GenerateDataContainerName(dcPrefix, montageEnd, row, col));
       }
     }
   }
@@ -672,7 +672,7 @@ void IMFViewer_UI::importZeissZenMontage()
     {
       for(int32_t col = montageStart[0]; col <= montageEnd[0]; col++)
       {
-        dcNames.push_back(MontageUtilities::GenerateDataContainerName(dcPrefix, montageStart, montageEnd, row, col));
+        dcNames.push_back(MontageUtilities::GenerateDataContainerName(dcPrefix, montageEnd, row, col));
       }
     }
   }
