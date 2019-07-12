@@ -321,7 +321,7 @@ void IMFViewer_UI::importDREAM3DMontage()
     pipeline->pushBack(itkRegistrationFilter);
 
     DataArrayPath montagePath("MontageDC", "MontageAM", "MontageData");
-    AbstractFilter::Pointer itkStitchingFilter = filterFactory->createTileStitchingFilter(montageStart, montageEnd, dcNames, amName, daName, montagePath);
+    AbstractFilter::Pointer itkStitchingFilter = filterFactory->createTileStitchingFilter(montageStart, montageEnd, dcPrefix, amName, daName, montagePath);
     pipeline->pushBack(itkStitchingFilter);
   }
 
@@ -418,7 +418,7 @@ void IMFViewer_UI::importFijiMontage(const QString& montageName, FijiListInfo_t 
     pipeline->pushBack(itkRegistrationFilter);
 
     DataArrayPath montagePath("MontageDC", "MontageAM", "MontageData");
-    AbstractFilter::Pointer itkStitchingFilter = filterFactory->createTileStitchingFilter(montageStart, montageEnd, dcNames, amName, daName, montagePath);
+    AbstractFilter::Pointer itkStitchingFilter = filterFactory->createTileStitchingFilter(montageStart, montageEnd, dcPrefix, amName, daName, montagePath);
     pipeline->pushBack(itkStitchingFilter);
   }
 
@@ -501,7 +501,7 @@ void IMFViewer_UI::importRobometMontage()
       pipeline->pushBack(itkRegistrationFilter);
 
       DataArrayPath montagePath("MontageDC", "MontageAM", "MontageData");
-      AbstractFilter::Pointer itkStitchingFilter = filterFactory->createTileStitchingFilter(montageStart, montageEnd, dcNames, amName, daName, montagePath);
+      AbstractFilter::Pointer itkStitchingFilter = filterFactory->createTileStitchingFilter(montageStart, montageEnd, dcPrefix, amName, daName, montagePath);
       pipeline->pushBack(itkStitchingFilter);
     }
 
@@ -596,7 +596,7 @@ void IMFViewer_UI::importZeissMontage()
     pipeline->pushBack(itkRegistrationFilter);
 
     DataArrayPath montagePath("MontageDC", "MontageAM", "MontageData");
-    AbstractFilter::Pointer itkStitchingFilter = filterFactory->createTileStitchingFilter(montageStart, montageEnd, dcNames, amName, daName, montagePath);
+    AbstractFilter::Pointer itkStitchingFilter = filterFactory->createTileStitchingFilter(montageStart, montageEnd, dcPrefix, amName, daName, montagePath);
     pipeline->pushBack(itkStitchingFilter);
   }
 
@@ -685,7 +685,7 @@ void IMFViewer_UI::importZeissZenMontage()
     pipeline->pushBack(itkRegistrationFilter);
 
     DataArrayPath montagePath("MontageDC", "MontageAM", "MontageData");
-    AbstractFilter::Pointer itkStitchingFilter = filterFactory->createTileStitchingFilter(montageStart, montageEnd, dcNames, amName, daName, montagePath);
+    AbstractFilter::Pointer itkStitchingFilter = filterFactory->createTileStitchingFilter(montageStart, montageEnd, dcPrefix, amName, daName, montagePath);
     pipeline->pushBack(itkStitchingFilter);
   }
 
@@ -1060,16 +1060,16 @@ void IMFViewer_UI::performMontage()
     IntVec2Type montageStart = {0, 0};
     IntVec2Type montageEnd = {montageSize[0] - 1, montageSize[1] - 1};
 
+    QString dcPrefix = MontageUtilities::FindDataContainerPrefix(dcNames);
+
     if(!stitchingOnly)
     {
-      QString dcPrefix = MontageUtilities::FindDataContainerPrefix(dcNames);
-
       AbstractFilter::Pointer itkRegistrationFilter = filterFactory->createPCMTileRegistrationFilter(montageStart, montageEnd, dcPrefix, amName, daName);
       pipeline->pushBack(itkRegistrationFilter);
     }
 
     DataArrayPath montagePath("MontageDC", "MontageAM", "MontageData");
-    AbstractFilter::Pointer itkStitchingFilter = filterFactory->createTileStitchingFilter(montageStart, montageEnd, dcNames, amName, daName, montagePath);
+    AbstractFilter::Pointer itkStitchingFilter = filterFactory->createTileStitchingFilter(montageStart, montageEnd, dcPrefix, amName, daName, montagePath);
     pipeline->pushBack(itkStitchingFilter);
 
     // Check if output to file was requested
