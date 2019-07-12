@@ -147,6 +147,12 @@ void IMFViewer_UI::setupGui()
   VSFilterView* filterView = baseWidget->getFilterView();
   connect(filterView, &VSFilterView::saveFilterRequested, [=] { saveImage(); });
   connect(baseWidget, &VSMainWidgetBase::selectedFiltersChanged, this, &IMFViewer_UI::listenSelectionChanged);
+  connect(baseWidget, &VSMainWidgetBase::selectedFiltersChanged, [=](VSAbstractFilter::FilterListType filters) {
+    if(!filters.empty())
+    {
+      this->m_Ui->vsWidget->updateCurrentFilter(filters.front());
+    }
+  });
 }
 
 // -----------------------------------------------------------------------------
