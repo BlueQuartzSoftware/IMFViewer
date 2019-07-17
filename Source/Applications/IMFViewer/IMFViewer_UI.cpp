@@ -1433,7 +1433,7 @@ void IMFViewer_UI::createMenu()
   connect(robometMontageAction, &QAction::triggered, this, &IMFViewer_UI::importRobometMontage);
   importMontageMenu->addAction(robometMontageAction);
 
-  QAction* zeissMontageAction = new QAction("Zeiss XML");
+  QAction* zeissMontageAction = new QAction("Zeiss AxioVision");
   connect(zeissMontageAction, &QAction::triggered, this, &IMFViewer_UI::importZeissMontage);
   importMontageMenu->addAction(zeissMontageAction);
 
