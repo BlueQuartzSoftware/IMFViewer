@@ -93,6 +93,8 @@ if(MSVC_IDE OR XCODE)
   file(MAKE_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/Release)
 endif()
 
+set(IMFViewer_Parent_DIR "")
+get_filename_component(IMFViewer_Parent_DIR ${IMFViewerProj_SOURCE_DIR} DIRECTORY)
 set(IMFViewer_ExternalProject_DIR "${IMFViewerProj_SOURCE_DIR}/Source/External_Projects")
 set(IMFViewer_Plugins_DIR "${IMFViewerProj_SOURCE_DIR}/Source/Plugins")
 
@@ -136,6 +138,42 @@ if("${SIMPLVtkLibProj_SOURCE_DIR}" STREQUAL "")
     message(FATAL_ERROR "SIMPLVtkLibProj_SOURCE_DIR was not set. Please set the SIMPLVtkLibProj_SOURCE_DIR variable to the SIMPLVtkLib directory.")
   endif()
   message(STATUS "SIMPLVtkLibProj_SOURCE_DIR: ${SIMPLVtkLibProj_SOURCE_DIR}")
+endif()
+
+#------------------------------------------------------------------------------
+# If the developer has set another OrientationAnalysis directory then use that, otherwise look
+# for the OrientationAnalysis directory inside the DREAM3D directory that is at the same level
+if("${OrientationAnalysis_SOURCE_DIR}" STREQUAL "")
+  if(EXISTS "${IMFViewer_Parent_DIR}/DREAM3D/Source/Plugins/OrientationAnalysis")
+    set(OrientationAnalysis_SOURCE_DIR "${IMFViewer_Parent_DIR}/DREAM3D/Source/Plugins/OrientationAnalysis")
+  else()
+    message(FATAL_ERROR "OrientationAnalysis_SOURCE_DIR was not set. Where is the OrientationAnalysis directory? Typically it is inside the DREAM3D directory.  Please set the OrientationAnalysis_SOURCE_DIR variable to the OrientationAnalysis directory.")
+  endif()
+  message(STATUS "OrientationAnalysis_SOURCE_DIR: ${OrientationAnalysis_SOURCE_DIR}")
+endif()
+
+#------------------------------------------------------------------------------
+# If the developer has set another EbsdLib directory then use that, otherwise look
+# for the EbsdLib directory inside the DREAM3D directory that is at the same level
+if("${EbsdLib_SOURCE_DIR}" STREQUAL "")
+  if(EXISTS "${IMFViewer_Parent_DIR}/DREAM3D/Source/EbsdLib")
+    set(EbsdLib_SOURCE_DIR "${IMFViewer_Parent_DIR}/DREAM3D/Source/EbsdLib")
+  else()
+    message(FATAL_ERROR "EbsdLib_SOURCE_DIR was not set. Where is the EbsdLib directory? Typically it is inside the DREAM3D directory.  Please set the EbsdLib_SOURCE_DIR variable to the EbsdLib directory.")
+  endif()
+  message(STATUS "EbsdLib_SOURCE_DIR: ${EbsdLib_SOURCE_DIR}")
+endif()
+
+#------------------------------------------------------------------------------
+# If the developer has set another OrientationLib directory then use that, otherwise look
+# for the OrientationLib directory inside the DREAM3D directory that is at the same level
+if("${OrientationLib_SOURCE_DIR}" STREQUAL "")
+  if(EXISTS "${IMFViewer_Parent_DIR}/DREAM3D/Source/OrientationLib")
+    set(OrientationLib_SOURCE_DIR "${IMFViewer_Parent_DIR}/DREAM3D/Source/OrientationLib")
+  else()
+    message(FATAL_ERROR "OrientationLib_SOURCE_DIR was not set. Where is the OrientationLib directory? Typically it is inside the DREAM3D directory.  Please set the OrientationLib_SOURCE_DIR variable to the OrientationLib directory.")
+  endif()
+  message(STATUS "OrientationLib_SOURCE_DIR: ${OrientationLib_SOURCE_DIR}")
 endif()
 
 # -----------------------------------------------------------------------
@@ -382,6 +420,25 @@ add_subdirectory( ${SIMPLProj_SOURCE_DIR} ${PROJECT_BINARY_DIR}/SIMPL)
 # Add in the SIMPLVtkLib Sources
 # -----------------------------------------------------------------------
 add_subdirectory( ${SIMPLVtkLibProj_SOURCE_DIR} ${PROJECT_BINARY_DIR}/SIMPLVtkLib)
+
+# -----------------------------------------------------------------------
+# Add in the EbsdLib Sources
+# -----------------------------------------------------------------------
+set(DREAM3DProj_VERSION_MAJOR ${IMFViewerProj_VERSION_MAJOR})
+set(DREAM3DProj_VERSION_MINOR ${IMFViewerProj_VERSION_MINOR})
+set(DREAM3DProj_BINARY_DIR ${IMFViewerProj_BINARY_DIR})
+add_subdirectory( ${EbsdLib_SOURCE_DIR} ${PROJECT_BINARY_DIR}/EbsdLib)
+
+# -----------------------------------------------------------------------
+# Add in the OrientationLib Sources
+# -----------------------------------------------------------------------
+add_subdirectory( ${OrientationLib_SOURCE_DIR} ${PROJECT_BINARY_DIR}/OrientationLib)
+
+# -----------------------------------------------------------------------
+# Add in the OrientationAnalysis Sources
+# -----------------------------------------------------------------------
+set(OrientationAnalysis_BINARY_DIR "${PROJECT_BINARY_DIR}/OrientationAnalysis")
+add_subdirectory( ${OrientationAnalysis_SOURCE_DIR} ${PROJECT_BINARY_DIR}/OrientationAnalysis)
 
 # -----------------------------------------------------------------------
 # Add in the Necessary IMFViewer Sources
