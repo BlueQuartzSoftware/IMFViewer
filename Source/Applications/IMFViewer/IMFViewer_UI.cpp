@@ -304,9 +304,10 @@ void IMFViewer_UI::importDREAM3DMontage()
   }
 
   AbstractFilter::Pointer dataContainerReader = filterFactory->createDataContainerReaderFilter(dataFilePath, dream3dProxy);
-  if(!dataContainerReader)
+  if(dataContainerReader == AbstractFilter::NullPointer())
   {
     // Error!
+    return;
   }
 
   pipeline->pushBack(dataContainerReader);
@@ -317,10 +318,20 @@ void IMFViewer_UI::importDREAM3DMontage()
   if(m_DisplayType != AbstractImportMontageDialog::DisplayType::SideBySide && m_DisplayType != AbstractImportMontageDialog::DisplayType::Outline)
   {
     AbstractFilter::Pointer itkRegistrationFilter = filterFactory->createPCMTileRegistrationFilter(montageStart, montageEnd, dcPrefix, amName, daName);
+    if(itkRegistrationFilter == AbstractFilter::NullPointer())
+    {
+      // Error!
+      return;
+    }
     pipeline->pushBack(itkRegistrationFilter);
 
     DataArrayPath montagePath("MontageDC", "MontageAM", "MontageData");
     AbstractFilter::Pointer itkStitchingFilter = filterFactory->createTileStitchingFilter(montageStart, montageEnd, dcPrefix, amName, daName, montagePath);
+    if(itkStitchingFilter == AbstractFilter::NullPointer())
+    {
+      // Error!
+      return;
+    }
     pipeline->pushBack(itkStitchingFilter);
   }
 
@@ -375,9 +386,10 @@ void IMFViewer_UI::importFijiMontage(const QString& montageName, FijiListInfo_t 
   QString daName = "Image Data";
   AbstractFilter::Pointer importFijiMontageFilter =
       filterFactory->createImportFijiMontageFilter(fijiConfigFilePath, dcPath, amName, daName, overrideOrigin, origin.data(), montageStart, montageEnd, overrideSpacing, spacing.data(), lengthUnit);
-  if(!importFijiMontageFilter)
+  if(importFijiMontageFilter == AbstractFilter::NullPointer())
   {
     // Error!
+    return;
   }
 
   pipeline->pushBack(importFijiMontageFilter);
@@ -414,10 +426,20 @@ void IMFViewer_UI::importFijiMontage(const QString& montageName, FijiListInfo_t 
   if(m_DisplayType != AbstractImportMontageDialog::DisplayType::SideBySide && m_DisplayType != AbstractImportMontageDialog::DisplayType::Outline)
   {
     AbstractFilter::Pointer itkRegistrationFilter = filterFactory->createPCMTileRegistrationFilter(montageStart, montageEnd, dcPrefix, amName, daName);
+    if(itkRegistrationFilter == AbstractFilter::NullPointer())
+    {
+      // Error!
+      return;
+    }
     pipeline->pushBack(itkRegistrationFilter);
 
     DataArrayPath montagePath("MontageDC", "MontageAM", "MontageData");
     AbstractFilter::Pointer itkStitchingFilter = filterFactory->createTileStitchingFilter(montageStart, montageEnd, dcPrefix, amName, daName, montagePath);
+    if(itkStitchingFilter == AbstractFilter::NullPointer())
+    {
+      // Error!
+      return;
+    }
     pipeline->pushBack(itkStitchingFilter);
   }
 
@@ -482,9 +504,10 @@ void IMFViewer_UI::importRobometMontage()
 
     AbstractFilter::Pointer importRoboMetMontageFilter = filterFactory->createImportRobometMontageFilter(
         robometFilePath, dcPath, amName, daName, slice, imagePrefix, imageFileExtension, overrideOrigin, origin.data(), montageStart, montageEnd, overrideSpacing, spacing.data(), lengthUnit);
-    if(!importRoboMetMontageFilter)
+    if(importRoboMetMontageFilter == AbstractFilter::NullPointer())
     {
       // Error!
+      return;
     }
 
     pipeline->pushBack(importRoboMetMontageFilter);
@@ -497,10 +520,20 @@ void IMFViewer_UI::importRobometMontage()
     {
       QString dcPrefix = dcPath.getDataContainerName() + "_";
       AbstractFilter::Pointer itkRegistrationFilter = filterFactory->createPCMTileRegistrationFilter(montageStart, montageEnd, dcPrefix, amName, daName);
+      if(itkRegistrationFilter == AbstractFilter::NullPointer())
+      {
+        // Error!
+        return;
+      }
       pipeline->pushBack(itkRegistrationFilter);
 
       DataArrayPath montagePath("MontageDC", "MontageAM", "MontageData");
       AbstractFilter::Pointer itkStitchingFilter = filterFactory->createTileStitchingFilter(montageStart, montageEnd, dcPrefix, amName, daName, montagePath);
+      if(itkStitchingFilter == AbstractFilter::NullPointer())
+      {
+        // Error!
+        return;
+      }
       pipeline->pushBack(itkStitchingFilter);
     }
 
@@ -553,10 +586,10 @@ void IMFViewer_UI::importZeissMontage()
 
   importZeissMontage = filterFactory->createImportZeissMontageFilter(configFilePath, dcPath, amName, daName, metadataAMName, importAllMetadata, convertToGrayscale, colorWeighting, changeOrigin,
                                                                      origin, montageStart, montageEnd, changeSpacing, spacing);
-
-  if(!importZeissMontage)
+  if(importZeissMontage == AbstractFilter::NullPointer())
   {
     // Error!
+    return;
   }
 
   pipeline->pushBack(importZeissMontage);
@@ -592,10 +625,20 @@ void IMFViewer_UI::importZeissMontage()
   if(m_DisplayType != AbstractImportMontageDialog::DisplayType::SideBySide && m_DisplayType != AbstractImportMontageDialog::DisplayType::Outline)
   {
     AbstractFilter::Pointer itkRegistrationFilter = filterFactory->createPCMTileRegistrationFilter(montageStart, montageEnd, dcPrefix, amName, daName);
+    if(itkRegistrationFilter == AbstractFilter::NullPointer())
+    {
+      // Error!
+      return;
+    }
     pipeline->pushBack(itkRegistrationFilter);
 
     DataArrayPath montagePath("MontageDC", "MontageAM", "MontageData");
     AbstractFilter::Pointer itkStitchingFilter = filterFactory->createTileStitchingFilter(montageStart, montageEnd, dcPrefix, amName, daName, montagePath);
+    if(itkStitchingFilter == AbstractFilter::NullPointer())
+    {
+      // Error!
+      return;
+    }
     pipeline->pushBack(itkStitchingFilter);
   }
 
@@ -642,10 +685,10 @@ void IMFViewer_UI::importZeissZenMontage()
   FloatVec3Type colorWeighting = dialog->getColorWeighting();
 
   importZeissMontage = filterFactory->createImportZeissZenMontageFilter(configFilePath, dcPath, amName, daName, convertToGrayscale, colorWeighting, changeOrigin, origin, montageStart, montageEnd);
-
-  if(!importZeissMontage)
+  if(importZeissMontage == AbstractFilter::NullPointer())
   {
     // Error!
+    return;
   }
 
   pipeline->pushBack(importZeissMontage);
@@ -681,10 +724,20 @@ void IMFViewer_UI::importZeissZenMontage()
   if(m_DisplayType != AbstractImportMontageDialog::DisplayType::SideBySide && m_DisplayType != AbstractImportMontageDialog::DisplayType::Outline)
   {
     AbstractFilter::Pointer itkRegistrationFilter = filterFactory->createPCMTileRegistrationFilter(montageStart, montageEnd, dcPrefix, amName, daName);
+    if(itkRegistrationFilter == AbstractFilter::NullPointer())
+    {
+      // Error!
+      return;
+    }
     pipeline->pushBack(itkRegistrationFilter);
 
     DataArrayPath montagePath("MontageDC", "MontageAM", "MontageData");
     AbstractFilter::Pointer itkStitchingFilter = filterFactory->createTileStitchingFilter(montageStart, montageEnd, dcPrefix, amName, daName, montagePath);
+    if(itkStitchingFilter == AbstractFilter::NullPointer())
+    {
+      // Error!
+      return;
+    }
     pipeline->pushBack(itkStitchingFilter);
   }
 
