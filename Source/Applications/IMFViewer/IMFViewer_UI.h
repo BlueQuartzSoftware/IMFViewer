@@ -43,6 +43,7 @@
 
 #include "SIMPLVtkLib/Dialogs/AbstractImportMontageDialog.h"
 #include "SIMPLVtkLib/Dialogs/FijiListWidget.h"
+#include "SIMPLVtkLib/QtWidgets/VSMontageImporter.h"
 #include "SIMPLVtkLib/QtWidgets/VSQueueWidget.h"
 #include "SIMPLVtkLib/Visualization/VisualFilters/VSAbstractFilter.h"
 
@@ -198,13 +199,6 @@ protected slots:
   void handleDatasetResults(VSFileNameFilter* textFilter, VSDataSetFilter* filter);
 
   /**
-   * @brief handleMontageResults
-   * @param pipeline
-   * @param err
-   */
-  void handleMontageResults(const FilterPipeline::Pointer& pipeline, int err);
-
-  /**
    * @brief listenSelectionChanged
    * @param filters
    */
@@ -222,7 +216,6 @@ private:
   QActionGroup* m_ThemeActionGroup = nullptr;
 
   QString m_OpenDialogLastDirectory = "";
-  AbstractImportMontageDialog::DisplayType m_DisplayType = AbstractImportMontageDialog::DisplayType::NotSpecified;
 
   std::vector<FilterPipeline::Pointer> m_Pipelines;
 
@@ -259,23 +252,20 @@ private:
    */
   void importFijiMontage();
 
+  /**
+   * @brief importEbsdMontage
+   */
+  void importEbsdMontage();
+
   using SpacingTuple = std::tuple<float, float, float>;
   using OriginTuple = std::tuple<float, float, float>;
   using ColorWeightingTuple = std::tuple<float, float, float>;
 
   /**
    * @brief importFijiMontage
-   * @param montageName
-   * @param fijiListInfo
-   * @param overrideSpacing
-   * @param spacing
-   * @param overrideOrigin
-   * @param origin
-   * @param montageStart
-   * @param montageEnd
+   * @param metadata
    */
-  void importFijiMontage(const QString& montageName, FijiListInfo_t fijiListInfo, bool overrideSpacing, FloatVec3Type spacing, bool overrideOrigin, FloatVec3Type origin, IntVec2Type montageStart,
-                         IntVec2Type montageEnd, int32_t lengthUnit);
+  void importFijiMontage(const FijiMontageMetadata& metadata);
 
   /**
    * @brief importRobometMontage
@@ -293,16 +283,10 @@ private:
   void importZeissZenMontage();
 
   /**
-   * @brief runPipeline
-   * @param pipeline
+   * @brief addMontageImporterToQueue
+   * @param importer
    */
-  void addPipelineToQueue(const FilterPipeline::Pointer& pipeline);
-
-  /**
-   * @brief executePipeline
-   * @param pipeline
-   */
-  void executePipeline(const FilterPipeline::Pointer& pipeline, const DataContainerArray::Pointer& dca);
+  void addMontageImporterToQueue(VSMontageImporter::Pointer importer);
 
   /**
    * @brief Build a custom data container array for montaging

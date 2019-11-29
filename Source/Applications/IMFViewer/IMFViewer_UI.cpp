@@ -60,6 +60,7 @@
 #include "SIMPLVtkLib/Common/MontageUtilities.h"
 #include "SIMPLVtkLib/Common/SIMPLVtkLibConstants.h"
 #include "SIMPLVtkLib/Dialogs/ImportDREAM3DMontageDialog.h"
+#include "SIMPLVtkLib/Dialogs/ImportEbsdMontageDialog.h"
 #include "SIMPLVtkLib/Dialogs/ImportFijiMontageDialog.h"
 #include "SIMPLVtkLib/Dialogs/ImportGenericMontageDialog.h"
 #include "SIMPLVtkLib/Dialogs/ImportRobometMontageDialog.h"
@@ -77,6 +78,7 @@
 #include "SIMPLVtkLib/Dialogs/RobometListWidget.h"
 #include "SIMPLVtkLib/Dialogs/ZeissListWidget.h"
 #include "SIMPLVtkLib/Dialogs/ZeissZenListWidget.h"
+#include "SIMPLVtkLib/Visualization/VisualFilters/VSRootFilter.h"
 #include "SIMPLVtkLib/Visualization/VisualFilters/VSTransform.h"
 #include "SIMPLVtkLib/Wizards/ExecutePipeline/ExecutePipelineConstants.h"
 #include "SIMPLVtkLib/Wizards/ExecutePipeline/ExecutePipelineWizard.h"
@@ -216,23 +218,25 @@ void IMFViewer_UI::importGenericMontage()
     return;
   }
 
+  GenericMontageMetadata metadata = dialog->getMetadata();
+
   VSMainWidgetBase* baseWidget = dynamic_cast<VSMainWidgetBase*>(m_Ui->vsWidget);
   VSFilterViewModel* filterViewModel = baseWidget->getActiveViewWidget()->getFilterViewModel();
-  m_DisplayType = dialog->getDisplayType();
-  filterViewModel->setDisplayType(m_DisplayType);
+  MontageMetadata::DisplayType displayType = metadata.getDataDisplayType();
+  filterViewModel->setDisplayType(displayType);
 
   QString tileConfigFile = "TileConfiguration.txt";
 
-  IntVec2Type montageStart = dialog->getMontageStart();
-  IntVec2Type montageEnd = dialog->getMontageEnd();
-  int numOfRows = montageEnd.getY() - montageStart.getY() + 1;
-  int numOfCols = montageEnd.getX() - montageStart.getX() + 1;
+  IntVec2Type rowLimits = metadata.getRowLimits();
+  IntVec2Type colLimits = metadata.getColumnLimits();
+  int numOfRows = rowLimits[1] - rowLimits[0] + 1;
+  int numOfCols = colLimits[1] - colLimits[0] + 1;
 
   // Get input file names
-  FileListInfo_t inputFileInfo = dialog->getFileListInfo();
+  StackFileListInfo inputFileInfo = dialog->getFileListInfo();
 
   // Generate tile configuration file.
-  TileConfigFileGenerator tileConfigFileGenerator(inputFileInfo, dialog->getMontageType(), dialog->getMontageOrder(), numOfCols, numOfRows, dialog->getTileOverlap(), tileConfigFile);
+  TileConfigFileGenerator tileConfigFileGenerator(inputFileInfo, metadata.getMontageType(), metadata.getMontageOrder(), numOfCols, numOfRows, metadata.getTileOverlap(), tileConfigFile);
   tileConfigFileGenerator.generateTileConfigFile();
 
   QString fijiFilePath(inputFileInfo.InputPath);
@@ -240,15 +244,17 @@ void IMFViewer_UI::importGenericMontage()
   fijiFilePath.append(tileConfigFile);
 
   // Change wizard data for Fiji use case
-  QString montageName = dialog->getMontageName();
-  FijiListInfo_t fijiListInfo;
-  fijiListInfo.FijiFilePath = fijiFilePath;
-  bool overrideSpacing = dialog->getOverrideSpacing();
-  SpacingTuple spacing = dialog->getSpacing();
-  OriginTuple origin = dialog->getOrigin();
-  int32_t lengthUnit = dialog->getLengthUnit();
+  FijiMontageMetadata fijiMetadata;
+  fijiMetadata.setMontageName(metadata.getMontageName());
+  fijiMetadata.setRowLimits(metadata.getRowLimits());
+  fijiMetadata.setColumnLimits(metadata.getColumnLimits());
+  fijiMetadata.setDataDisplayType(displayType);
+  fijiMetadata.setConfigFilePath(fijiFilePath);
+  fijiMetadata.setChangeOrigin(true);
+  fijiMetadata.setOrigin(metadata.getOrigin());
+  fijiMetadata.setLengthUnitsIdx(metadata.getLengthUnitsIdx());
 
-  importFijiMontage(montageName, fijiListInfo, overrideSpacing, spacing, true, origin, montageStart, montageEnd, lengthUnit);
+  importFijiMontage(fijiMetadata);
 }
 
 // -----------------------------------------------------------------------------
@@ -263,40 +269,39 @@ void IMFViewer_UI::importDREAM3DMontage()
     return;
   }
 
+  DREAM3DMontageMetadata metadata = dialog->getMetadata();
+
   VSMainWidgetBase* baseWidget = dynamic_cast<VSMainWidgetBase*>(m_Ui->vsWidget);
   VSFilterViewModel* filterViewModel = baseWidget->getActiveViewWidget()->getFilterViewModel();
-  m_DisplayType = dialog->getDisplayType();
-  filterViewModel->setDisplayType(m_DisplayType);
+  MontageMetadata::DisplayType displayType = metadata.getDataDisplayType();
+  filterViewModel->setDisplayType(displayType);
 
   VSFilterFactory::Pointer filterFactory = VSFilterFactory::New();
   connect(filterFactory.get(), &VSFilterFactory::notifyErrorMessage,
-          [=](const QString& msg, int code) { QMessageBox::critical(this, "Import DREAM3D Montage", msg, QMessageBox::StandardButton::Ok, QMessageBox::StandardButton::Ok); });
+          [=](const QString& msg) { QMessageBox::critical(this, "Import DREAM3D Montage", msg, QMessageBox::StandardButton::Ok, QMessageBox::StandardButton::Ok); });
 
   FilterPipeline::Pointer pipeline = FilterPipeline::New();
-  QString montageName = dialog->getMontageName();
+  QString montageName = metadata.getMontageName();
   pipeline->setName(montageName);
 
-  QString dataFilePath = dialog->getDataFilePath();
-
-  QString dcPrefix = dialog->getDataContainerPrefix();
-
-  IntVec2Type montageStart = dialog->getMontageStart();
-  IntVec2Type montageEnd = dialog->getMontageEnd();
-  IntVec3Type montageSize = dialog->getMontageSize();
+  IntVec2Type rowLimits = metadata.getRowLimits();
+  IntVec2Type colLimits = metadata.getColumnLimits();
+  QString dcPrefix = metadata.getDataContainerPrefix();
 
   QStringList dcNames;
-  for(int32_t row = montageStart[1]; row <= montageEnd[1]; row++)
+  for(int32_t row = rowLimits[1]; row <= rowLimits[1]; row++)
   {
-    for(int32_t col = montageStart[0]; col <= montageEnd[0]; col++)
+    for(int32_t col = colLimits[0]; col <= colLimits[0]; col++)
     {
-      dcNames.push_back(MontageUtilities::GenerateDataContainerName(dcPrefix, montageEnd, row, col));
+      dcNames.push_back(MontageUtilities::GenerateDataContainerName(dcPrefix, {colLimits[1], rowLimits[1]}, row, col));
     }
   }
 
   SIMPLH5DataReader reader;
   connect(&reader, &SIMPLH5DataReader::errorGenerated,
-          [=](const QString& title, const QString& msg, const int& code) { QMessageBox::critical(this, title, msg, QMessageBox::StandardButton::Ok, QMessageBox::StandardButton::Ok); });
+          [=](const QString& title, const QString& msg) { QMessageBox::critical(this, title, msg, QMessageBox::StandardButton::Ok, QMessageBox::StandardButton::Ok); });
 
+  QString dataFilePath = metadata.getFilePath();
   DataContainerArrayProxy dream3dProxy = MontageUtilities::CreateMontageProxy(reader, dataFilePath, dcNames);
   if(dream3dProxy == DataContainerArrayProxy())
   {
@@ -312,12 +317,12 @@ void IMFViewer_UI::importDREAM3DMontage()
 
   pipeline->pushBack(dataContainerReader);
 
-  QString amName = dialog->getAttributeMatrixName();
-  QString daName = dialog->getDataArrayName();
+  QString amName = metadata.getAttributeMatrixName();
+  QString daName = metadata.getDataArrayName();
 
-  if(m_DisplayType != AbstractImportMontageDialog::DisplayType::SideBySide && m_DisplayType != AbstractImportMontageDialog::DisplayType::Outline)
+  if(displayType != MontageMetadata::DisplayType::SideBySide && displayType != MontageMetadata::DisplayType::Outline)
   {
-    AbstractFilter::Pointer itkRegistrationFilter = filterFactory->createPCMTileRegistrationFilter(montageStart, montageEnd, dcPrefix, amName, daName);
+    AbstractFilter::Pointer itkRegistrationFilter = filterFactory->createPCMTileRegistrationFilter(rowLimits, colLimits, dcPrefix, amName, daName);
     if(itkRegistrationFilter == AbstractFilter::NullPointer())
     {
       // Error!
@@ -326,7 +331,7 @@ void IMFViewer_UI::importDREAM3DMontage()
     pipeline->pushBack(itkRegistrationFilter);
 
     DataArrayPath montagePath("MontageDC", "MontageAM", "MontageData");
-    AbstractFilter::Pointer itkStitchingFilter = filterFactory->createTileStitchingFilter(montageStart, montageEnd, dcPrefix, amName, daName, montagePath);
+    AbstractFilter::Pointer itkStitchingFilter = filterFactory->createTileStitchingFilter(rowLimits, colLimits, dcPrefix, amName, daName, montagePath);
     if(itkStitchingFilter == AbstractFilter::NullPointer())
     {
       // Error!
@@ -335,7 +340,8 @@ void IMFViewer_UI::importDREAM3DMontage()
     pipeline->pushBack(itkStitchingFilter);
   }
 
-  addPipelineToQueue(pipeline);
+  VSMontageImporter::Pointer importer = VSMontageImporter::New(pipeline, displayType);
+  addMontageImporterToQueue(importer);
 }
 
 // -----------------------------------------------------------------------------
@@ -350,42 +356,30 @@ void IMFViewer_UI::importFijiMontage()
     return;
   }
 
+  FijiMontageMetadata metadata = dialog->getMetadata();
+
   VSMainWidgetBase* baseWidget = dynamic_cast<VSMainWidgetBase*>(m_Ui->vsWidget);
   VSFilterViewModel* filterViewModel = baseWidget->getActiveViewWidget()->getFilterViewModel();
-  m_DisplayType = dialog->getDisplayType();
-  filterViewModel->setDisplayType(m_DisplayType);
+  MontageMetadata::DisplayType displayType = metadata.getDataDisplayType();
+  filterViewModel->setDisplayType(displayType);
 
-  QString montageName = dialog->getMontageName();
-  FijiListInfo_t fijiListInfo = dialog->getFijiListInfo();
-  bool overrideSpacing = dialog->getOverrideSpacing();
-  FloatVec3Type spacing = dialog->getSpacing();
-  bool overrideOrigin = dialog->getOverrideOrigin();
-  FloatVec3Type origin = dialog->getOrigin();
-  int32_t lengthUnit = dialog->getLengthUnit();
-
-  IntVec2Type montageStart = dialog->getMontageStart();
-  IntVec2Type montageEnd = dialog->getMontageEnd();
-
-  importFijiMontage(montageName, fijiListInfo, overrideSpacing, spacing, overrideOrigin, origin, montageStart, montageEnd, lengthUnit);
+  importFijiMontage(metadata);
 }
 
 // -----------------------------------------------------------------------------
 //
 // -----------------------------------------------------------------------------
-void IMFViewer_UI::importFijiMontage(const QString& montageName, FijiListInfo_t fijiListInfo, bool overrideSpacing, FloatVec3Type spacing, bool overrideOrigin, FloatVec3Type origin,
-                                     IntVec2Type montageStart, IntVec2Type montageEnd, int32_t lengthUnit)
+void IMFViewer_UI::importFijiMontage(const FijiMontageMetadata& metadata)
 {
   VSFilterFactory::Pointer filterFactory = VSFilterFactory::New();
 
   FilterPipeline::Pointer pipeline = FilterPipeline::New();
-  pipeline->setName(montageName);
+  pipeline->setName(metadata.getMontageName());
 
-  QString fijiConfigFilePath = fijiListInfo.FijiFilePath;
   DataArrayPath dcPath("UntitledMontage_", "", "");
   QString amName = "Cell Attribute Matrix";
   QString daName = "Image Data";
-  AbstractFilter::Pointer importFijiMontageFilter =
-      filterFactory->createImportFijiMontageFilter(fijiConfigFilePath, dcPath, amName, daName, overrideOrigin, origin.data(), montageStart, montageEnd, overrideSpacing, spacing.data(), lengthUnit);
+  AbstractFilter::Pointer importFijiMontageFilter = filterFactory->createImportFijiMontageFilter(metadata, dcPath, amName, daName);
   if(importFijiMontageFilter == AbstractFilter::NullPointer())
   {
     // Error!
@@ -401,7 +395,10 @@ void IMFViewer_UI::importFijiMontage(const QString& montageName, FijiListInfo_t 
 
   int rowCount;
   int colCount;
-  if(montageEnd.getX() == 0 && montageEnd.getY() == 0)
+  IntVec2Type rowLimits = metadata.getRowLimits();
+  IntVec2Type colLimits = metadata.getColumnLimits();
+
+  if(colLimits.getY() == 0 && rowLimits.getY() == 0)
   {
     rowCount = importFijiMontageFilter->property("RowCount").toInt();
     colCount = importFijiMontageFilter->property("ColumnCount").toInt();
@@ -410,22 +407,23 @@ void IMFViewer_UI::importFijiMontage(const QString& montageName, FijiListInfo_t 
   }
   else
   {
-    rowCount = montageEnd.getY() - montageStart.getY() + 1;
-    colCount = montageEnd.getX() - montageStart.getX() + 1;
-    for(int32_t row = montageStart[1]; row <= montageEnd[1]; row++)
+    rowCount = rowLimits[1] - rowLimits[0] + 1;
+    colCount = colLimits[1] - colLimits[0] + 1;
+    for(int32_t row = rowLimits[0]; row <= rowLimits[1]; row++)
     {
-      for(int32_t col = montageStart[0]; col <= montageEnd[0]; col++)
+      for(int32_t col = colLimits[0]; col <= colLimits[1]; col++)
       {
-        dcNames.push_back(MontageUtilities::GenerateDataContainerName(dcPrefix, montageEnd, row, col));
+        dcNames.push_back(MontageUtilities::GenerateDataContainerName(dcPrefix, {colLimits[1], rowLimits[1]}, row, col));
       }
     }
   }
 
   IntVec3Type montageSize = {colCount, rowCount, 1};
+  MontageMetadata::DisplayType displayType = metadata.getDataDisplayType();
 
-  if(m_DisplayType != AbstractImportMontageDialog::DisplayType::SideBySide && m_DisplayType != AbstractImportMontageDialog::DisplayType::Outline)
+  if(displayType != MontageMetadata::DisplayType::SideBySide && displayType != MontageMetadata::DisplayType::Outline)
   {
-    AbstractFilter::Pointer itkRegistrationFilter = filterFactory->createPCMTileRegistrationFilter(montageStart, montageEnd, dcPrefix, amName, daName);
+    AbstractFilter::Pointer itkRegistrationFilter = filterFactory->createPCMTileRegistrationFilter(rowLimits, colLimits, dcPrefix, amName, daName);
     if(itkRegistrationFilter == AbstractFilter::NullPointer())
     {
       // Error!
@@ -434,7 +432,7 @@ void IMFViewer_UI::importFijiMontage(const QString& montageName, FijiListInfo_t 
     pipeline->pushBack(itkRegistrationFilter);
 
     DataArrayPath montagePath("MontageDC", "MontageAM", "MontageData");
-    AbstractFilter::Pointer itkStitchingFilter = filterFactory->createTileStitchingFilter(montageStart, montageEnd, dcPrefix, amName, daName, montagePath);
+    AbstractFilter::Pointer itkStitchingFilter = filterFactory->createTileStitchingFilter(rowLimits, colLimits, dcPrefix, amName, daName, montagePath);
     if(itkStitchingFilter == AbstractFilter::NullPointer())
     {
       // Error!
@@ -444,7 +442,8 @@ void IMFViewer_UI::importFijiMontage(const QString& montageName, FijiListInfo_t 
   }
 
   // Run the pipeline
-  addPipelineToQueue(pipeline);
+  VSMontageImporter::Pointer importer = VSMontageImporter::New(pipeline, displayType);
+  addMontageImporterToQueue(importer);
 }
 
 // -----------------------------------------------------------------------------
@@ -459,51 +458,30 @@ void IMFViewer_UI::importRobometMontage()
     return;
   }
 
+  RobometMontageMetadata metadata = dialog->getMetadata();
+
   VSMainWidgetBase* baseWidget = dynamic_cast<VSMainWidgetBase*>(m_Ui->vsWidget);
   VSFilterViewModel* filterViewModel = baseWidget->getActiveViewWidget()->getFilterViewModel();
-  m_DisplayType = dialog->getDisplayType();
-  filterViewModel->setDisplayType(m_DisplayType);
+  MontageMetadata::DisplayType displayType = metadata.getDataDisplayType();
+  filterViewModel->setDisplayType(displayType);
 
   VSFilterFactory::Pointer filterFactory = VSFilterFactory::New();
 
-  bool overrideSpacing = dialog->getOverrideSpacing();
-  FloatVec3Type spacing = dialog->getSpacing();
-  bool overrideOrigin = dialog->getOverrideOrigin();
-  FloatVec3Type origin = dialog->getOrigin();
-  RobometListInfo_t rbmListInfo = dialog->getRobometListInfo();
-  int sliceMin = rbmListInfo.SliceMin;
-  int sliceMax = rbmListInfo.SliceMax;
-  int32_t lengthUnit = dialog->getLengthUnit();
+  IntVec2Type sliceLimits = metadata.getSliceLimits();
 
-  for(int slice = sliceMin; slice <= sliceMax; slice++)
+  for(int slice = sliceLimits[0]; slice <= sliceLimits[1]; slice++)
   {
     FilterPipeline::Pointer pipeline = FilterPipeline::New();
-    QString montageName = dialog->getMontageName();
+    QString montageName = metadata.getMontageName();
     QString pipelineName = montageName;
     pipelineName.append(tr("_%1").arg(slice));
     pipeline->setName(pipelineName);
 
-    QString robometFilePath = rbmListInfo.RobometFilePath;
     DataArrayPath dcPath("UntitledMontage_", "", "");
     QString amName = "Cell Attribute Matrix";
     QString daName = "Image Data";
-    QString imagePrefix = rbmListInfo.ImagePrefix;
-    if(!imagePrefix.endsWith("_"))
-    {
-      imagePrefix.append("_");
-    }
-    QString imageFileExtension = rbmListInfo.ImageExtension;
 
-    int montageStartCol = rbmListInfo.MontageStartCol;
-    int montageStartRow = rbmListInfo.MontageStartRow;
-    int montageEndCol = rbmListInfo.MontageEndCol;
-    int montageEndRow = rbmListInfo.MontageEndRow;
-    IntVec2Type montageStart = {montageStartCol, montageStartRow};
-    IntVec2Type montageEnd = {montageEndCol, montageEndRow};
-    IntVec3Type montageSize = {montageEndCol - montageStartCol + 1, montageEndRow - montageStartRow + 1, 1};
-
-    AbstractFilter::Pointer importRoboMetMontageFilter = filterFactory->createImportRobometMontageFilter(
-        robometFilePath, dcPath, amName, daName, slice, imagePrefix, imageFileExtension, overrideOrigin, origin.data(), montageStart, montageEnd, overrideSpacing, spacing.data(), lengthUnit);
+    AbstractFilter::Pointer importRoboMetMontageFilter = filterFactory->createImportRobometMontageFilter(metadata, dcPath, amName, daName, slice);
     if(importRoboMetMontageFilter == AbstractFilter::NullPointer())
     {
       // Error!
@@ -516,10 +494,13 @@ void IMFViewer_UI::importRobometMontage()
     DataContainerArray::Pointer dca = importRoboMetMontageFilter->getDataContainerArray();
     QStringList dcNames = dca->getDataContainerNames();
 
-    if(m_DisplayType != AbstractImportMontageDialog::DisplayType::SideBySide && m_DisplayType != AbstractImportMontageDialog::DisplayType::Outline)
+    if(displayType != MontageMetadata::DisplayType::SideBySide && displayType != MontageMetadata::DisplayType::Outline)
     {
+      IntVec2Type rowLimits = metadata.getRowLimits();
+      IntVec2Type colLimits = metadata.getColumnLimits();
+
       QString dcPrefix = dcPath.getDataContainerName() + "_";
-      AbstractFilter::Pointer itkRegistrationFilter = filterFactory->createPCMTileRegistrationFilter(montageStart, montageEnd, dcPrefix, amName, daName);
+      AbstractFilter::Pointer itkRegistrationFilter = filterFactory->createPCMTileRegistrationFilter(rowLimits, colLimits, dcPrefix, amName, daName);
       if(itkRegistrationFilter == AbstractFilter::NullPointer())
       {
         // Error!
@@ -528,7 +509,7 @@ void IMFViewer_UI::importRobometMontage()
       pipeline->pushBack(itkRegistrationFilter);
 
       DataArrayPath montagePath("MontageDC", "MontageAM", "MontageData");
-      AbstractFilter::Pointer itkStitchingFilter = filterFactory->createTileStitchingFilter(montageStart, montageEnd, dcPrefix, amName, daName, montagePath);
+      AbstractFilter::Pointer itkStitchingFilter = filterFactory->createTileStitchingFilter(rowLimits, colLimits, dcPrefix, amName, daName, montagePath);
       if(itkStitchingFilter == AbstractFilter::NullPointer())
       {
         // Error!
@@ -537,7 +518,8 @@ void IMFViewer_UI::importRobometMontage()
       pipeline->pushBack(itkStitchingFilter);
     }
 
-    addPipelineToQueue(pipeline);
+    VSMontageImporter::Pointer importer = VSMontageImporter::New(pipeline, displayType);
+    addMontageImporterToQueue(importer);
   }
 }
 
@@ -553,14 +535,16 @@ void IMFViewer_UI::importZeissMontage()
     return;
   }
 
+  ZeissMontageMetadata metadata = dialog->getMetadata();
+
   VSMainWidgetBase* baseWidget = dynamic_cast<VSMainWidgetBase*>(m_Ui->vsWidget);
   VSFilterViewModel* filterViewModel = baseWidget->getActiveViewWidget()->getFilterViewModel();
-  m_DisplayType = dialog->getDisplayType();
-  filterViewModel->setDisplayType(m_DisplayType);
+  MontageMetadata::DisplayType displayType = metadata.getDataDisplayType();
+  filterViewModel->setDisplayType(displayType);
 
   FilterPipeline::Pointer pipeline = FilterPipeline::New();
   AbstractFilter::Pointer importZeissMontage;
-  QString montageName = dialog->getMontageName();
+  QString montageName = metadata.getMontageName();
   pipeline->setName(montageName);
 
   VSFilterFactory::Pointer filterFactory = VSFilterFactory::New();
@@ -574,18 +558,8 @@ void IMFViewer_UI::importZeissMontage()
   QString daName = "Image Data";
   QString metadataAMName = "Metadata Attribute Matrix";
   bool importAllMetadata = true;
-  bool convertToGrayscale = dialog->getConvertToGrayscale();
-  bool changeSpacing = dialog->getOverrideSpacing();
-  bool changeOrigin = dialog->getOverrideOrigin();
 
-  FloatVec3Type spacing = dialog->getSpacing();
-  FloatVec3Type origin = dialog->getOrigin();
-  IntVec2Type montageStart = dialog->getMontageStart();
-  IntVec2Type montageEnd = dialog->getMontageEnd();
-  FloatVec3Type colorWeighting = dialog->getColorWeighting();
-
-  importZeissMontage = filterFactory->createImportZeissMontageFilter(configFilePath, dcPath, amName, daName, metadataAMName, importAllMetadata, convertToGrayscale, colorWeighting, changeOrigin,
-                                                                     origin, montageStart, montageEnd, changeSpacing, spacing);
+  importZeissMontage = filterFactory->createImportZeissMontageFilter(metadata, dcPath, amName, daName, metadataAMName, importAllMetadata);
   if(importZeissMontage == AbstractFilter::NullPointer())
   {
     // Error!
@@ -600,7 +574,10 @@ void IMFViewer_UI::importZeissMontage()
 
   int rowCount;
   int colCount;
-  if(montageEnd.getX() == 0 && montageEnd.getY() == 0)
+  IntVec2Type rowLimits = metadata.getRowLimits();
+  IntVec2Type colLimits = metadata.getColumnLimits();
+
+  if(colLimits.getY() == 0 && rowLimits.getY() == 0)
   {
     rowCount = importZeissMontage->property("RowCount").toInt();
     colCount = importZeissMontage->property("ColumnCount").toInt();
@@ -609,22 +586,22 @@ void IMFViewer_UI::importZeissMontage()
   }
   else
   {
-    rowCount = montageEnd.getY() - montageStart.getY() + 1;
-    colCount = montageEnd.getX() - montageStart.getX() + 1;
-    for(int32_t row = montageStart[1]; row <= montageEnd[1]; row++)
+    rowCount = rowLimits[1] - rowLimits[0] + 1;
+    colCount = colLimits[1] - colLimits[0] + 1;
+    for(int32_t row = rowLimits[0]; row <= rowLimits[1]; row++)
     {
-      for(int32_t col = montageStart[0]; col <= montageEnd[0]; col++)
+      for(int32_t col = colLimits[0]; col <= colLimits[1]; col++)
       {
-        dcNames.push_back(MontageUtilities::GenerateDataContainerName(dcPrefix, montageEnd, row, col));
+        dcNames.push_back(MontageUtilities::GenerateDataContainerName(dcPrefix, {colLimits[1], rowLimits[1]}, row, col));
       }
     }
   }
 
   IntVec3Type montageSize = {colCount, rowCount, 1};
 
-  if(m_DisplayType != AbstractImportMontageDialog::DisplayType::SideBySide && m_DisplayType != AbstractImportMontageDialog::DisplayType::Outline)
+  if(displayType != MontageMetadata::DisplayType::SideBySide && displayType != MontageMetadata::DisplayType::Outline)
   {
-    AbstractFilter::Pointer itkRegistrationFilter = filterFactory->createPCMTileRegistrationFilter(montageStart, montageEnd, dcPrefix, amName, daName);
+    AbstractFilter::Pointer itkRegistrationFilter = filterFactory->createPCMTileRegistrationFilter(rowLimits, colLimits, dcPrefix, amName, daName);
     if(itkRegistrationFilter == AbstractFilter::NullPointer())
     {
       // Error!
@@ -633,7 +610,7 @@ void IMFViewer_UI::importZeissMontage()
     pipeline->pushBack(itkRegistrationFilter);
 
     DataArrayPath montagePath("MontageDC", "MontageAM", "MontageData");
-    AbstractFilter::Pointer itkStitchingFilter = filterFactory->createTileStitchingFilter(montageStart, montageEnd, dcPrefix, amName, daName, montagePath);
+    AbstractFilter::Pointer itkStitchingFilter = filterFactory->createTileStitchingFilter(rowLimits, colLimits, dcPrefix, amName, daName, montagePath);
     if(itkStitchingFilter == AbstractFilter::NullPointer())
     {
       // Error!
@@ -642,7 +619,8 @@ void IMFViewer_UI::importZeissMontage()
     pipeline->pushBack(itkStitchingFilter);
   }
 
-  addPipelineToQueue(pipeline);
+  VSMontageImporter::Pointer importer = VSMontageImporter::New(pipeline, displayType);
+  addMontageImporterToQueue(importer);
 }
 
 // -----------------------------------------------------------------------------
@@ -657,14 +635,16 @@ void IMFViewer_UI::importZeissZenMontage()
     return;
   }
 
+  ZeissZenMontageMetadata metadata = dialog->getMetadata();
+
   VSMainWidgetBase* baseWidget = dynamic_cast<VSMainWidgetBase*>(m_Ui->vsWidget);
   VSFilterViewModel* filterViewModel = baseWidget->getActiveViewWidget()->getFilterViewModel();
-  m_DisplayType = dialog->getDisplayType();
-  filterViewModel->setDisplayType(m_DisplayType);
+  MontageMetadata::DisplayType displayType = metadata.getDataDisplayType();
+  filterViewModel->setDisplayType(displayType);
 
   FilterPipeline::Pointer pipeline = FilterPipeline::New();
   AbstractFilter::Pointer importZeissMontage;
-  QString montageName = dialog->getMontageName();
+  QString montageName = metadata.getMontageName();
   pipeline->setName(montageName);
 
   VSFilterFactory::Pointer filterFactory = VSFilterFactory::New();
@@ -676,15 +656,8 @@ void IMFViewer_UI::importZeissZenMontage()
   DataArrayPath dcPath("UntitledMontage", "", "");
   QString amName = "Cell Attribute Matrix";
   QString daName = "Image Data";
-  bool convertToGrayscale = dialog->getConvertToGrayscale();
-  bool changeOrigin = dialog->getOverrideOrigin();
 
-  IntVec2Type montageStart = dialog->getMontageStart();
-  IntVec2Type montageEnd = dialog->getMontageEnd();
-  FloatVec3Type origin = dialog->getOrigin();
-  FloatVec3Type colorWeighting = dialog->getColorWeighting();
-
-  importZeissMontage = filterFactory->createImportZeissZenMontageFilter(configFilePath, dcPath, amName, daName, convertToGrayscale, colorWeighting, changeOrigin, origin, montageStart, montageEnd);
+  importZeissMontage = filterFactory->createImportZeissZenMontageFilter(metadata, dcPath, amName, daName);
   if(importZeissMontage == AbstractFilter::NullPointer())
   {
     // Error!
@@ -699,7 +672,10 @@ void IMFViewer_UI::importZeissZenMontage()
 
   int rowCount;
   int colCount;
-  if(montageEnd.getX() == 0 && montageEnd.getY() == 0)
+  IntVec2Type rowLimits = metadata.getRowLimits();
+  IntVec2Type colLimits = metadata.getColumnLimits();
+
+  if(colLimits.getY() == 0 && rowLimits.getY() == 0)
   {
     rowCount = importZeissMontage->property("RowCount").toInt();
     colCount = importZeissMontage->property("ColumnCount").toInt();
@@ -708,22 +684,22 @@ void IMFViewer_UI::importZeissZenMontage()
   }
   else
   {
-    rowCount = montageEnd.getY() - montageStart.getY() + 1;
-    colCount = montageEnd.getX() - montageStart.getX() + 1;
-    for(int32_t row = montageStart[1]; row <= montageEnd[1]; row++)
+    rowCount = rowLimits[1] - rowLimits[0] + 1;
+    colCount = colLimits[1] - colLimits[0] + 1;
+    for(int32_t row = rowLimits[0]; row <= rowLimits[1]; row++)
     {
-      for(int32_t col = montageStart[0]; col <= montageEnd[0]; col++)
+      for(int32_t col = colLimits[0]; col <= colLimits[1]; col++)
       {
-        dcNames.push_back(MontageUtilities::GenerateDataContainerName(dcPrefix, montageEnd, row, col));
+        dcNames.push_back(MontageUtilities::GenerateDataContainerName(dcPrefix, {colLimits[1], rowLimits[1]}, row, col));
       }
     }
   }
 
   IntVec3Type montageSize = {colCount, rowCount, 1};
 
-  if(m_DisplayType != AbstractImportMontageDialog::DisplayType::SideBySide && m_DisplayType != AbstractImportMontageDialog::DisplayType::Outline)
+  if(displayType != MontageMetadata::DisplayType::SideBySide && displayType != MontageMetadata::DisplayType::Outline)
   {
-    AbstractFilter::Pointer itkRegistrationFilter = filterFactory->createPCMTileRegistrationFilter(montageStart, montageEnd, dcPrefix, amName, daName);
+    AbstractFilter::Pointer itkRegistrationFilter = filterFactory->createPCMTileRegistrationFilter(rowLimits, colLimits, dcPrefix, amName, daName);
     if(itkRegistrationFilter == AbstractFilter::NullPointer())
     {
       // Error!
@@ -732,7 +708,7 @@ void IMFViewer_UI::importZeissZenMontage()
     pipeline->pushBack(itkRegistrationFilter);
 
     DataArrayPath montagePath("MontageDC", "MontageAM", "MontageData");
-    AbstractFilter::Pointer itkStitchingFilter = filterFactory->createTileStitchingFilter(montageStart, montageEnd, dcPrefix, amName, daName, montagePath);
+    AbstractFilter::Pointer itkStitchingFilter = filterFactory->createTileStitchingFilter(rowLimits, colLimits, dcPrefix, amName, daName, montagePath);
     if(itkStitchingFilter == AbstractFilter::NullPointer())
     {
       // Error!
@@ -741,29 +717,114 @@ void IMFViewer_UI::importZeissZenMontage()
     pipeline->pushBack(itkStitchingFilter);
   }
 
-  addPipelineToQueue(pipeline);
+  VSMontageImporter::Pointer importer = VSMontageImporter::New(pipeline, displayType);
+  addMontageImporterToQueue(importer);
 }
 
 // -----------------------------------------------------------------------------
 //
 // -----------------------------------------------------------------------------
-void IMFViewer_UI::addPipelineToQueue(const FilterPipeline::Pointer& pipeline)
+void IMFViewer_UI::importEbsdMontage()
 {
-  VSMontageImporter::Pointer importer = VSMontageImporter::New(pipeline);
-  connect(importer.get(), &VSMontageImporter::resultReady, this, &IMFViewer_UI::handleMontageResults);
+  ImportEbsdMontageDialog::Pointer dialog = ImportEbsdMontageDialog::New(this);
+  int ret = dialog->exec();
+  if(ret == QDialog::Rejected)
+  {
+    return;
+  }
 
-  m_Ui->queueWidget->addDataImporter(pipeline->getName(), importer);
+  EbsdMontageMetadata metadata = dialog->getMetadata();
+
+  VSMainWidgetBase* baseWidget = dynamic_cast<VSMainWidgetBase*>(m_Ui->vsWidget);
+  VSFilterViewModel* filterViewModel = baseWidget->getActiveViewWidget()->getFilterViewModel();
+  MontageMetadata::DisplayType displayType = metadata.getDataDisplayType();
+  filterViewModel->setDisplayType(displayType);
+
+  VSFilterFactory::Pointer filterFactory = VSFilterFactory::New();
+
+  FilterPipeline::Pointer pipeline = FilterPipeline::New();
+  pipeline->setName(metadata.getMontageName());
+
+  DataArrayPath dcPath("UntitledMontage_", "", "");
+  QString amName = "Cell Attribute Matrix";
+  QString ensembleAMName = "Cell Attribute Matrix";
+  QString daName = "Image Data";
+  QString ipfColorsName = "IPF Colors";
+  AbstractFilter::Pointer importEbsdMontageFilter = filterFactory->createImportEbsdMontageFilter(metadata, dcPath, amName, ensembleAMName, daName, ipfColorsName);
+  if(importEbsdMontageFilter == AbstractFilter::NullPointer())
+  {
+    // Error!
+    return;
+  }
+
+  pipeline->pushBack(importEbsdMontageFilter);
+
+  // Set Image Data Containers
+  importEbsdMontageFilter->preflight();
+  QStringList dcNames;
+  QString dcPrefix = dcPath.getDataContainerName() + "_";
+
+  int rowCount;
+  int colCount;
+  IntVec2Type rowLimits = metadata.getRowLimits();
+  IntVec2Type colLimits = metadata.getColumnLimits();
+
+  if(colLimits.getY() == 0 && rowLimits.getY() == 0)
+  {
+    rowCount = importEbsdMontageFilter->property("RowCount").toInt();
+    colCount = importEbsdMontageFilter->property("ColumnCount").toInt();
+    DataContainerArray::Pointer dca = importEbsdMontageFilter->getDataContainerArray();
+    dcNames = dca->getDataContainerNames();
+  }
+  else
+  {
+    rowCount = rowLimits[1] - rowLimits[0] + 1;
+    colCount = colLimits[1] - colLimits[0] + 1;
+    for(int32_t row = rowLimits[0]; row <= rowLimits[1]; row++)
+    {
+      for(int32_t col = colLimits[0]; col <= colLimits[1]; col++)
+      {
+        dcNames.push_back(MontageUtilities::GenerateDataContainerName(dcPrefix, {colLimits[1], rowLimits[1]}, row, col));
+      }
+    }
+  }
+
+  IntVec3Type montageSize = {colCount, rowCount, 1};
+
+  if(displayType != MontageMetadata::DisplayType::SideBySide && displayType != MontageMetadata::DisplayType::Outline)
+  {
+    AbstractFilter::Pointer itkRegistrationFilter = filterFactory->createPCMTileRegistrationFilter(rowLimits, colLimits, dcPrefix, amName, daName);
+    if(itkRegistrationFilter == AbstractFilter::NullPointer())
+    {
+      // Error!
+      return;
+    }
+    pipeline->pushBack(itkRegistrationFilter);
+
+    DataArrayPath montagePath("MontageDC", "MontageAM", "MontageData");
+    AbstractFilter::Pointer itkStitchingFilter = filterFactory->createTileStitchingFilter(rowLimits, colLimits, dcPrefix, amName, daName, montagePath);
+    if(itkStitchingFilter == AbstractFilter::NullPointer())
+    {
+      // Error!
+      return;
+    }
+    pipeline->pushBack(itkStitchingFilter);
+  }
+
+  // Run the pipeline
+  VSMontageImporter::Pointer importer = VSMontageImporter::New(pipeline, metadata.getDataDisplayType());
+  addMontageImporterToQueue(importer);
 }
 
 // -----------------------------------------------------------------------------
 //
 // -----------------------------------------------------------------------------
-void IMFViewer_UI::executePipeline(const FilterPipeline::Pointer& pipeline, const DataContainerArray::Pointer& dca)
+void IMFViewer_UI::addMontageImporterToQueue(VSMontageImporter::Pointer importer)
 {
-  VSMontageImporter::Pointer importer = VSMontageImporter::New(pipeline, dca);
-  connect(importer.get(), &VSMontageImporter::resultReady, this, &IMFViewer_UI::handleMontageResults);
+  VSMainWidgetBase* baseWidget = dynamic_cast<VSMainWidgetBase*>(m_Ui->vsWidget);
+  connect(importer.get(), &VSMontageImporter::montageResultsReady, baseWidget, &VSMainWidgetBase::importPipelineOutput);
 
-  m_Ui->queueWidget->addDataImporter(pipeline->getName(), importer);
+  m_Ui->queueWidget->addDataImporter(importer->getName(), importer);
 }
 
 // -----------------------------------------------------------------------------
@@ -791,55 +852,13 @@ void IMFViewer_UI::handleDatasetResults(VSFileNameFilter* textFilter, VSDataSetF
 // -----------------------------------------------------------------------------
 //
 // -----------------------------------------------------------------------------
-void IMFViewer_UI::handleMontageResults(const FilterPipeline::Pointer& pipeline, int err)
-{
-  if(err >= 0)
-  {
-    DataContainerArray::Pointer dca = pipeline->getDataContainerArray();
-    QStringList pipelineNameTokens = pipeline->getName().split("_", QString::SplitBehavior::SkipEmptyParts);
-    int slice = 0;
-    if(pipelineNameTokens.size() > 1)
-    {
-      slice = pipelineNameTokens[1].toInt();
-    }
-
-    // If Display Montage was selected, remove non-stitched image data containers
-    if(m_DisplayType == AbstractImportMontageDialog::DisplayType::Montage)
-    {
-      for(const DataContainer::Pointer& dc : dca->getDataContainers())
-      {
-        if(dc->getName() == "MontageDC")
-        {
-          ImageGeom::Pointer imageGeom = dc->getGeometryAs<ImageGeom>();
-          if(imageGeom)
-          {
-            FloatVec3Type origin = imageGeom->getOrigin();
-            origin[2] += slice;
-            imageGeom->setOrigin(origin);
-          }
-        }
-        else
-        {
-          dca->removeDataContainer(dc->getName());
-        }
-      }
-    }
-
-    VSMainWidgetBase* baseWidget = dynamic_cast<VSMainWidgetBase*>(m_Ui->vsWidget);
-    baseWidget->importPipelineOutput(pipeline, dca);
-  }
-}
-
-// -----------------------------------------------------------------------------
-//
-// -----------------------------------------------------------------------------
 void IMFViewer_UI::importData(const QString& filePath)
 {
   VSMainWidgetBase* baseWidget = dynamic_cast<VSMainWidgetBase*>(m_Ui->vsWidget);
   VSFilterModel* filterModel = baseWidget->getController()->getFilterModel();
   VSRootFilter* rootFilter = filterModel->getRootFilter();
   VSFileNameFilter* textFilter = new VSFileNameFilter(filePath);
-  textFilter->setParentFilter((VSAbstractFilter*)rootFilter);
+  textFilter->setParentFilter(dynamic_cast<VSAbstractFilter*>(rootFilter));
   VSDataSetFilter* filter = new VSDataSetFilter(filePath, textFilter);
   VSDatasetImporter::Pointer importer = VSDatasetImporter::New(textFilter, filter);
   connect(importer.get(), &VSDatasetImporter::resultReady, this, &IMFViewer_UI::handleDatasetResults);
@@ -880,7 +899,8 @@ void IMFViewer_UI::importImages(const QStringList& filePaths)
   }
 
   // Run the pipeline
-  addPipelineToQueue(pipeline);
+  VSMontageImporter::Pointer importer = VSMontageImporter::New(pipeline, MontageMetadata::DisplayType::SideBySide);
+  addMontageImporterToQueue(importer);
 }
 
 // -----------------------------------------------------------------------------
@@ -909,20 +929,21 @@ void IMFViewer_UI::importPipeline(ExecutePipelineWizard* executePipelineWizard)
 
   VSMainWidgetBase* baseWidget = dynamic_cast<VSMainWidgetBase*>(m_Ui->vsWidget);
   VSFilterViewModel* filterViewModel = baseWidget->getActiveViewWidget()->getFilterViewModel();
+  MontageMetadata::DisplayType displayType;
   if(displayMontage)
   {
-    m_DisplayType = AbstractImportMontageDialog::DisplayType::Montage;
+    displayType = MontageMetadata::DisplayType::Montage;
   }
   else if(displayOutline)
   {
-    m_DisplayType = AbstractImportMontageDialog::DisplayType::Outline;
+    displayType = MontageMetadata::DisplayType::Outline;
   }
   else
   {
-    m_DisplayType = AbstractImportMontageDialog::DisplayType::SideBySide;
+    displayType = MontageMetadata::DisplayType::SideBySide;
   }
 
-  filterViewModel->setDisplayType(m_DisplayType);
+  filterViewModel->setDisplayType(displayType);
 
   QString filePath = executePipelineWizard->field(ExecutePipeline::FieldNames::PipelineFile).toString();
   ExecutePipelineWizard::ExecutionType executionType = executePipelineWizard->field(ExecutePipeline::FieldNames::ExecutionType).value<ExecutePipelineWizard::ExecutionType>();
@@ -948,7 +969,8 @@ void IMFViewer_UI::importPipeline(ExecutePipelineWizard* executePipelineWizard)
   {
     if(executionType == ExecutePipelineWizard::ExecutionType::FromFilesystem)
     {
-      addPipelineToQueue(pipelineFromJson);
+      VSMontageImporter::Pointer importer = VSMontageImporter::New(pipelineFromJson, displayType);
+      addMontageImporterToQueue(importer);
     }
     else if(executionType == ExecutePipelineWizard::ExecutionType::OnLoadedData)
     {
@@ -1025,7 +1047,8 @@ void IMFViewer_UI::importPipeline(ExecutePipelineWizard* executePipelineWizard)
         pipeline->pushBack(filter);
       }
 
-      executePipeline(pipeline, dca);
+      VSMontageImporter::Pointer importer = VSMontageImporter::New(pipeline, displayType);
+      addMontageImporterToQueue(importer);
     }
   }
 }
@@ -1051,7 +1074,7 @@ void IMFViewer_UI::performMontage()
   std::pair<int, int> rowColPair;
   bool validSIMPL = false;
 
-  m_DisplayType = AbstractImportMontageDialog::DisplayType::Montage;
+  MontageMetadata::DisplayType displayType = MontageMetadata::DisplayType::Montage;
   bool stitchingOnly = performMontageDialog->getStitchingOnly();
 
   QString montageName = performMontageDialog->getMontageName();
@@ -1061,7 +1084,7 @@ void IMFViewer_UI::performMontage()
 
   VSFilterViewModel* filterViewModel = baseWidget->getActiveViewWidget()->getFilterViewModel();
 
-  filterViewModel->setDisplayType(AbstractImportMontageDialog::DisplayType::Montage);
+  filterViewModel->setDisplayType(displayType);
 
   QStringList selectedFilterNames;
   VSAbstractFilter::FilterListType selectedFilters = baseWidget->getActiveViewWidget()->getSelectedFilters();
@@ -1133,7 +1156,8 @@ void IMFViewer_UI::performMontage()
       pipeline->pushBack(itkImageWriterFilter);
     }
 
-    executePipeline(pipeline, dca);
+    VSMontageImporter::Pointer importer = VSMontageImporter::New(pipeline, displayType);
+    addMontageImporterToQueue(importer);
   }
 }
 
@@ -1472,6 +1496,10 @@ void IMFViewer_UI::createMenu()
   QAction* d3dMontageAction = new QAction("DREAM3D");
   connect(d3dMontageAction, &QAction::triggered, this, &IMFViewer_UI::importDREAM3DMontage);
   importMontageMenu->addAction(d3dMontageAction);
+
+  QAction* ebsdMontageAction = new QAction("EBSD");
+  connect(ebsdMontageAction, &QAction::triggered, this, &IMFViewer_UI::importEbsdMontage);
+  importMontageMenu->addAction(ebsdMontageAction);
 
   QAction* fijiMontageAction = new QAction("Fiji");
   connect(fijiMontageAction, &QAction::triggered, this, qOverload<>(&IMFViewer_UI::importFijiMontage));
