@@ -759,57 +759,57 @@ void IMFViewer_UI::importEbsdMontage()
 
   pipeline->pushBack(importEbsdMontageFilter);
 
-  // Set Image Data Containers
-  importEbsdMontageFilter->preflight();
-  QStringList dcNames;
-  QString dcPrefix = dcPath.getDataContainerName() + "_";
+  //  // Set Image Data Containers
+  //  importEbsdMontageFilter->preflight();
+  //  QStringList dcNames;
+  //  QString dcPrefix = dcPath.getDataContainerName() + "_";
 
-  int rowCount;
-  int colCount;
-  IntVec2Type rowLimits = metadata.getRowLimits();
-  IntVec2Type colLimits = metadata.getColumnLimits();
+  //  int rowCount;
+  //  int colCount;
+  //  IntVec2Type rowLimits = metadata.getRowLimits();
+  //  IntVec2Type colLimits = metadata.getColumnLimits();
 
-  if(colLimits.getY() == 0 && rowLimits.getY() == 0)
-  {
-    rowCount = importEbsdMontageFilter->property("RowCount").toInt();
-    colCount = importEbsdMontageFilter->property("ColumnCount").toInt();
-    DataContainerArray::Pointer dca = importEbsdMontageFilter->getDataContainerArray();
-    dcNames = dca->getDataContainerNames();
-  }
-  else
-  {
-    rowCount = rowLimits[1] - rowLimits[0] + 1;
-    colCount = colLimits[1] - colLimits[0] + 1;
-    for(int32_t row = rowLimits[0]; row <= rowLimits[1]; row++)
-    {
-      for(int32_t col = colLimits[0]; col <= colLimits[1]; col++)
-      {
-        dcNames.push_back(MontageUtilities::GenerateDataContainerName(dcPrefix, {colLimits[1], rowLimits[1]}, row, col));
-      }
-    }
-  }
+  //  if(colLimits.getY() == 0 && rowLimits.getY() == 0)
+  //  {
+  //    rowCount = importEbsdMontageFilter->property("RowCount").toInt();
+  //    colCount = importEbsdMontageFilter->property("ColumnCount").toInt();
+  //    DataContainerArray::Pointer dca = importEbsdMontageFilter->getDataContainerArray();
+  //    dcNames = dca->getDataContainerNames();
+  //  }
+  //  else
+  //  {
+  //    rowCount = rowLimits[1] - rowLimits[0] + 1;
+  //    colCount = colLimits[1] - colLimits[0] + 1;
+  //    for(int32_t row = rowLimits[0]; row <= rowLimits[1]; row++)
+  //    {
+  //      for(int32_t col = colLimits[0]; col <= colLimits[1]; col++)
+  //      {
+  //        dcNames.push_back(MontageUtilities::GenerateDataContainerName(dcPrefix, {colLimits[1], rowLimits[1]}, row, col));
+  //      }
+  //    }
+  //  }
 
-  IntVec3Type montageSize = {colCount, rowCount, 1};
+  //  IntVec3Type montageSize = {colCount, rowCount, 1};
 
-  if(displayType != MontageMetadata::DisplayType::SideBySide && displayType != MontageMetadata::DisplayType::Outline)
-  {
-    AbstractFilter::Pointer itkRegistrationFilter = filterFactory->createPCMTileRegistrationFilter(rowLimits, colLimits, dcPrefix, amName, daName);
-    if(itkRegistrationFilter == AbstractFilter::NullPointer())
-    {
-      // Error!
-      return;
-    }
-    pipeline->pushBack(itkRegistrationFilter);
+  //  if(displayType != MontageMetadata::DisplayType::SideBySide && displayType != MontageMetadata::DisplayType::Outline)
+  //  {
+  //    AbstractFilter::Pointer itkRegistrationFilter = filterFactory->createPCMTileRegistrationFilter(rowLimits, colLimits, dcPrefix, amName, daName);
+  //    if(itkRegistrationFilter == AbstractFilter::NullPointer())
+  //    {
+  //      // Error!
+  //      return;
+  //    }
+  //    pipeline->pushBack(itkRegistrationFilter);
 
-    DataArrayPath montagePath("MontageDC", "MontageAM", "MontageData");
-    AbstractFilter::Pointer itkStitchingFilter = filterFactory->createTileStitchingFilter(rowLimits, colLimits, dcPrefix, amName, daName, montagePath);
-    if(itkStitchingFilter == AbstractFilter::NullPointer())
-    {
-      // Error!
-      return;
-    }
-    pipeline->pushBack(itkStitchingFilter);
-  }
+  //    DataArrayPath montagePath("MontageDC", "MontageAM", "MontageData");
+  //    AbstractFilter::Pointer itkStitchingFilter = filterFactory->createTileStitchingFilter(rowLimits, colLimits, dcPrefix, amName, daName, montagePath);
+  //    if(itkStitchingFilter == AbstractFilter::NullPointer())
+  //    {
+  //      // Error!
+  //      return;
+  //    }
+  //    pipeline->pushBack(itkStitchingFilter);
+  //  }
 
   // Run the pipeline
   VSMontageImporter::Pointer importer = VSMontageImporter::New(pipeline, metadata.getDataDisplayType());
