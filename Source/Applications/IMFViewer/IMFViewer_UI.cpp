@@ -745,7 +745,7 @@ void IMFViewer_UI::importEbsdMontage()
 
   DataArrayPath dcPath("UntitledMontage_", "", "");
   QString amName = "Cell Attribute Matrix";
-  QString ensembleAMName = "Cell Attribute Matrix";
+  QString ensembleAMName = "Cell Ensemble Attribute Matrix";
   QString daName = "Image Data";
   QString ipfColorsName = "IPF Colors";
   AbstractFilter::Pointer importEbsdMontageFilter = filterFactory->createImportEbsdMontageFilter(metadata, dcPath, amName, ensembleAMName, daName, ipfColorsName);
