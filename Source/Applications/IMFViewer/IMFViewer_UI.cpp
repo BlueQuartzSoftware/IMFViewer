@@ -277,8 +277,6 @@ void IMFViewer_UI::importDREAM3DMontage()
   filterViewModel->setDisplayType(displayType);
 
   VSFilterFactory::Pointer filterFactory = VSFilterFactory::New();
-  connect(filterFactory.get(), &VSFilterFactory::notifyErrorMessage,
-          [=](const QString& msg) { QMessageBox::critical(this, "Import DREAM3D Montage", msg, QMessageBox::StandardButton::Ok, QMessageBox::StandardButton::Ok); });
 
   FilterPipeline::Pointer pipeline = FilterPipeline::New();
   QString montageName = metadata.getMontageName();
