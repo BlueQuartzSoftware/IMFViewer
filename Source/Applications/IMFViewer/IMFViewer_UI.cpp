@@ -109,7 +109,6 @@ IMFViewer_UI::IMFViewer_UI(QWidget* parent)
   setupGui();
 
   qRegisterMetaType<FilterPipeline::Pointer>();
-  qRegisterMetaType<DataContainerArray::Pointer>();
 }
 
 // -----------------------------------------------------------------------------
