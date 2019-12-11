@@ -35,6 +35,8 @@
 
 #include "IMFViewer_UI.h"
 
+#include <array>
+
 #include <QDesktopServices>
 #include <QtConcurrent>
 #include <vtkImageData.h>
@@ -87,6 +89,8 @@
 #include "BrandedStrings.h"
 
 #include "ui_IMFViewer_UI.h"
+
+using Array3Type = std::array<double, 3>;
 
 // -----------------------------------------------------------------------------
 //
@@ -1684,7 +1688,7 @@ std::pair<int, int> IMFViewer_UI::buildCustomDCA(const DataContainerArray::Point
   for(iterator = montageDatasets.begin(); iterator != montageDatasets.end(); ++iterator)
   {
     VSAbstractFilter* montageDataset = *iterator;
-    double* pos = montageDataset->getTransform()->getLocalPosition();
+    std::array<double, 3> pos = montageDataset->getTransform()->getLocalPosition();
     if(dynamic_cast<VSFileNameFilter*>(montageDataset) != nullptr)
     {
       pos = montageDataset->getChildren().front()->getTransform()->getLocalPosition();
@@ -1746,7 +1750,7 @@ std::pair<int, int> IMFViewer_UI::buildCustomDCA(const DataContainerArray::Point
   for(iterator = montageDatasets.begin(); iterator != montageDatasets.end(); ++iterator)
   {
     VSAbstractFilter* montageDataset = *iterator;
-    double* pos = montageDataset->getTransform()->getLocalPosition();
+    std::array<double, 3> pos = montageDataset->getTransform()->getLocalPosition();
     if(dynamic_cast<VSFileNameFilter*>(montageDataset) != nullptr)
     {
       pos = montageDataset->getChildren().front()->getTransform()->getLocalPosition();
