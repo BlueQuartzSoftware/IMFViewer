@@ -1,7 +1,7 @@
 # IMF Viewer #
 ![](Resources/OpenSourceEdition/splash/IMFViewer_splash.png)
 
-This project is sponsored by the US Air Force and US Navy Office of Scientific Development (OSD) that aims to allow users to view and generate multi-scale data sets primarily from optical and electron microscopes in the form of mosaics.
+This project is sponsored by the Office of the Secretary of Defense through the US Air Force and US Navy Research Laboratories. The project aims to allow users to view and generate multi-scale data sets primarily from optical and electron microscopes in the form of mosaics.
 
 Application icon [Designed by Freepik](https://www.freepik.com/free-vector/set-of-abstract-modern-logos_1051962.htm)
 
